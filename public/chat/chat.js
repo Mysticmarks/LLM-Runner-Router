@@ -105,7 +105,8 @@ class LLMRouterDemo {
             
             // Add assistant response
             this.addMessage('assistant', response.text, {
-                strategy: routingResult.selectedModel,
+                strategy: response.provider,
+                model: response.model,
                 responseTime: response.responseTime,
                 tokens: response.tokens
             });
@@ -150,27 +151,62 @@ class LLMRouterDemo {
         const temperature = parseFloat(document.getElementById('temperatureSlider').value);
         const maxTokens = parseInt(document.getElementById('maxTokensSlider').value);
         
-        // Simulate processing delay based on strategy
-        const baseDelay = this.getStrategyDelay(this.currentStrategy);
-        const jitter = Math.random() * 500;
-        
-        await new Promise(resolve => setTimeout(resolve, baseDelay + jitter));
+        try {
+            // Make real API call to Netlify Functions
+            const response = await fetch('/.netlify/functions/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message,
+                    strategy: this.currentStrategy,
+                    options: {
+                        temperature,
+                        maxTokens,
+                        streaming
+                    }
+                })
+            });
 
-        // Generate contextual response
-        const response = this.generateContextualResponse(message, temperature);
-        const responseTime = Date.now() - startTime;
-        const estimatedTokens = Math.min(Math.floor(response.length / 4), maxTokens);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `API request failed: ${response.status}`);
+            }
 
-        return {
-            text: response,
-            responseTime,
-            tokens: estimatedTokens,
-            model: routingResult.selectedModel,
-            strategy: routingResult.strategy
-        };
+            const data = await response.json();
+            const responseTime = Date.now() - startTime;
+
+            return {
+                text: data.text,
+                responseTime: data.responseTime || responseTime,
+                tokens: data.tokensUsed || 0,
+                model: data.model || 'Unknown',
+                provider: data.provider || 'Unknown',
+                strategy: data.strategy || this.currentStrategy
+            };
+
+        } catch (error) {
+            console.error('API Error:', error);
+            
+            // Fallback to demo mode if API fails
+            this.showNotification('⚠️ API unavailable, using demo mode', 'error');
+            
+            const response = this.generateFallbackResponse(message, temperature);
+            const responseTime = Date.now() - startTime;
+            
+            return {
+                text: response,
+                responseTime,
+                tokens: Math.floor(response.length / 4),
+                model: 'Demo Mode',
+                provider: 'Fallback',
+                strategy: 'demo'
+            };
+        }
     }
 
-    generateContextualResponse(message, temperature) {
+    generateFallbackResponse(message, temperature) {
         const lowerMessage = message.toLowerCase();
         
         // Pattern-based responses for demo purposes
@@ -367,10 +403,10 @@ class LLMRouterDemo {
     updateModelStatus() {
         const modelList = document.getElementById('modelList');
         const models = [
-            { name: 'Demo Mode', status: 'simulated', class: 'simulated' },
-            { name: 'GPT-4o', status: 'Available', class: 'online' },
-            { name: 'Claude-3.5', status: 'Available', class: 'online' },
-            { name: 'Llama-3.1', status: 'Available', class: 'online' }
+            { name: 'OpenAI GPT-4o', status: 'Ready', class: 'online' },
+            { name: 'Claude-3.5-Sonnet', status: 'Ready', class: 'online' },
+            { name: 'Cohere Command-R+', status: 'Ready', class: 'online' },
+            { name: 'Fallback Demo', status: 'Backup', class: 'simulated' }
         ];
 
         modelList.innerHTML = models.map(model => `
