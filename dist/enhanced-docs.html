@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="LLM Runner Router - Universal Model Orchestration System Documentation. Complete guide to neural network routing, model loading, and intelligent AI orchestration.">
+    <meta name="keywords" content="LLM, AI, machine learning, model routing, neural networks, documentation">
+    <meta name="author" content="Echo AI Systems">
+    <meta property="og:title" content="LLM Runner Router Documentation">
+    <meta property="og:description" content="Comprehensive documentation for the Universal Model Orchestration System">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://llm-runner-router.com/docs">
+    <meta name="twitter:card" content="summary_large_image">
+    
+    <title>LLM Runner Router - Documentation</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #22c55e;
+            --primary-dark: #16a34a;
+            --primary-light: #86efac;
+            --secondary-color: #f59e0b;
+            --bg-dark: #0f172a;
+            --bg-light: #f8fafc;
+            --bg-gray: #f1f5f9;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --text-muted: #94a3b8;
+            --border-color: #e2e8f0;
+            --border-light: #f1f5f9;
+            --sidebar-width: 320px;
+            --header-height: 70px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.7;
+            color: var(--text-dark);
+            background: var(--bg-light);
+            overflow-x: hidden;
+            font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+        }
+
+        /* Enhanced Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+            transition: transform 0.2s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.02);
+        }
+
+        .version-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.6rem;
+            border-radius: var(--radius-lg);
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.025em;
+        }
+
+        .header-nav {
+            margin-left: auto;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .header-nav a {
+            text-decoration: none;
+            color: var(--text-light);
+            font-weight: 500;
+            padding: 0.6rem 1.2rem;
+            border-radius: var(--radius-md);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header-nav a:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            padding: 0.6rem;
+            border-radius: var(--radius-md);
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-gray);
+            color: var(--text-dark);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            flex-direction: column;
+            gap: 3px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.6rem;
+            border-radius: var(--radius-md);
+            transition: all 0.2s ease;
+        }
+
+        .mobile-menu-btn:hover {
+            background: var(--bg-gray);
+        }
+
+        .mobile-menu-btn span {
+            width: 20px;
+            height: 2px;
+            background: var(--text-dark);
+            transition: all 0.3s ease;
+        }
+
+        .mobile-menu-btn.open span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+
+        .mobile-menu-btn.open span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .mobile-menu-btn.open span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -6px);
+        }
+
+        /* Enhanced Sidebar */
+        .sidebar {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background: white;
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            z-index: 900;
+            transform: translateX(0);
+            transition: transform 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sidebar-content {
+            padding: 2rem 0 4rem;
+        }
+
+        /* Enhanced Search */
+        .search-container {
+            padding: 0 1.5rem;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.8rem 1rem 0.8rem 2.8rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            background: var(--bg-light);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 1.5rem;
+            right: 1.5rem;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .search-result-item {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-light);
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .search-result-item:hover {
+            background: var(--bg-light);
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-title {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .search-result-snippet {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            line-height: 1.5;
+        }
+
+        .search-result-snippet mark {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--primary-dark);
+            padding: 0.1rem 0.2rem;
+            border-radius: 2px;
+        }
+
+        /* Enhanced Navigation */
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-section-title {
+            padding: 0 1.5rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            display: block;
+            padding: 0.8rem 1.5rem;
+            text-decoration: none;
+            color: var(--text-light);
+            font-weight: 500;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            position: relative;
+        }
+
+        .nav-item:hover {
+            background: rgba(34, 197, 94, 0.08);
+            color: var(--primary-dark);
+            border-left-color: var(--primary-light);
+            transform: translateX(2px);
+        }
+
+        .nav-item.active {
+            background: rgba(34, 197, 94, 0.12);
+            color: var(--primary-dark);
+            border-left-color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            right: 1rem;
+            width: 6px;
+            height: 6px;
+            background: var(--primary-color);
+            border-radius: 50%;
+        }
+
+        .nav-item i {
+            width: 16px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            min-height: calc(100vh - var(--header-height));
+            position: relative;
+        }
+
+        .content {
+            max-width: 900px;
+            padding: 3rem;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* Enhanced Typography */
+        .content h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+            background: linear-gradient(135deg, var(--text-dark), var(--text-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .content h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin: 3rem 0 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--border-color);
+            position: relative;
+        }
+
+        .content h2::before {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 60px;
+            height: 2px;
+            background: var(--primary-color);
+        }
+
+        .content h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 2.5rem 0 1rem;
+            position: relative;
+        }
+
+        .content h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 2rem 0 0.75rem;
+        }
+
+        .content p {
+            margin-bottom: 1.5rem;
+            color: var(--text-light);
+            font-size: 1rem;
+            line-height: 1.8;
+        }
+
+        .content ul, .content ol {
+            margin-left: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .content li {
+            margin-bottom: 0.6rem;
+            color: var(--text-light);
+            line-height: 1.7;
+        }
+
+        .content blockquote {
+            border-left: 4px solid var(--primary-color);
+            background: rgba(34, 197, 94, 0.05);
+            padding: 1.5rem 2rem;
+            margin: 2rem 0;
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+            font-style: italic;
+            color: var(--text-dark);
+            position: relative;
+        }
+
+        .content blockquote::before {
+            content: '"';
+            font-size: 3rem;
+            color: var(--primary-light);
+            position: absolute;
+            top: 0.5rem;
+            left: 1rem;
+            font-family: serif;
+        }
+
+        /* Enhanced Code Blocks */
+        .content pre {
+            background: var(--bg-dark);
+            color: #e2e8f0;
+            padding: 1.5rem 2rem;
+            border-radius: var(--radius-lg);
+            overflow-x: auto;
+            margin: 2rem 0;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            position: relative;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .content pre::before {
+            content: '';
+            position: absolute;
+            top: 1rem;
+            right: 2rem;
+            width: 12px;
+            height: 12px;
+            background: #ef4444;
+            border-radius: 50%;
+            box-shadow: 20px 0 #f59e0b, 40px 0 #22c55e;
+        }
+
+        .content code {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--primary-dark);
+            padding: 0.3rem 0.5rem;
+            border-radius: var(--radius-sm);
+            font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', monospace;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .content pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            font-weight: 400;
+        }
+
+        /* Enhanced Tables */
+        .content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+            background: white;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        .content th,
+        .content td {
+            padding: 1rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .content th {
+            background: var(--bg-gray);
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 0.9rem;
+            letter-spacing: 0.025em;
+        }
+
+        .content tr:hover {
+            background: var(--bg-light);
+        }
+
+        .content tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Enhanced Alerts */
+        .alert {
+            padding: 1.5rem 2rem;
+            border-radius: var(--radius-lg);
+            margin: 2rem 0;
+            border-left: 4px solid;
+            position: relative;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .alert::before {
+            content: '';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 1.5rem;
+            left: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.08);
+            border-left-color: #3b82f6;
+            color: #1e40af;
+        }
+
+        .alert-info::before {
+            content: '\f05a';
+            color: #3b82f6;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.08);
+            border-left-color: #f59e0b;
+            color: #92400e;
+        }
+
+        .alert-warning::before {
+            content: '\f071';
+            color: #f59e0b;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.08);
+            border-left-color: #22c55e;
+            color: #166534;
+        }
+
+        .alert-success::before {
+            content: '\f00c';
+            color: #22c55e;
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.08);
+            border-left-color: #ef4444;
+            color: #991b1b;
+        }
+
+        .alert-danger::before {
+            content: '\f06a';
+            color: #ef4444;
+        }
+
+        /* Table of Contents */
+        .toc {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+        }
+
+        .toc h4 {
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toc h4::before {
+            content: '\f0cb';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: var(--primary-color);
+        }
+
+        .toc ul {
+            margin-left: 0;
+            list-style: none;
+        }
+
+        .toc li {
+            margin-bottom: 0.4rem;
+            position: relative;
+        }
+
+        .toc a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 0.3rem 0;
+            display: inline-block;
+            transition: color 0.2s ease;
+            border-radius: var(--radius-sm);
+        }
+
+        .toc a:hover {
+            color: var(--primary-color);
+        }
+
+        .toc .toc-level-1 {
+            font-weight: 600;
+            margin-top: 0.8rem;
+        }
+
+        .toc .toc-level-2 {
+            margin-left: 1rem;
+        }
+
+        .toc .toc-level-3 {
+            margin-left: 2rem;
+            font-size: 0.85rem;
+        }
+
+        /* Breadcrumbs */
+        .breadcrumbs {
+            padding: 1.5rem 3rem 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .breadcrumbs a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .breadcrumbs a:hover {
+            color: var(--primary-dark);
+        }
+
+        .breadcrumb-separator {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* Enhanced Footer */
+        .footer {
+            margin-top: 6rem;
+            padding: 3rem;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            background: white;
+            position: relative;
+        }
+
+        .footer-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .footer-logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+
+        .footer-description {
+            color: var(--text-light);
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .footer-meta {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-light);
+        }
+
+        /* Reading Progress */
+        .reading-progress {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--border-light);
+            z-index: 1001;
+        }
+
+        .reading-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            width: 0%;
+            transition: width 0.2s ease;
+        }
+
+        /* Page Metadata */
+        .page-metadata {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .page-metadata span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .page-metadata i {
+            font-size: 0.8rem;
+        }
+
+        /* Loading States */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            gap: 2rem;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-light);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+        }
+
+        /* Error States */
+        .error-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-light);
+        }
+
+        .error-state i {
+            font-size: 4rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .error-state h3 {
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+        }
+
+        .error-state button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 2rem;
+            transition: all 0.2s ease;
+        }
+
+        .error-state button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .content {
+                max-width: 100%;
+                padding: 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            :root {
+                --sidebar-width: 280px;
+            }
+
+            .mobile-menu-btn {
+                display: flex;
+            }
+
+            .header-nav {
+                display: none;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: var(--shadow-xl);
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .content {
+                padding: 1.5rem;
+            }
+
+            .content h1 {
+                font-size: 2rem;
+            }
+
+            .content h2 {
+                font-size: 1.5rem;
+            }
+
+            .breadcrumbs {
+                padding: 1rem 1.5rem 0;
+            }
+
+            .footer {
+                padding: 2rem 1.5rem;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .page-metadata {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .search-container {
+                padding: 0 1rem;
+            }
+
+            .nav-item {
+                padding: 0.7rem 1rem;
+            }
+
+            .content pre {
+                padding: 1rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            .header,
+            .sidebar,
+            .breadcrumbs,
+            .footer,
+            .reading-progress {
+                display: none;
+            }
+
+            .main {
+                margin-left: 0;
+                margin-top: 0;
+            }
+
+            .content {
+                max-width: none;
+                padding: 0;
+            }
+
+            .content pre {
+                background: #f8f9fa;
+                color: #333;
+                border: 1px solid #ddd;
+            }
+        }
+
+        /* Dark mode support (for future implementation) */
+        @media (prefers-color-scheme: dark) {
+            /* Dark mode styles would go here */
+        }
+
+        /* High contrast mode */
+        @media (prefers-contrast: high) {
+            :root {
+                --border-color: #000;
+                --text-light: #000;
+            }
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Focus states for accessibility */
+        .nav-item:focus,
+        .search-input:focus,
+        .header-nav a:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Reading Progress Bar -->
+    <div class="reading-progress">
+        <div class="reading-progress-bar" id="readingProgressBar"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle navigation menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <a href="/" class="logo">🧠 LLM Runner Router</a>
+            <div class="version-badge">v2.1.0</div>
+        </div>
+        <nav class="header-nav">
+            <a href="../index.html">
+                <i class="fas fa-home"></i>
+                Home
+            </a>
+            <a href="https://github.com/MCERQUA/LLM-Runner-Router" target="_blank" rel="noopener">
+                <i class="fab fa-github"></i>
+                GitHub
+            </a>
+            <a href="https://www.npmjs.com/package/llm-runner-router" target="_blank" rel="noopener">
+                <i class="fab fa-npm"></i>
+                NPM
+            </a>
+        </nav>
+        <div class="header-actions">
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-content">
+            <!-- Search -->
+            <div class="search-container">
+                <div style="position: relative;">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" id="searchInput" 
+                           placeholder="Search documentation..." autocomplete="off">
+                </div>
+                <div class="search-results" id="searchResults"></div>
+            </div>
+
+            <!-- Navigation -->
+            <nav>
+                <!-- Getting Started -->
+                <div class="nav-section">
+                    <div class="nav-section-title">
+                        <i class="fas fa-rocket"></i>
+                        Getting Started
+                    </div>
+                    <a href="#overview" class="nav-item" data-page="overview">
+                        <i class="fas fa-compass"></i>
+                        Overview
+                    </a>
+                    <a href="#architecture" class="nav-item" data-page="architecture">
+                        <i class="fas fa-sitemap"></i>
+                        Architecture
+                    </a>
+                    <a href="#examples" class="nav-item" data-page="examples">
+                        <i class="fas fa-code"></i>
+                        Quick Examples
+                    </a>
+                </div>
+
+                <!-- Core Documentation -->
+                <div class="nav-section">
+                    <div class="nav-section-title">
+                        <i class="fas fa-book"></i>
+                        Core Documentation
+                    </div>
+                    <a href="#api-reference" class="nav-item" data-page="api-reference">
+                        <i class="fas fa-cogs"></i>
+                        API Reference
+                    </a>
+                    <a href="#config-reference" class="nav-item" data-page="config-reference">
+                        <i class="fas fa-sliders-h"></i>
+                        Configuration
+                    </a>
+                    <a href="#routing-strategies" class="nav-item" data-page="routing-strategies">
+                        <i class="fas fa-route"></i>
+                        Routing Strategies
+                    </a>
+                    <a href="#model-formats" class="nav-item" data-page="model-formats">
+                        <i class="fas fa-cube"></i>
+                        Model Formats
+                    </a>
+                    <a href="#performance" class="nav-item" data-page="performance">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Performance
+                    </a>
+                </div>
+
+                <!-- Examples & Tutorials -->
+                <div class="nav-section">
+                    <div class="nav-section-title">
+                        <i class="fas fa-graduation-cap"></i>
+                        Examples & Tutorials
+                    </div>
+                    <a href="#basic-examples" class="nav-item" data-page="basic-examples">
+                        <i class="fas fa-play"></i>
+                        Basic Usage
+                    </a>
+                    <a href="#streaming-examples" class="nav-item" data-page="streaming-examples">
+                        <i class="fas fa-stream"></i>
+                        Streaming
+                    </a>
+                    <a href="#api-examples" class="nav-item" data-page="api-examples">
+                        <i class="fas fa-server"></i>
+                        Building APIs
+                    </a>
+                    <a href="#docker-examples" class="nav-item" data-page="docker-examples">
+                        <i class="fab fa-docker"></i>
+                        Docker & Deployment
+                    </a>
+                    <a href="#monitoring-examples" class="nav-item" data-page="monitoring-examples">
+                        <i class="fas fa-chart-line"></i>
+                        Monitoring
+                    </a>
+                </div>
+
+                <!-- Operations -->
+                <div class="nav-section">
+                    <div class="nav-section-title">
+                        <i class="fas fa-tools"></i>
+                        Operations
+                    </div>
+                    <a href="#deployment" class="nav-item" data-page="deployment">
+                        <i class="fas fa-rocket"></i>
+                        Deployment
+                    </a>
+                    <a href="#security" class="nav-item" data-page="security">
+                        <i class="fas fa-shield-alt"></i>
+                        Security
+                    </a>
+                    <a href="#troubleshooting" class="nav-item" data-page="troubleshooting">
+                        <i class="fas fa-wrench"></i>
+                        Troubleshooting
+                    </a>
+                </div>
+
+                <!-- Development -->
+                <div class="nav-section">
+                    <div class="nav-section-title">
+                        <i class="fas fa-laptop-code"></i>
+                        Development
+                    </div>
+                    <a href="#plugin-development" class="nav-item" data-page="plugin-development">
+                        <i class="fas fa-puzzle-piece"></i>
+                        Plugin Development
+                    </a>
+                    <a href="#faq" class="nav-item" data-page="faq">
+                        <i class="fas fa-question-circle"></i>
+                        FAQ
+                    </a>
+                    <a href="#glossary" class="nav-item" data-page="glossary">
+                        <i class="fas fa-book-open"></i>
+                        Glossary
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="breadcrumbs" id="breadcrumbs">
+            <a href="/">Home</a> 
+            <span class="breadcrumb-separator">></span> 
+            <span id="currentPage">Documentation</span>
+        </div>
+        
+        <div class="content" id="content">
+            <!-- Default loading content -->
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Loading documentation...</div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-logo">🧠 LLM Runner Router</div>
+                <p class="footer-description">
+                    Universal Model Orchestration System - Intelligently route between any AI model, 
+                    anywhere, with blazing fast performance.
+                </p>
+                <div class="footer-links">
+                    <a href="https://github.com/MCERQUA/LLM-Runner-Router">GitHub</a>
+                    <a href="https://www.npmjs.com/package/llm-runner-router">NPM Package</a>
+                    <a href="mailto:support@echoai.systems">Support</a>
+                    <a href="https://echoai.systems">Echo AI Systems</a>
+                </div>
+                <div class="footer-meta">
+                    <p><strong>Built with 💚 by Echo AI Systems</strong></p>
+                    <p>Open source • MIT Licensed • Production Ready • Last updated: <span id="lastUpdated"></span></p>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/5.1.1/marked.min.js"></script>
+    <script src="enhanced-docs-api.js"></script>
+    
+    <script>
+        class EnhancedDocsApp {
+            constructor() {
+                this.currentPage = 'overview';
+                this.docsAPI = new EnhancedDocsAPI();
+                this.searchTimeout = null;
+                this.isSearching = false;
+                
+                this.init();
+            }
+
+            async init() {
+                try {
+                    // Initialize the docs API
+                    await this.docsAPI.init();
+                    
+                    // Setup all event listeners
+                    this.setupEventListeners();
+                    this.setupMobileMenu();
+                    this.setupSearch();
+                    this.setupReadingProgress();
+                    this.setupThemeToggle();
+                    
+                    // Load initial page
+                    const initialPage = this.getPageFromHash() || 'overview';
+                    await this.loadPage(initialPage);
+                    this.updateActiveNav(initialPage);
+                    
+                    // Update last modified date
+                    this.updateLastModified();
+                    
+                    console.log('Enhanced Docs App initialized successfully');
+                } catch (error) {
+                    console.error('Failed to initialize Enhanced Docs App:', error);
+                    this.showError('Failed to load documentation system');
+                }
+            }
+
+            setupEventListeners() {
+                // Navigation clicks
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const page = e.target.closest('.nav-item').getAttribute('data-page');
+                        this.loadPage(page);
+                        this.updateActiveNav(page);
+                        
+                        // Close mobile menu if open
+                        if (window.innerWidth <= 768) {
+                            document.getElementById('sidebar').classList.remove('open');
+                            document.getElementById('mobileMenuBtn').classList.remove('open');
+                        }
+                    });
+                });
+
+                // Handle browser back/forward
+                window.addEventListener('popstate', (e) => {
+                    const page = this.getPageFromHash() || 'overview';
+                    this.loadPage(page, false);
+                    this.updateActiveNav(page);
+                });
+
+                // Handle clicks outside search to close results
+                document.addEventListener('click', (e) => {
+                    const searchContainer = document.querySelector('.search-container');
+                    const searchResults = document.getElementById('searchResults');
+                    
+                    if (!searchContainer.contains(e.target)) {
+                        searchResults.style.display = 'none';
+                    }
+                });
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    // Ctrl/Cmd + K to focus search
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                        e.preventDefault();
+                        document.getElementById('searchInput').focus();
+                    }
+                    
+                    // Escape to close search results
+                    if (e.key === 'Escape') {
+                        document.getElementById('searchResults').style.display = 'none';
+                    }
+                });
+            }
+
+            setupMobileMenu() {
+                const btn = document.getElementById('mobileMenuBtn');
+                const sidebar = document.getElementById('sidebar');
+
+                btn.addEventListener('click', () => {
+                    sidebar.classList.toggle('open');
+                    btn.classList.toggle('open');
+                });
+
+                // Close on outside click
+                document.addEventListener('click', (e) => {
+                    if (!sidebar.contains(e.target) && !btn.contains(e.target)) {
+                        sidebar.classList.remove('open');
+                        btn.classList.remove('open');
+                    }
+                });
+
+                // Close on escape key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+                        sidebar.classList.remove('open');
+                        btn.classList.remove('open');
+                    }
+                });
+            }
+
+            setupSearch() {
+                const searchInput = document.getElementById('searchInput');
+                const searchResults = document.getElementById('searchResults');
+
+                searchInput.addEventListener('input', (e) => {
+                    const query = e.target.value.trim();
+                    
+                    if (query.length < 2) {
+                        searchResults.style.display = 'none';
+                        return;
+                    }
+
+                    clearTimeout(this.searchTimeout);
+                    this.searchTimeout = setTimeout(() => {
+                        this.performSearch(query);
+                    }, 300);
+                });
+
+                searchInput.addEventListener('focus', () => {
+                    const query = searchInput.value.trim();
+                    if (query.length >= 2) {
+                        searchResults.style.display = 'block';
+                    }
+                });
+            }
+
+            async performSearch(query) {
+                if (this.isSearching) return;
+                
+                try {
+                    this.isSearching = true;
+                    const results = await this.docsAPI.search(query, { limit: 8 });
+                    this.displaySearchResults(results, query);
+                } catch (error) {
+                    console.error('Search failed:', error);
+                } finally {
+                    this.isSearching = false;
+                }
+            }
+
+            displaySearchResults(results, query) {
+                const searchResults = document.getElementById('searchResults');
+                
+                if (results.length === 0) {
+                    searchResults.innerHTML = `
+                        <div class="search-result-item">
+                            <div class="search-result-title">No results found</div>
+                            <div class="search-result-snippet">Try different keywords or check the spelling.</div>
+                        </div>
+                    `;
+                } else {
+                    searchResults.innerHTML = results.map(result => `
+                        <div class="search-result-item" onclick="app.loadPageFromSearch('${result.docName}')">
+                            <div class="search-result-title">${result.title}</div>
+                            <div class="search-result-snippet">${result.snippet}</div>
+                        </div>
+                    `).join('');
+                }
+                
+                searchResults.style.display = 'block';
+            }
+
+            loadPageFromSearch(docName) {
+                document.getElementById('searchResults').style.display = 'none';
+                document.getElementById('searchInput').value = '';
+                this.loadPage(docName);
+                this.updateActiveNav(docName);
+            }
+
+            setupReadingProgress() {
+                const progressBar = document.getElementById('readingProgressBar');
+                
+                window.addEventListener('scroll', () => {
+                    const content = document.getElementById('content');
+                    const scrollTop = window.pageYOffset;
+                    const docHeight = content.offsetHeight;
+                    const winHeight = window.innerHeight;
+                    const scrollPercent = Math.min(100, (scrollTop / (docHeight - winHeight)) * 100);
+                    
+                    progressBar.style.width = Math.max(0, scrollPercent) + '%';
+                });
+            }
+
+            setupThemeToggle() {
+                const themeToggle = document.getElementById('themeToggle');
+                
+                themeToggle.addEventListener('click', () => {
+                    // Theme toggle functionality would be implemented here
+                    const icon = themeToggle.querySelector('i');
+                    if (icon.classList.contains('fa-moon')) {
+                        icon.classList.replace('fa-moon', 'fa-sun');
+                    } else {
+                        icon.classList.replace('fa-sun', 'fa-moon');
+                    }
+                });
+            }
+
+            getPageFromHash() {
+                return window.location.hash.slice(1);
+            }
+
+            async loadPage(page, updateHistory = true) {
+                this.currentPage = page;
+                
+                if (updateHistory) {
+                    history.pushState({ page }, '', `#${page}`);
+                }
+
+                // Show loading state
+                this.showLoading();
+                
+                try {
+                    const doc = await this.docsAPI.loadDoc(page);
+                    this.renderPage(doc);
+                    this.updateBreadcrumbs(page);
+                    
+                    // Re-run Prism highlighting
+                    if (window.Prism) {
+                        Prism.highlightAll();
+                    }
+                    
+                    // Scroll to top smoothly
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    
+                } catch (error) {
+                    console.error('Error loading page:', error);
+                    this.showError(`Failed to load page: ${page}`);
+                }
+            }
+
+            renderPage(doc) {
+                const content = document.getElementById('content');
+                
+                const pageMetadata = `
+                    <div class="page-metadata">
+                        <span><i class="fas fa-clock"></i> ${doc.readingTime} min read</span>
+                        <span><i class="fas fa-file-alt"></i> ${doc.wordCount} words</span>
+                        <span><i class="fas fa-calendar"></i> Updated ${new Date(doc.lastModified).toLocaleDateString()}</span>
+                    </div>
+                `;
+
+                let tocHtml = '';
+                if (doc.toc && doc.toc.length > 0) {
+                    tocHtml = `
+                        <div class="toc">
+                            <h4>Table of Contents</h4>
+                            <ul>
+                                ${doc.toc.map(item => `
+                                    <li class="toc-level-${item.level}">
+                                        <a href="${item.anchor}">${item.text}</a>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                content.innerHTML = pageMetadata + tocHtml + doc.html;
+
+                // Add anchor links to headings
+                this.addAnchorLinks();
+            }
+
+            addAnchorLinks() {
+                const headings = document.querySelectorAll('.content h1, .content h2, .content h3, .content h4');
+                
+                headings.forEach(heading => {
+                    const text = heading.textContent;
+                    const id = text.toLowerCase()
+                        .replace(/[^\w\s-]/g, '')
+                        .replace(/\s+/g, '-')
+                        .replace(/--+/g, '-')
+                        .trim();
+                    
+                    heading.id = id;
+                    
+                    // Add anchor link
+                    const anchor = document.createElement('a');
+                    anchor.href = `#${id}`;
+                    anchor.className = 'heading-anchor';
+                    anchor.innerHTML = '<i class="fas fa-link"></i>';
+                    anchor.style.cssText = `
+                        opacity: 0;
+                        margin-left: 0.5rem;
+                        color: var(--primary-color);
+                        text-decoration: none;
+                        font-size: 0.8em;
+                        transition: opacity 0.2s ease;
+                    `;
+                    
+                    heading.appendChild(anchor);
+                    
+                    heading.addEventListener('mouseenter', () => {
+                        anchor.style.opacity = '1';
+                    });
+                    
+                    heading.addEventListener('mouseleave', () => {
+                        anchor.style.opacity = '0';
+                    });
+                });
+            }
+
+            showLoading() {
+                document.getElementById('content').innerHTML = `
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">Loading documentation...</div>
+                    </div>
+                `;
+            }
+
+            showError(message) {
+                document.getElementById('content').innerHTML = `
+                    <div class="error-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Oops! Something went wrong</h3>
+                        <p>${message}</p>
+                        <button onclick="location.reload()">Reload Page</button>
+                    </div>
+                `;
+            }
+
+            updateActiveNav(page) {
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                const activeItem = document.querySelector(`[data-page="${page}"]`);
+                if (activeItem) {
+                    activeItem.classList.add('active');
+                }
+            }
+
+            updateBreadcrumbs(page) {
+                const currentPageSpan = document.getElementById('currentPage');
+                const title = this.docsAPI.getPageTitle(page);
+                currentPageSpan.textContent = title;
+                
+                // Update document title
+                document.title = `${title} - LLM Runner Router Documentation`;
+            }
+
+            updateLastModified() {
+                const lastUpdatedElement = document.getElementById('lastUpdated');
+                if (lastUpdatedElement) {
+                    lastUpdatedElement.textContent = new Date().toLocaleDateString();
+                }
+            }
+        }
+
+        // Global app instance
+        let app;
+
+        // Initialize the app when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            app = new EnhancedDocsApp();
+        });
+
+        // Service Worker registration for PWA features (optional)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/docs-sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

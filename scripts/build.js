@@ -18,6 +18,9 @@ try {
   mkdirSync('dist', { recursive: true });
   cpSync('public', 'dist', { recursive: true });
   
+  // Ensure chat demo is included
+  console.log('Including interactive chat demo...');
+  
   // Copy important files to dist
   cpSync('README.md', 'dist/README.md');
   cpSync('package.json', 'dist/package.json');
