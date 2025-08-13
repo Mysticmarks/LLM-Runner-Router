@@ -1211,7 +1211,7 @@
     <script>
         class EnhancedDocsApp {
             constructor() {
-                this.currentPage = 'overview';
+                this.currentPage = null; // Will be set in init()
                 this.docsAPI = new EnhancedDocsAPI();
                 this.searchTimeout = null;
                 this.isSearching = false;
@@ -1233,6 +1233,7 @@
                     
                     // Load initial page
                     const initialPage = this.getPageFromHash() || 'overview';
+                    this.currentPage = initialPage; // Set current page
                     await this.loadPage(initialPage);
                     this.updateActiveNav(initialPage);
                     
@@ -1265,6 +1266,13 @@
 
                 // Handle browser back/forward
                 window.addEventListener('popstate', (e) => {
+                    const page = this.getPageFromHash() || 'overview';
+                    this.loadPage(page, false);
+                    this.updateActiveNav(page);
+                });
+                
+                // Handle direct hash navigation
+                window.addEventListener('hashchange', (e) => {
                     const page = this.getPageFromHash() || 'overview';
                     this.loadPage(page, false);
                     this.updateActiveNav(page);
