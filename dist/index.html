@@ -5,195 +5,467 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LLM Runner Router - Universal Model Orchestration System</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             line-height: 1.6;
-            color: #333;
+            color: #1a1a1a;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            padding: 0 20px;
         }
-        .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        
+        .header {
+            text-align: center;
+            padding: 4rem 0 2rem;
+            position: relative;
         }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: pulse 3s infinite ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.5; }
+            50% { transform: translateX(-50%) scale(1.1); opacity: 0.8; }
+        }
+        
         h1 {
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 0.5rem;
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, #22c55e, #16a34a, #15803d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+            position: relative;
+            z-index: 2;
         }
+        
         .subtitle {
-            text-align: center;
-            color: #7f8c8d;
-            font-style: italic;
-            margin-bottom: 2rem;
+            font-size: 1.25rem;
+            color: #94a3b8;
+            font-weight: 400;
+            margin-bottom: 3rem;
+            position: relative;
+            z-index: 2;
         }
+        
         .hero {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 2rem 0 4rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #22c55e, #16a34a, #15803d);
+        }
+        
+        .hero p {
+            font-size: 1.2rem;
+            line-height: 1.7;
             text-align: center;
-            margin: 2rem 0;
+            color: #334155;
+            font-weight: 400;
         }
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin: 2rem 0;
-        }
-        .feature {
-            background: #f8f9fa;
-            padding: 1.5rem;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-        }
-        .feature h3 {
-            margin-top: 0;
-            color: #2c3e50;
-        }
-        .code-block {
-            background: #2c3e50;
-            color: #ecf0f1;
-            padding: 1.5rem;
-            border-radius: 8px;
-            overflow-x: auto;
-            margin: 1rem 0;
-        }
+        
         .links {
             display: flex;
             justify-content: center;
-            gap: 1rem;
-            margin: 2rem 0;
+            gap: 1.5rem;
+            margin: 3rem 0;
             flex-wrap: wrap;
         }
+        
         .link {
-            background: #667eea;
+            background: linear-gradient(135deg, #16a34a, #15803d);
             color: white;
-            padding: 0.75rem 1.5rem;
+            padding: 1rem 2rem;
             text-decoration: none;
-            border-radius: 5px;
-            transition: background 0.3s;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);
+            position: relative;
+            overflow: hidden;
         }
+        
+        .link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .link:hover::before {
+            left: 100%;
+        }
+        
         .link:hover {
-            background: #5a6fd8;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(22, 163, 74, 0.4);
         }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 4rem 0;
+        }
+        
+        .feature {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #f59e0b, #d97706, #b45309);
+        }
+        
+        .feature:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .feature h3 {
+            margin-bottom: 1rem;
+            color: #1e293b;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+        
+        .feature p {
+            color: #475569;
+            line-height: 1.6;
+        }
+        
+        .code-section {
+            margin: 4rem 0;
+        }
+        
+        .code-section h2 {
+            color: #f8fafc;
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+        }
+        
+        .code-block {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 2rem;
+            overflow-x: auto;
+            margin: 2rem 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        
+        .code-block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+        }
+        
+        .code-block pre {
+            color: #e2e8f0;
+            font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin: 2rem 0;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin: 4rem 0;
         }
+        
         .stat {
             text-align: center;
-            padding: 1rem;
-            background: #e8f4fd;
-            border-radius: 8px;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
         }
+        
+        .stat:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        
         .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #16a34a;
+            margin-bottom: 0.5rem;
+            display: block;
         }
+        
+        .stat-label {
+            color: #64748b;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+        
+        .strategies {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border-radius: 20px;
+            margin: 4rem 0;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .strategies h2 {
+            color: #1e293b;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .strategies ul {
+            list-style: none;
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .strategies li {
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 10px;
+            border-left: 4px solid #f59e0b;
+            transition: all 0.3s ease;
+        }
+        
+        .strategies li:hover {
+            background: #f1f5f9;
+            transform: translateX(5px);
+        }
+        
         .footer {
             text-align: center;
-            margin-top: 2rem;
-            padding-top: 1rem;
-            border-top: 1px solid #eee;
-            color: #7f8c8d;
+            margin: 4rem 0 2rem;
+            padding: 2rem;
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .footer p {
+            margin-bottom: 0.5rem;
+        }
+        
+        .footer strong {
+            color: #e2e8f0;
+        }
+        
+        @media (max-width: 768px) {
+            .hero {
+                padding: 2rem 1.5rem;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .links {
+                flex-direction: column;
+                align-items: center;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🧠 LLM Runner Router</h1>
-        <p class="subtitle">Universal Model Orchestration System</p>
+        <header class="header">
+            <h1>🧠 LLM Runner Router</h1>
+            <p class="subtitle">Universal Model Orchestration System</p>
+        </header>
         
         <div class="hero">
-            <p>A full-stack agnostic neural orchestration system that adapts to ANY model format, ANY runtime environment, and ANY deployment scenario.</p>
+            <p>A cutting-edge, full-stack agnostic neural orchestration system that intelligently adapts to ANY model format, ANY runtime environment, and ANY deployment scenario. Experience the future of AI model management.</p>
         </div>
 
         <div class="links">
-            <a href="https://github.com/MCERQUA/LLM-Runner-Router" class="link">📚 View on GitHub</a>
-            <a href="https://github.com/MCERQUA/LLM-Runner-Router#readme" class="link">📖 Documentation</a>
-            <a href="https://www.npmjs.com/package/llm-runner-router" class="link">📦 NPM Package</a>
+            <a href="https://github.com/MCERQUA/LLM-Runner-Router" class="link">
+                <span>📚</span> View on GitHub
+            </a>
+            <a href="https://github.com/MCERQUA/LLM-Runner-Router#readme" class="link">
+                <span>📖</span> Documentation
+            </a>
+            <a href="https://www.npmjs.com/package/llm-runner-router" class="link">
+                <span>📦</span> NPM Package
+            </a>
         </div>
 
         <div class="features">
             <div class="feature">
                 <h3>🔮 Universal Format Support</h3>
-                <p>GGUF, ONNX, Safetensors, HuggingFace, and whatever format the future invents</p>
+                <p>Seamlessly load and manage GGUF, ONNX, Safetensors, HuggingFace models, and future formats with zero configuration.</p>
             </div>
             <div class="feature">
-                <h3>⚡ Multi-Engine Support</h3>
-                <p>WebGPU for speed demons, WASM for universalists, Node for servers</p>
+                <h3>⚡ Multi-Engine Architecture</h3>
+                <p>Harness the power of WebGPU for maximum performance, WASM for universal compatibility, and Node.js for server deployments.</p>
             </div>
             <div class="feature">
                 <h3>🧭 Intelligent Routing</h3>
-                <p>Automatically selects the perfect model based on quality, cost, speed, or chaos</p>
+                <p>Advanced algorithms automatically select the optimal model based on quality metrics, cost constraints, speed requirements, or custom strategies.</p>
             </div>
             <div class="feature">
-                <h3>🚀 Streaming Everything</h3>
-                <p>Real-time token generation that flows like digital poetry</p>
+                <h3>🚀 Real-Time Streaming</h3>
+                <p>Experience lightning-fast token generation with async generators and real-time streaming capabilities for responsive AI applications.</p>
+            </div>
+            <div class="feature">
+                <h3>💰 Cost Optimization</h3>
+                <p>Built-in cost analysis and optimization algorithms ensure maximum efficiency while staying within budget constraints.</p>
+            </div>
+            <div class="feature">
+                <h3>🔧 Developer-First API</h3>
+                <p>Intuitive APIs designed for both simple quick-start scenarios and complex enterprise-grade implementations.</p>
             </div>
         </div>
 
-        <h2>Quick Start</h2>
-        <div class="code-block">
-<pre>// Simple Mode - For Mortals
+        <section class="code-section">
+            <h2>Quick Start</h2>
+            <div class="code-block">
+<pre>// Simple Mode - For Rapid Prototyping
 import { quick } from 'llm-runner-router';
 
 const response = await quick("Explain quantum computing to a goldfish");
 console.log(response.text);
 
-// Advanced Mode - For Wizards
+// Advanced Mode - For Production Systems
 import LLMRouter from 'llm-runner-router';
 
 const router = new LLMRouter({
   strategy: 'quality-first',
-  enableQuantumMode: true
+  fallbacks: ['gpt-3.5', 'local-llama'],
+  cacheEnabled: true
 });
 
+// Load multiple models
 await router.load('huggingface:meta-llama/Llama-2-7b');
+await router.load('local:./models/mistral-7b.gguf');
+
+// Intelligent routing in action
 const response = await router.advanced({
   prompt: "Write a haiku about JavaScript",
   temperature: 0.8,
-  maxTokens: 50
-});</pre>
-        </div>
+  maxTokens: 50,
+  streaming: true
+});
+
+// Stream tokens in real-time
+for await (const token of response) {
+  process.stdout.write(token);
+}</pre>
+            </div>
+        </section>
 
         <div class="stats">
             <div class="stat">
-                <div class="stat-number">&lt;500ms</div>
-                <div>Model Load Time</div>
+                <span class="stat-number">&lt;500ms</span>
+                <span class="stat-label">Model Load Time</span>
             </div>
             <div class="stat">
-                <div class="stat-number">&lt;100ms</div>
-                <div>First Token</div>
+                <span class="stat-number">&lt;100ms</span>
+                <span class="stat-label">First Token</span>
             </div>
             <div class="stat">
-                <div class="stat-number">100+</div>
-                <div>Tokens/sec</div>
+                <span class="stat-number">100+</span>
+                <span class="stat-label">Tokens/sec</span>
             </div>
             <div class="stat">
-                <div class="stat-number">&lt;50%</div>
-                <div>Memory Usage</div>
+                <span class="stat-number">&lt;50%</span>
+                <span class="stat-label">Memory Usage</span>
             </div>
         </div>
 
-        <h2>Routing Strategies</h2>
-        <ul>
-            <li><strong>🏆 Quality First:</strong> Only the finest neural outputs shall pass</li>
-            <li><strong>💵 Cost Optimized:</strong> Your accountant will love you</li>
-            <li><strong>⚡ Speed Priority:</strong> Gotta go fast!</li>
-            <li><strong>⚖️ Balanced:</strong> The zen master approach</li>
-            <li><strong>🎲 Random:</strong> Embrace chaos, trust the universe</li>
-        </ul>
+        <section class="strategies">
+            <h2>Routing Strategies</h2>
+            <ul>
+                <li><strong>🏆 Quality First:</strong> Prioritizes the highest quality outputs with advanced scoring algorithms</li>
+                <li><strong>💵 Cost Optimized:</strong> Balances performance with cost-effectiveness for budget-conscious deployments</li>
+                <li><strong>⚡ Speed Priority:</strong> Optimizes for minimum latency and maximum throughput</li>
+                <li><strong>⚖️ Balanced:</strong> Intelligently weighs quality, cost, and speed for optimal overall performance</li>
+                <li><strong>🔄 Round Robin:</strong> Distributes requests evenly across available models for load balancing</li>
+                <li><strong>🎯 Least Loaded:</strong> Routes to the least busy model instance for optimal resource utilization</li>
+            </ul>
+        </section>
 
-        <div class="footer">
-            <p><strong>Built with 💙 and ☕ by Echo AI Systems</strong></p>
-            <p><em>"Because every business deserves an AI brain, and every AI brain deserves a proper orchestration system"</em></p>
-        </div>
+        <footer class="footer">
+            <p><strong>Built with 💚 and ☕ by Echo AI Systems</strong></p>
+            <p><em>"Empowering every business with intelligent AI orchestration, because every AI brain deserves a world-class management system"</em></p>
+            <p>Open source • MIT Licensed • Production Ready</p>
+        </footer>
     </div>
 </body>
 </html>
