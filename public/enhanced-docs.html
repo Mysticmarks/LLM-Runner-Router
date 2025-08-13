@@ -612,12 +612,21 @@
         }
 
         .toc h4 {
-            margin-bottom: 1.5rem;
+            margin-bottom: 0;
             color: var(--text-dark);
             font-size: 1.1rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--radius-sm);
+            transition: background-color 0.2s ease;
+            user-select: none;
+        }
+
+        .toc h4:hover {
+            background-color: var(--bg-light);
         }
 
         .toc h4::before {
@@ -627,9 +636,38 @@
             color: var(--primary-color);
         }
 
+        .toc-toggle {
+            margin-left: auto;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            transition: transform 0.3s ease;
+        }
+
+        .toc-toggle.expanded {
+            transform: rotate(180deg);
+        }
+
+        .toc-content {
+            margin-top: 1rem;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+        }
+
+        .toc-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+        .toc-content.expanded {
+            max-height: 1000px;
+            opacity: 1;
+        }
+
         .toc ul {
             margin-left: 0;
             list-style: none;
+            margin-bottom: 0;
         }
 
         .toc li {
@@ -1485,14 +1523,19 @@
                 if (doc.toc && doc.toc.length > 0) {
                     tocHtml = `
                         <div class="toc">
-                            <h4>Table of Contents</h4>
-                            <ul>
-                                ${doc.toc.map(item => `
-                                    <li class="toc-level-${item.level}">
-                                        <a href="${item.anchor}">${item.text}</a>
-                                    </li>
-                                `).join('')}
-                            </ul>
+                            <h4 class="toc-header">
+                                Table of Contents
+                                <span class="toc-toggle">▼</span>
+                            </h4>
+                            <div class="toc-content collapsed">
+                                <ul>
+                                    ${doc.toc.map(item => `
+                                        <li class="toc-level-${item.level}">
+                                            <a href="${item.anchor}">${item.text}</a>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
                         </div>
                     `;
                 }
@@ -1501,6 +1544,9 @@
 
                 // Add anchor links to headings
                 this.addAnchorLinks();
+                
+                // Setup TOC toggle functionality
+                this.setupTOCToggle();
             }
 
             addAnchorLinks() {
@@ -1540,6 +1586,32 @@
                         anchor.style.opacity = '0';
                     });
                 });
+            }
+
+            setupTOCToggle() {
+                const tocHeader = document.querySelector('.toc-header');
+                const tocContent = document.querySelector('.toc-content');
+                const tocToggle = document.querySelector('.toc-toggle');
+                
+                if (tocHeader && tocContent && tocToggle) {
+                    tocHeader.addEventListener('click', () => {
+                        const isCollapsed = tocContent.classList.contains('collapsed');
+                        
+                        if (isCollapsed) {
+                            // Expand
+                            tocContent.classList.remove('collapsed');
+                            tocContent.classList.add('expanded');
+                            tocToggle.classList.add('expanded');
+                            tocToggle.textContent = '▲';
+                        } else {
+                            // Collapse
+                            tocContent.classList.remove('expanded');
+                            tocContent.classList.add('collapsed');
+                            tocToggle.classList.remove('expanded');
+                            tocToggle.textContent = '▼';
+                        }
+                    });
+                }
             }
 
             showLoading() {
