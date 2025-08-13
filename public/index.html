@@ -83,6 +83,27 @@
             position: relative;
             overflow: hidden;
         }
+
+        .hero-tag {
+            position: absolute;
+            top: 20px;
+            right: -30px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            padding: 0.5rem 2rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transform: rotate(12deg);
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+            border-radius: 4px;
+            z-index: 10;
+            animation: tagFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes tagFloat {
+            0%, 100% { transform: rotate(12deg) translateY(0px); }
+            50% { transform: rotate(12deg) translateY(-3px); }
+        }
         
         .hero::before {
             content: '';
@@ -351,6 +372,7 @@
         </header>
         
         <div class="hero">
+            <div class="hero-tag">powered by 🜁 SentientEC</div>
             <p>A cutting-edge, full-stack agnostic neural orchestration system that intelligently adapts to ANY model format, ANY runtime environment, and ANY deployment scenario. Experience the future of AI model management.</p>
         </div>
 
