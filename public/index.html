@@ -242,6 +242,34 @@
         .feature p {
             color: #475569;
             line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-links {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .feature-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem 0.75rem;
+            background: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .feature-link:hover {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: rgba(34, 197, 94, 0.3);
+            transform: translateY(-1px);
         }
         
         .code-section {
@@ -357,6 +385,90 @@
             background: #f1f5f9;
             transform: translateX(5px);
         }
+
+        .resources-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .resource-card {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .resource-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .resource-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .resource-card h3 {
+            color: #1e293b;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .resource-card p {
+            color: #64748b;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .resource-links {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .resource-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .resource-link.primary {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+        }
+
+        .resource-link.primary:hover {
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .resource-link:not(.primary) {
+            background: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .resource-link:not(.primary):hover {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: rgba(34, 197, 94, 0.3);
+        }
         
         .footer {
             text-align: center;
@@ -428,33 +540,58 @@
             <div class="feature">
                 <h3>🔮 Universal Format Support</h3>
                 <p>Seamlessly load and manage GGUF, ONNX, Safetensors, HuggingFace models, and future formats with zero configuration.</p>
+                <div class="feature-links">
+                    <a href="enhanced-docs.html#model-formats" class="feature-link">📖 Supported Formats</a>
+                    <a href="enhanced-docs.html#examples" class="feature-link">🔗 Model Examples</a>
+                </div>
             </div>
             <div class="feature">
                 <h3>⚡ Multi-Engine Architecture</h3>
                 <p>Harness the power of WebGPU for maximum performance, WASM for universal compatibility, and Node.js for server deployments.</p>
+                <div class="feature-links">
+                    <a href="enhanced-docs.html#engines" class="feature-link">⚙️ Engine Guide</a>
+                    <a href="enhanced-docs.html#performance" class="feature-link">📊 Benchmarks</a>
+                </div>
             </div>
             <div class="feature">
                 <h3>🧭 Intelligent Routing</h3>
                 <p>Advanced algorithms automatically select the optimal model based on quality metrics, cost constraints, speed requirements, or custom strategies.</p>
+                <div class="feature-links">
+                    <a href="#routing-strategies" class="feature-link">🎯 View Strategies</a>
+                    <a href="enhanced-docs.html#routing" class="feature-link">📚 Routing Guide</a>
+                </div>
             </div>
             <div class="feature">
                 <h3>🚀 Real-Time Streaming</h3>
                 <p>Experience lightning-fast token generation with async generators and real-time streaming capabilities for responsive AI applications.</p>
+                <div class="feature-links">
+                    <a href="chat/" class="feature-link">🎮 Try Streaming</a>
+                    <a href="enhanced-docs.html#streaming" class="feature-link">📖 Stream API</a>
+                </div>
             </div>
             <div class="feature">
                 <h3>💰 Cost Optimization</h3>
                 <p>Built-in cost analysis and optimization algorithms ensure maximum efficiency while staying within budget constraints.</p>
+                <div class="feature-links">
+                    <a href="enhanced-docs.html#cost-analysis" class="feature-link">💡 Cost Guide</a>
+                    <a href="enhanced-docs.html#optimization" class="feature-link">⚡ Optimization</a>
+                </div>
             </div>
             <div class="feature">
                 <h3>🔧 Developer-First API</h3>
                 <p>Intuitive APIs designed for both simple quick-start scenarios and complex enterprise-grade implementations.</p>
+                <div class="feature-links">
+                    <a href="enhanced-docs.html#api-reference" class="feature-link">📋 API Reference</a>
+                    <a href="#quick-start" class="feature-link">🚀 Quick Start</a>
+                </div>
             </div>
             </div>
         </div>
 
         <div class="content-section">
-            <section class="code-section">
+            <section class="code-section" id="quick-start">
             <h2>Quick Start</h2>
+            <p style="text-align: center; color: #64748b; margin-bottom: 2rem;">Get started with LLM Runner Router in just a few lines of code</p>
             <div class="code-block">
 <pre>// Simple Mode - For Rapid Prototyping
 import { quick } from 'llm-runner-router';
@@ -511,8 +648,9 @@ for await (const token of response) {
         </div>
 
         <div class="content-section">
-            <section class="strategies">
+            <section class="strategies" id="routing-strategies">
             <h2>Routing Strategies</h2>
+            <p style="text-align: center; color: #64748b; margin-bottom: 2rem;">Intelligent model selection algorithms designed for every use case</p>
             <ul>
                 <li><strong>🏆 Quality First:</strong> Prioritizes the highest quality outputs with advanced scoring algorithms</li>
                 <li><strong>💵 Cost Optimized:</strong> Balances performance with cost-effectiveness for budget-conscious deployments</li>
@@ -521,6 +659,80 @@ for await (const token of response) {
                 <li><strong>🔄 Round Robin:</strong> Distributes requests evenly across available models for load balancing</li>
                 <li><strong>🎯 Least Loaded:</strong> Routes to the least busy model instance for optimal resource utilization</li>
             </ul>
+            <div style="text-align: center; margin-top: 2rem;">
+                <a href="enhanced-docs.html#routing-strategies" class="btn btn-secondary">
+                    <span>📖</span> Learn More About Routing
+                </a>
+            </div>
+            </section>
+        </div>
+
+        <div class="content-section">
+            <section class="resources-section">
+                <h2>📚 Documentation & Resources</h2>
+                <p style="text-align: center; color: #64748b; margin-bottom: 3rem;">Everything you need to master LLM Runner Router</p>
+                
+                <div class="resources-grid">
+                    <div class="resource-card">
+                        <div class="resource-icon">📖</div>
+                        <h3>Complete Documentation</h3>
+                        <p>Comprehensive guides, API reference, and tutorials for all skill levels</p>
+                        <div class="resource-links">
+                            <a href="enhanced-docs.html" class="resource-link primary">View Documentation</a>
+                            <a href="enhanced-docs.html#api-reference" class="resource-link">API Reference</a>
+                        </div>
+                    </div>
+
+                    <div class="resource-card">
+                        <div class="resource-icon">💻</div>
+                        <h3>Code Examples</h3>
+                        <p>Ready-to-use examples for common use cases and advanced implementations</p>
+                        <div class="resource-links">
+                            <a href="enhanced-docs.html#examples" class="resource-link primary">Browse Examples</a>
+                            <a href="https://github.com/MCERQUA/LLM-Runner-Router/tree/main/examples" class="resource-link">GitHub Examples</a>
+                        </div>
+                    </div>
+
+                    <div class="resource-card">
+                        <div class="resource-icon">🚀</div>
+                        <h3>Quick Start Guide</h3>
+                        <p>Get up and running in 5 minutes with our step-by-step installation guide</p>
+                        <div class="resource-links">
+                            <a href="enhanced-docs.html#quickstart" class="resource-link primary">Get Started</a>
+                            <a href="https://www.npmjs.com/package/llm-runner-router" class="resource-link">NPM Package</a>
+                        </div>
+                    </div>
+
+                    <div class="resource-card">
+                        <div class="resource-icon">🔧</div>
+                        <h3>Integration Guides</h3>
+                        <p>Platform-specific integration guides for React, Node.js, Docker, and more</p>
+                        <div class="resource-links">
+                            <a href="enhanced-docs.html#integration" class="resource-link primary">View Guides</a>
+                            <a href="enhanced-docs.html#deployment" class="resource-link">Deployment</a>
+                        </div>
+                    </div>
+
+                    <div class="resource-card">
+                        <div class="resource-icon">🎯</div>
+                        <h3>Performance Tuning</h3>
+                        <p>Optimization strategies, benchmarking tools, and performance best practices</p>
+                        <div class="resource-links">
+                            <a href="enhanced-docs.html#performance" class="resource-link primary">Optimize Performance</a>
+                            <a href="enhanced-docs.html#benchmarks" class="resource-link">View Benchmarks</a>
+                        </div>
+                    </div>
+
+                    <div class="resource-card">
+                        <div class="resource-icon">🤝</div>
+                        <h3>Community & Support</h3>
+                        <p>Join our community, get help, and contribute to the project's development</p>
+                        <div class="resource-links">
+                            <a href="https://github.com/MCERQUA/LLM-Runner-Router/issues" class="resource-link primary">Get Support</a>
+                            <a href="https://github.com/MCERQUA/LLM-Runner-Router" class="resource-link">Contribute</a>
+                        </div>
+                    </div>
+                </div>
             </section>
         </div>
 
