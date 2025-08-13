@@ -1,0 +1,65 @@
+# Robots.txt for LLM Runner Router
+# Universal AI Model Orchestration System
+
+User-agent: *
+Allow: /
+
+# Priority pages for crawling
+Allow: /index.html
+Allow: /docs.html
+Allow: /enhanced-docs.html
+Allow: /chat/
+Allow: /docs/
+
+# Block unnecessary paths to improve crawl budget
+Disallow: /node_modules/
+Disallow: /.git/
+Disallow: /models/
+Disallow: /cache/
+Disallow: /temp/
+Disallow: /logs/
+Disallow: /.claude/
+Disallow: /scripts/
+Disallow: /tests/
+Disallow: /*.log
+Disallow: /*.tmp
+Disallow: /*?debug=*
+Disallow: /*?test=*
+
+# Allow specific documentation formats
+Allow: /docs/*.md
+Allow: /examples/*.md
+Allow: /README.md
+Allow: /LICENSE
+
+# Sitemaps
+Sitemap: https://github.com/MCERQUA/LLM-Runner-Router/sitemap.xml
+
+# Crawl optimization
+Crawl-delay: 1
+
+# Search engine specific instructions
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+# Block problematic bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
