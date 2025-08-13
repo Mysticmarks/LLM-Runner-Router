@@ -46,8 +46,7 @@
 
 ### Environment Variables
 Set these in Netlify dashboard under "Site settings" > "Environment variables":
-- `NODE_VERSION`: `20`
-- `NPM_FLAGS`: `--prefix=/opt/buildhome/.nodejs`
+- `NODE_VERSION`: `20` (automatically set via netlify.toml)
 
 ## Deployment Commands
 
