@@ -96,8 +96,8 @@ class EnhancedDocsAPI {
 
     async fetchDocContent(fileName) {
         try {
-            // Try to fetch the actual file from the docs directory
-            const response = await fetch(`../docs/${fileName}`);
+            // Try to fetch the actual file from the docs directory (now in public/docs)
+            const response = await fetch(`./docs/${fileName}`);
             
             if (response.ok) {
                 return await response.text();
@@ -380,16 +380,12 @@ Built with 💚 by Echo AI Systems`;
 
     markdownToHtml(markdown) {
         if (typeof marked !== 'undefined') {
-            // Configure marked for better rendering
+            // Configure marked for better rendering (avoiding deprecated options)
             marked.setOptions({
-                highlight: function(code, lang) {
-                    if (typeof Prism !== 'undefined' && lang && Prism.languages[lang]) {
-                        return Prism.highlight(code, Prism.languages[lang], lang);
-                    }
-                    return code;
-                },
                 breaks: true,
-                gfm: true
+                gfm: true,
+                headerIds: false,  // Disable to avoid deprecated warnings
+                mangle: false      // Disable to avoid deprecated warnings
             });
             
             return marked.parse(markdown);
