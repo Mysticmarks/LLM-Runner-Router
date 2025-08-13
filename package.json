@@ -14,7 +14,9 @@
     "benchmark": "node examples/benchmarks/performance.js",
     "lint": "eslint src/**/*.js",
     "format": "prettier --write src/**/*.js",
-    "docs": "jsdoc -c jsdoc.json"
+    "docs": "jsdoc -c jsdoc.json",
+    "prepublishOnly": "npm run lint && npm run test && npm run build",
+    "prepack": "npm run build"
   },
   "keywords": [
     "llm",
@@ -62,9 +64,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/echoaisystems/llm-runner-router"
+    "url": "git+https://github.com/MCERQUA/LLM-Runner-Router.git"
   },
   "bugs": {
-    "url": "https://github.com/echoaisystems/llm-runner-router/issues"
-  }
+    "url": "https://github.com/MCERQUA/LLM-Runner-Router/issues"
+  },
+  "homepage": "https://github.com/MCERQUA/LLM-Runner-Router#readme",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "src/",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ]
 }
