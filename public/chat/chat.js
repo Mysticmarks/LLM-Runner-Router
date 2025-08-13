@@ -20,6 +20,7 @@ class LLMRouterDemo {
         // Initialize the actual LLM Router
         this.router = null;
         this.isInitialized = false;
+        this.useDemoMode = false;
         
         this.initializeRouter();
         this.initializeUI();
@@ -30,10 +31,21 @@ class LLMRouterDemo {
         try {
             this.updateStatus('initializing', 'Loading LLM Router...');
             
-            // Dynamically import the LLM Router
+            // Try to dynamically import the LLM Router, fallback to demo mode if not available
             if (!LLMRouter) {
-                const module = await import('../../src/index.js');
-                LLMRouter = module.default || module.LLMRouter;
+                try {
+                    const module = await import('../../src/index.js');
+                    LLMRouter = module.default || module.LLMRouter;
+                } catch (importError) {
+                    console.warn('Could not load LLM Router module, using demo mode:', importError);
+                    // Set flag to use demo mode only
+                    this.isInitialized = false;
+                    this.useDemoMode = true;
+                    this.updateStatus('online', 'Demo Mode Ready');
+                    this.showNotification('🎭 Running in Demo Mode - showcasing LLM Router capabilities', 'info');
+                    this.updateModelStatus();
+                    return;
+                }
             }
             
             // Create router instance with HuggingFace models configuration
@@ -222,8 +234,19 @@ class LLMRouterDemo {
         const temperature = parseFloat(document.getElementById('temperatureSlider').value);
         const maxTokens = parseInt(document.getElementById('maxTokensSlider').value);
         
-        if (!this.isInitialized || !this.router) {
-            throw new Error('LLM Router not initialized');
+        if (this.useDemoMode || !this.isInitialized || !this.router) {
+            // Use demo mode with realistic delays
+            const fallbackResponse = this.generateFallbackResponse(message, temperature);
+            const responseTime = Date.now() - startTime;
+            
+            return {
+                text: fallbackResponse,
+                responseTime,
+                tokens: Math.floor(fallbackResponse.length / 4),
+                model: 'Demo Mode',
+                provider: 'HuggingFace (Simulated)',
+                strategy: this.currentStrategy
+            };
         }
 
         try {
@@ -530,6 +553,23 @@ class LLMRouterDemo {
 
     updateModelStatus() {
         const modelList = document.getElementById('modelList');
+        
+        if (this.useDemoMode) {
+            const models = [
+                { name: 'DialoGPT-Small', status: 'Demo Mode', class: 'simulated' },
+                { name: 'DialoGPT-Medium', status: 'Demo Mode', class: 'simulated' },
+                { name: 'Zephyr-7B-Beta', status: 'Demo Mode', class: 'simulated' },
+                { name: 'LLM Router System', status: 'Showcasing Features', class: 'simulated' }
+            ];
+            
+            modelList.innerHTML = models.map(model => `
+                <div class="model-item">
+                    <div class="model-name">${model.name}</div>
+                    <div class="model-status-badge ${model.class}">${model.status}</div>
+                </div>
+            `).join('');
+            return;
+        }
         
         if (!this.router || !this.isInitialized) {
             const models = [
