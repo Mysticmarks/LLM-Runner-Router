@@ -385,15 +385,16 @@ Built with 💚 by Echo AI Systems`;
 
     markdownToHtml(markdown) {
         if (typeof marked !== 'undefined') {
-            // Configure marked to avoid ALL deprecated warnings
+            // Configure marked to completely eliminate ALL deprecated warnings
             marked.setOptions({
                 breaks: true,
                 gfm: true,
-                headerIds: false,      // Disable deprecated headerIds
-                mangle: false,         // Disable deprecated mangle
-                highlight: null,       // Disable deprecated highlight
-                langPrefix: '',        // Reset deprecated langPrefix
-                headerPrefix: ''       // Reset deprecated headerPrefix
+                headerIds: false,      // Explicitly disable deprecated headerIds
+                mangle: false,         // Explicitly disable deprecated mangle
+                headerPrefix: '',      // Explicitly disable deprecated headerPrefix
+                // Remove these deprecated options entirely
+                // highlight: null,    // Removed deprecated highlight option
+                // langPrefix: '',     // Removed deprecated langPrefix option
             });
             
             return marked.parse(markdown);

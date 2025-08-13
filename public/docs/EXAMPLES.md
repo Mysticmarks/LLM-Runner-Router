@@ -7,21 +7,12 @@
 ### 🚀 Quick Start
 - [Basic Examples](./examples/BASIC.md) - Hello world to first app
 - [Streaming Examples](./examples/STREAMING.md) - Real-time generation
-- [Batch Processing](./examples/BATCH.md) - Efficient bulk operations
 
 ### 💡 Common Use Cases
-- [Chat Applications](./examples/CHAT.md) - Building conversational AI
 - [API Servers](./examples/API.md) - REST/GraphQL/WebSocket
-- [Document QA](./examples/DOCUMENT_QA.md) - RAG systems
-
-### 🔧 Advanced Patterns
-- [Custom Routing](./examples/ROUTING.md) - Smart model selection
-- [Caching Strategies](./examples/CACHING.md) - Performance optimization
-- [Model Ensemble](./examples/ENSEMBLE.md) - Multi-model inference
 
 ### 🏭 Production
 - [Docker Examples](./examples/DOCKER.md) - Containerization
-- [Kubernetes](./examples/K8S.md) - Orchestration at scale
 - [Monitoring](./examples/MONITORING.md) - Observability
 
 ## Quick Code Snippets
@@ -68,8 +59,8 @@ console.log(await router.quick("Hi!"));
 ## Learning Path
 
 1. **Start Here**: [Basic Examples](./examples/BASIC.md) (5 min)
-2. **Then**: [API Server](./examples/API.md) (10 min)
-3. **Advanced**: [Custom Routing](./examples/ROUTING.md) (15 min)
+2. **Then**: [API Server](./examples/API.md) (10 min)  
+3. **Streaming**: [Streaming Examples](./examples/STREAMING.md) (15 min)
 4. **Production**: [Docker Deploy](./examples/DOCKER.md) (20 min)
 
 ---

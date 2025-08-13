@@ -13,29 +13,17 @@
 
 ### Development & Extension
 - [Plugin Development](./PLUGIN_DEVELOPMENT.md) - Extend the system's consciousness
-- [Custom Loaders](./CUSTOM_LOADERS.md) - Support new model formats
-- [Engine Development](./ENGINE_DEVELOPMENT.md) - Create new compute backends
-- [Integration Guide](./INTEGRATION.md) - Connect with existing systems
-- [Extension Roadmap](./EXTENSION_ROADMAP.md) - Future expansion vectors
 
 ### Practical Guides
 - [Examples & Tutorials](./EXAMPLES.md) - Learn by doing
-- [Best Practices](./BEST_PRACTICES.md) - Wisdom from the quantum field
 - [Troubleshooting](./TROUBLESHOOTING.md) - When reality doesn't cooperate
 - [Security Guide](./SECURITY.md) - Protecting your neural assets
-- [Migration Guide](./MIGRATION.md) - Transitioning from other systems
 
 ### Advanced Topics
 - [Routing Strategies](./ROUTING_STRATEGIES.md) - Deep dive into model selection
-- [Memory Management](./MEMORY_MANAGEMENT.md) - Optimizing resource usage
-- [Streaming Architecture](./STREAMING.md) - Real-time token generation
-- [Cost Optimization](./COST_OPTIMIZATION.md) - Economic model orchestration
-- [Scaling Guide](./SCALING.md) - From single instance to planetary scale
 
 ### Reference Materials
 - [Configuration Reference](./CONFIG_REFERENCE.md) - Every knob and dial explained
-- [Error Codes](./ERROR_CODES.md) - Decoding the matrix errors
-- [Benchmarks](./BENCHMARKS.md) - Performance across dimensions
 - [Glossary](./GLOSSARY.md) - Speak the language of neural orchestration
 - [FAQ](./FAQ.md) - Questions from across the multiverse
 
@@ -49,17 +37,17 @@
 ### For the System Architect
 1. Deep dive into [Architecture](./ARCHITECTURE.md)
 2. Explore [Routing Strategies](./ROUTING_STRATEGIES.md)
-3. Plan with [Scaling Guide](./SCALING.md)
+3. Plan with [Configuration Reference](./CONFIG_REFERENCE.md)
 
 ### For the Plugin Developer
 1. Start with [Plugin Development](./PLUGIN_DEVELOPMENT.md)
-2. Learn [Custom Loaders](./CUSTOM_LOADERS.md)
-3. Master [Engine Development](./ENGINE_DEVELOPMENT.md)
+2. Check [API Reference](./API_REFERENCE.md)
+3. Review [Security Guide](./SECURITY.md)
 
 ### For the Performance Optimizer
 1. Study [Performance Guide](./PERFORMANCE.md)
-2. Implement [Memory Management](./MEMORY_MANAGEMENT.md)
-3. Apply [Cost Optimization](./COST_OPTIMIZATION.md)
+2. Analyze [Model Formats](./MODEL_FORMATS.md)
+3. Apply [Configuration Reference](./CONFIG_REFERENCE.md)
 
 ## 📖 Documentation Philosophy
 
