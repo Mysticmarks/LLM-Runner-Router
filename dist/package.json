@@ -8,9 +8,9 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "build": "node scripts/build.js",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
-    "test:watch": "NODE_OPTIONS='--experimental-vm-modules' jest --watch",
-    "test:coverage": "NODE_OPTIONS='--experimental-vm-modules' jest --coverage",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch",
+    "test:coverage": "node --experimental-vm-modules node_modules/.bin/jest --coverage",
     "benchmark": "node examples/benchmarks/performance.js",
     "lint": "eslint src/**/*.js",
     "format": "prettier --write src/**/*.js",
@@ -64,7 +64,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/MCERQUA/LLM-Runner-Router"
+    "url": "git+https://github.com/MCERQUA/LLM-Runner-Router.git"
   },
   "bugs": {
     "url": "https://github.com/MCERQUA/LLM-Runner-Router/issues"

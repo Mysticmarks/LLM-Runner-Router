@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     
     strategy:
       matrix:
@@ -38,6 +39,7 @@ jobs:
       
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
+      continue-on-error: true
       with:
         file: ./coverage/lcov.info
         flags: unittests
@@ -92,6 +94,8 @@ jobs:
       
     - name: Deploy to Netlify
       uses: nwtgck/actions-netlify@v2.0
+      continue-on-error: true
+      if: ${{ secrets.NETLIFY_AUTH_TOKEN != '' && secrets.NETLIFY_SITE_ID != '' }}
       with:
         publish-dir: './dist'
         production-branch: main
@@ -103,4 +107,4 @@ jobs:
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-      timeout-minutes: 1
+      timeout-minutes: 2
