@@ -1,7 +1,10 @@
 /**
  * LLM Runner Router - Interactive Chat Demo
- * Simulates the behavior of the LLM Router system with realistic responses
+ * Real working example using the actual LLM Router system with HuggingFace models
  */
+
+// Load the LLM Router system dynamically
+let LLMRouter;
 
 class LLMRouterDemo {
     constructor() {
@@ -14,10 +17,78 @@ class LLMRouterDemo {
         this.isProcessing = false;
         this.currentStrategy = 'balanced';
         
+        // Initialize the actual LLM Router
+        this.router = null;
+        this.isInitialized = false;
+        
+        this.initializeRouter();
         this.initializeUI();
         this.bindEvents();
-        this.updateStatus('online', 'Demo Ready');
-        this.showNotification('🚀 LLM Router Demo initialized successfully!', 'success');
+    }
+
+    async initializeRouter() {
+        try {
+            this.updateStatus('initializing', 'Loading LLM Router...');
+            
+            // Dynamically import the LLM Router
+            if (!LLMRouter) {
+                const module = await import('../../src/index.js');
+                LLMRouter = module.default || module.LLMRouter;
+            }
+            
+            // Create router instance with HuggingFace models configuration
+            this.router = new LLMRouter({
+                engines: ['webgpu', 'wasm'], // Try WebGPU first, fallback to WASM
+                models: {
+                    'microsoft/DialoGPT-small': {
+                        format: 'hf-transformers',
+                        priority: 'speed',
+                        maxTokens: 150
+                    },
+                    'microsoft/DialoGPT-medium': {
+                        format: 'hf-transformers', 
+                        priority: 'balanced',
+                        maxTokens: 200
+                    },
+                    'HuggingFaceH4/zephyr-7b-beta': {
+                        format: 'gguf',
+                        url: 'https://huggingface.co/HuggingFaceH4/zephyr-7b-beta-GGUF',
+                        priority: 'quality',
+                        maxTokens: 300
+                    }
+                },
+                strategies: {
+                    'speed-priority': {
+                        modelPreference: ['microsoft/DialoGPT-small'],
+                        maxLatency: 2000
+                    },
+                    'balanced': {
+                        modelPreference: ['microsoft/DialoGPT-medium', 'microsoft/DialoGPT-small'],
+                        balanceFactors: { speed: 0.4, quality: 0.4, cost: 0.2 }
+                    },
+                    'quality-first': {
+                        modelPreference: ['HuggingFaceH4/zephyr-7b-beta', 'microsoft/DialoGPT-medium'],
+                        maxLatency: 10000
+                    }
+                },
+                cache: {
+                    enabled: true,
+                    ttl: 300000 // 5 minutes
+                }
+            });
+
+            await this.router.initialize();
+            
+            this.isInitialized = true;
+            this.updateStatus('online', 'LLM Router Ready');
+            this.showNotification('🚀 LLM Router initialized with HuggingFace models!', 'success');
+            this.updateModelStatus();
+            
+        } catch (error) {
+            console.error('Router initialization failed:', error);
+            this.updateStatus('error', 'Initialization Failed');
+            this.showNotification('❌ Failed to initialize LLM Router. Check console for details.', 'error');
+        }
     }
 
     initializeUI() {
@@ -125,23 +196,23 @@ class LLMRouterDemo {
     }
 
     simulateRouting(message) {
-        const models = {
-            'balanced': ['GPT-4o-mini', 'Claude-3-Haiku', 'Llama-3.1-8B'],
-            'quality-first': ['GPT-4o', 'Claude-3.5-Sonnet', 'Gemini-Pro'],
-            'cost-optimized': ['GPT-3.5-Turbo', 'Claude-3-Haiku', 'Llama-3.1-8B'],
-            'speed-priority': ['GPT-4o-mini', 'Gemini-Flash', 'Mistral-7B'],
-            'random': ['GPT-4o', 'Claude-3.5', 'Llama-3.1', 'Gemini-Pro'],
-            'round-robin': ['Model-A', 'Model-B', 'Model-C']
-        };
+        if (!this.router || !this.isInitialized) {
+            return {
+                strategy: this.currentStrategy,
+                selectedModel: 'Fallback',
+                confidence: 0.5,
+                alternatives: []
+            };
+        }
 
-        const availableModels = models[this.currentStrategy] || models['balanced'];
-        const selectedModel = availableModels[Math.floor(Math.random() * availableModels.length)];
+        // Use the actual router to determine routing
+        const routingInfo = this.router.getRoutingInfo(message, { strategy: this.currentStrategy });
         
         return {
-            strategy: this.currentStrategy,
-            selectedModel,
-            confidence: 0.85 + Math.random() * 0.15,
-            alternatives: availableModels.filter(m => m !== selectedModel)
+            strategy: routingInfo.strategy || this.currentStrategy,
+            selectedModel: routingInfo.selectedModel || 'Unknown',
+            confidence: routingInfo.confidence || 0.8,
+            alternatives: routingInfo.alternatives || []
         };
     }
 
@@ -151,58 +222,115 @@ class LLMRouterDemo {
         const temperature = parseFloat(document.getElementById('temperatureSlider').value);
         const maxTokens = parseInt(document.getElementById('maxTokensSlider').value);
         
-        try {
-            // Make real API call to Netlify Functions
-            const response = await fetch('/.netlify/functions/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message,
-                    strategy: this.currentStrategy,
-                    options: {
-                        temperature,
-                        maxTokens,
-                        streaming
-                    }
-                })
-            });
+        if (!this.isInitialized || !this.router) {
+            throw new Error('LLM Router not initialized');
+        }
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `API request failed: ${response.status}`);
+        try {
+            const options = {
+                strategy: this.currentStrategy,
+                temperature,
+                maxTokens,
+                streaming
+            };
+
+            let response;
+            if (streaming) {
+                // Handle streaming response
+                response = await this.handleStreamingResponse(message, options, startTime);
+            } else {
+                // Handle regular response
+                const result = await this.router.process(message, options);
+                const responseTime = Date.now() - startTime;
+                
+                response = {
+                    text: result.text || result.response,
+                    responseTime,
+                    tokens: result.tokensUsed || result.tokens || Math.floor(result.text?.length / 4 || 0),
+                    model: result.model || 'Unknown',
+                    provider: result.provider || 'HuggingFace',
+                    strategy: result.strategy || this.currentStrategy
+                };
             }
 
-            const data = await response.json();
-            const responseTime = Date.now() - startTime;
-
-            return {
-                text: data.text,
-                responseTime: data.responseTime || responseTime,
-                tokens: data.tokensUsed || 0,
-                model: data.model || 'Unknown',
-                provider: data.provider || 'Unknown',
-                strategy: data.strategy || this.currentStrategy
-            };
+            return response;
 
         } catch (error) {
-            console.error('API Error:', error);
+            console.error('LLM Router Error:', error);
             
-            // Fallback to demo mode if API fails
-            this.showNotification('⚠️ API unavailable, using demo mode', 'error');
+            // Fallback to demo mode if router fails
+            this.showNotification('⚠️ Model unavailable, using fallback', 'warning');
             
-            const response = this.generateFallbackResponse(message, temperature);
+            const fallbackResponse = this.generateFallbackResponse(message, temperature);
             const responseTime = Date.now() - startTime;
             
             return {
-                text: response,
+                text: fallbackResponse,
                 responseTime,
-                tokens: Math.floor(response.length / 4),
-                model: 'Demo Mode',
-                provider: 'Fallback',
-                strategy: 'demo'
+                tokens: Math.floor(fallbackResponse.length / 4),
+                model: 'Fallback',
+                provider: 'Demo',
+                strategy: 'fallback'
             };
+        }
+    }
+
+    async handleStreamingResponse(message, options, startTime) {
+        const streamGenerator = this.router.stream(message, options);
+        let fullText = '';
+        let tokens = 0;
+        
+        // Create a temporary message element for streaming updates
+        const chatMessages = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message assistant streaming';
+        messageDiv.innerHTML = `
+            <div class="message-content">
+                <div class="streaming-text"></div>
+                <div class="message-meta">
+                    <span class="message-time">${new Date().toLocaleTimeString()}</span>
+                    <span class="message-strategy">${options.strategy}</span>
+                    <span class="streaming-indicator">⚡ Streaming...</span>
+                </div>
+            </div>
+        `;
+        
+        // Remove typing indicator and add streaming message
+        this.hideTypingIndicator();
+        chatMessages.appendChild(messageDiv);
+        
+        const streamingText = messageDiv.querySelector('.streaming-text');
+        
+        try {
+            for await (const chunk of streamGenerator) {
+                if (chunk.token) {
+                    fullText += chunk.token;
+                    tokens++;
+                    streamingText.innerHTML = this.formatMessageContent(fullText);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+            }
+            
+            // Update final message
+            messageDiv.className = 'message assistant';
+            messageDiv.querySelector('.streaming-indicator').remove();
+            
+            const responseTime = Date.now() - startTime;
+            
+            return {
+                text: fullText,
+                responseTime,
+                tokens,
+                model: 'HuggingFace Model',
+                provider: 'HuggingFace',
+                strategy: options.strategy,
+                streamed: true
+            };
+            
+        } catch (error) {
+            // Remove streaming message on error
+            messageDiv.remove();
+            throw error;
         }
     }
 
@@ -402,19 +530,40 @@ class LLMRouterDemo {
 
     updateModelStatus() {
         const modelList = document.getElementById('modelList');
-        const models = [
-            { name: 'OpenAI GPT-4o', status: 'Ready', class: 'online' },
-            { name: 'Claude-3.5-Sonnet', status: 'Ready', class: 'online' },
-            { name: 'Cohere Command-R+', status: 'Ready', class: 'online' },
-            { name: 'Fallback Demo', status: 'Backup', class: 'simulated' }
-        ];
+        
+        if (!this.router || !this.isInitialized) {
+            const models = [
+                { name: 'LLM Router', status: 'Initializing...', class: 'loading' },
+                { name: 'HuggingFace Models', status: 'Loading...', class: 'loading' }
+            ];
+            
+            modelList.innerHTML = models.map(model => `
+                <div class="model-item">
+                    <div class="model-name">${model.name}</div>
+                    <div class="model-status-badge ${model.class}">${model.status}</div>
+                </div>
+            `).join('');
+            return;
+        }
 
-        modelList.innerHTML = models.map(model => `
-            <div class="model-item">
-                <div class="model-name">${model.name}</div>
-                <div class="model-status-badge ${model.class}">${model.status}</div>
-            </div>
-        `).join('');
+        try {
+            const modelStatus = this.router.getModelStatus();
+            const models = [
+                { name: 'DialoGPT-Small', status: modelStatus['microsoft/DialoGPT-small'] || 'Ready', class: 'online' },
+                { name: 'DialoGPT-Medium', status: modelStatus['microsoft/DialoGPT-medium'] || 'Ready', class: 'online' },
+                { name: 'Zephyr-7B-Beta', status: modelStatus['HuggingFaceH4/zephyr-7b-beta'] || 'Loading', class: 'loading' },
+                { name: 'Fallback Demo', status: 'Backup', class: 'simulated' }
+            ];
+
+            modelList.innerHTML = models.map(model => `
+                <div class="model-item">
+                    <div class="model-name">${model.name}</div>
+                    <div class="model-status-badge ${model.class}">${model.status}</div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Error getting model status:', error);
+        }
     }
 
     updateStatus(status, text) {
