@@ -1419,7 +1419,18 @@
             }
 
             getPageFromHash() {
-                return window.location.hash.slice(1);
+                const hash = window.location.hash.slice(1);
+                // Clean hash and validate
+                const cleanHash = hash.replace(/^-+/, ''); // Remove leading dashes
+                const validPages = [
+                    'overview', 'architecture', 'api-reference', 'config-reference',
+                    'routing-strategies', 'model-formats', 'performance', 'security',
+                    'troubleshooting', 'deployment', 'plugin-development', 'faq',
+                    'glossary', 'examples', 'basic-examples', 'streaming-examples',
+                    'api-examples', 'docker-examples', 'monitoring-examples'
+                ];
+                
+                return validPages.includes(cleanHash) ? cleanHash : '';
             }
 
             async loadPage(page, updateHistory = true) {

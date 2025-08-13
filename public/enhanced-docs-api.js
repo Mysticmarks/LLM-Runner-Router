@@ -65,9 +65,14 @@ class EnhancedDocsAPI {
                 return this.cache.get(docName);
             }
 
-            const fileName = this.fileMap[docName];
+            // Clean docName and check for valid mapping
+            const cleanDocName = docName.replace(/^-+/, ''); // Remove leading dashes
+            const fileName = this.fileMap[docName] || this.fileMap[cleanDocName];
+            
             if (!fileName) {
-                throw new Error(`Document mapping not found: ${docName}`);
+                console.warn(`Document mapping not found: ${docName}, falling back to overview`);
+                // Fallback to overview page
+                return await this.loadDoc('overview');
             }
 
             // Fetch the actual markdown content
@@ -380,12 +385,15 @@ Built with 💚 by Echo AI Systems`;
 
     markdownToHtml(markdown) {
         if (typeof marked !== 'undefined') {
-            // Configure marked for better rendering (avoiding deprecated options)
+            // Configure marked to avoid ALL deprecated warnings
             marked.setOptions({
                 breaks: true,
                 gfm: true,
-                headerIds: false,  // Disable to avoid deprecated warnings
-                mangle: false      // Disable to avoid deprecated warnings
+                headerIds: false,      // Disable deprecated headerIds
+                mangle: false,         // Disable deprecated mangle
+                highlight: null,       // Disable deprecated highlight
+                langPrefix: '',        // Reset deprecated langPrefix
+                headerPrefix: ''       // Reset deprecated headerPrefix
             });
             
             return marked.parse(markdown);
