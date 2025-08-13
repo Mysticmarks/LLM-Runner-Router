@@ -126,3 +126,4 @@ When working with this codebase, pay special attention to:
 - `src/core/Registry.js` - Model registry management
 - `src/core/Pipeline.js` - Processing pipeline
 - `package.json` - Dependencies and scripts
+- push to githubs after updates and changes are made to the project

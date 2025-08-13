@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Runner Router - Universal Model Orchestration System</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            margin-bottom: 2rem;
+        }
+        .hero {
+            text-align: center;
+            margin: 2rem 0;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        .feature {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .feature h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        .links {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+        .link {
+            background: #667eea;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .link:hover {
+            background: #5a6fd8;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        .stat {
+            text-align: center;
+            padding: 1rem;
+            background: #e8f4fd;
+            border-radius: 8px;
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 LLM Runner Router</h1>
+        <p class="subtitle">Universal Model Orchestration System</p>
+        
+        <div class="hero">
+            <p>A full-stack agnostic neural orchestration system that adapts to ANY model format, ANY runtime environment, and ANY deployment scenario.</p>
+        </div>
+
+        <div class="links">
+            <a href="https://github.com/MCERQUA/LLM-Runner-Router" class="link">📚 View on GitHub</a>
+            <a href="https://github.com/MCERQUA/LLM-Runner-Router#readme" class="link">📖 Documentation</a>
+            <a href="https://www.npmjs.com/package/llm-runner-router" class="link">📦 NPM Package</a>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <h3>🔮 Universal Format Support</h3>
+                <p>GGUF, ONNX, Safetensors, HuggingFace, and whatever format the future invents</p>
+            </div>
+            <div class="feature">
+                <h3>⚡ Multi-Engine Support</h3>
+                <p>WebGPU for speed demons, WASM for universalists, Node for servers</p>
+            </div>
+            <div class="feature">
+                <h3>🧭 Intelligent Routing</h3>
+                <p>Automatically selects the perfect model based on quality, cost, speed, or chaos</p>
+            </div>
+            <div class="feature">
+                <h3>🚀 Streaming Everything</h3>
+                <p>Real-time token generation that flows like digital poetry</p>
+            </div>
+        </div>
+
+        <h2>Quick Start</h2>
+        <div class="code-block">
+<pre>// Simple Mode - For Mortals
+import { quick } from 'llm-runner-router';
+
+const response = await quick("Explain quantum computing to a goldfish");
+console.log(response.text);
+
+// Advanced Mode - For Wizards
+import LLMRouter from 'llm-runner-router';
+
+const router = new LLMRouter({
+  strategy: 'quality-first',
+  enableQuantumMode: true
+});
+
+await router.load('huggingface:meta-llama/Llama-2-7b');
+const response = await router.advanced({
+  prompt: "Write a haiku about JavaScript",
+  temperature: 0.8,
+  maxTokens: 50
+});</pre>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-number">&lt;500ms</div>
+                <div>Model Load Time</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">&lt;100ms</div>
+                <div>First Token</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">100+</div>
+                <div>Tokens/sec</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">&lt;50%</div>
+                <div>Memory Usage</div>
+            </div>
+        </div>
+
+        <h2>Routing Strategies</h2>
+        <ul>
+            <li><strong>🏆 Quality First:</strong> Only the finest neural outputs shall pass</li>
+            <li><strong>💵 Cost Optimized:</strong> Your accountant will love you</li>
+            <li><strong>⚡ Speed Priority:</strong> Gotta go fast!</li>
+            <li><strong>⚖️ Balanced:</strong> The zen master approach</li>
+            <li><strong>🎲 Random:</strong> Embrace chaos, trust the universe</li>
+        </ul>
+
+        <div class="footer">
+            <p><strong>Built with 💙 and ☕ by Echo AI Systems</strong></p>
+            <p><em>"Because every business deserves an AI brain, and every AI brain deserves a proper orchestration system"</em></p>
+        </div>
+    </div>
+</body>
+</html>

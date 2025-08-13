@@ -67,8 +67,8 @@ logs
 *.pid.lock
 
 # Built files
-dist/
 build/
+# Note: dist/ is used for Netlify deployment, so we don't ignore it
 
 # Testing
 .jest-cache/
