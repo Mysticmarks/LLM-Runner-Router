@@ -35,9 +35,9 @@ class GGUFModel extends ModelInterface {
     this.llama = null;
     
     // CPU optimization settings
-    this.maxThreads = config.maxThreads || process.env.LLM_MAX_THREADS || 2;
-    this.contextSize = config.contextSize || process.env.LLM_CONTEXT_SIZE || 2048;
-    this.batchSize = config.batchSize || process.env.LLM_BATCH_SIZE || 8;
+    this.maxThreads = parseInt(config.maxThreads || process.env.LLM_MAX_THREADS || 2);
+    this.contextSize = parseInt(config.contextSize || process.env.LLM_CONTEXT_SIZE || 2048);
+    this.batchSize = parseInt(config.batchSize || process.env.LLM_BATCH_SIZE || 8);
   }
 
   async load() {
