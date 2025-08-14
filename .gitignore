@@ -75,11 +75,15 @@ build/
 jest.config.js
 
 # Models directory (large files)
-models/*.gguf
-models/*.onnx
-models/*.bin
-models/*.safetensors
-models/*.model
+models/**/*.gguf
+models/**/*.onnx
+models/**/*.bin
+models/**/*.safetensors
+models/**/*.model
+*.gguf
+*.onnx
+*.bin
+*.safetensors
 
 # Cache directories
 .cache/
