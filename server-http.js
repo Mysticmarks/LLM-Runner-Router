@@ -45,11 +45,23 @@ console.log('🌐 HTTP LLM Router Server Starting...\n');
 const app = express();
 
 // Simple CORS - allow all origins for testing
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Add basic security headers (HTTP-friendly)
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  // Don't set COOP/COEP headers for HTTP to avoid warnings
+  next();
+});
 
 // Request ID middleware
 app.use((req, res, next) => {
@@ -169,7 +181,7 @@ app.get('/api/models', authenticateApiKey, async (req, res) => {
   }
   
   try {
-    const models = router.registry.getAllModels();
+    const models = router.registry.getAll();
     res.json({
       count: models.length,
       models: models.map(m => ({
@@ -217,8 +229,8 @@ app.post('/api/inference', authenticateApiKey, async (req, res) => {
     const startTime = Date.now();
     
     // Route and process
-    const result = await router.route(prompt, {
-      model,
+    const result = await router.quick(prompt, {
+      modelId: model,
       temperature,
       maxTokens,
       stream

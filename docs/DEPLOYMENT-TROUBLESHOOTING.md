@@ -341,8 +341,35 @@ pm2 monit
 
 ---
 
-*Last Updated: August 14, 2025 - 2:22 PM EST*
+*Last Updated: August 14, 2025 - 2:47 PM EST*
 *Status: Infrastructure ✅ | Models ✅ | Chat UI ✅ | API ✅ | Inference ⚠️*
 
 ## 🎉 Major Achievement
 **node-llama-cpp is now successfully installed and working!** The TinyLlama GGUF model loads properly and the system recognizes it. The main barrier (native dependencies) has been overcome. The remaining work is just fixing the integration between the router and the model's inference methods.
+
+## ✅ Latest Server Configuration (Aug 14, 2025 - 2:47 PM EST)
+
+### Working HTTP Server
+- **File**: `server-http.js` (simplified version without strict HTTPS headers)
+- **Process**: Running via PM2 as `llm-router-http`
+- **Status**: Fully operational
+- **Endpoints**:
+  - `/health` - ✅ Returns server health status
+  - `/api/models` - ✅ Lists available models (returns TinyLlama model)
+  - `/api/status` - ✅ Shows API status
+  - `/chat/` - ✅ Serves chat interface
+  - `/api/inference` - ⚠️ Needs integration work
+
+### Fixed Issues
+1. **Registry Method Error**: Changed `getAllModels()` to `getAll()` in server-http.js
+2. **Router Method Error**: Changed `route()` to `quick()` for inference
+3. **BitNetLoader Error**: Commented out BitNetLoader due to missing dependencies
+4. **Model Storage**: Confirmed models should stay in project folder for autonomy
+
+### Model Architecture Decision
+**Decision**: Keep models inside the project folder at `./models/`
+**Reasoning**: 
+- Project agent maintains full control over model ecosystem
+- No dependency on system admin for model management
+- Self-contained project that can be moved/deployed easily
+- Project agent can download, manage, and update models independently
