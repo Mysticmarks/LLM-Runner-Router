@@ -19,11 +19,11 @@
         "completion": true
       },
       "metrics": {
-        "loadTime": 1755209001275,
+        "loadTime": 1755211708696,
         "inferenceCount": 2,
         "totalTokens": 2,
-        "avgLatency": 1504,
-        "lastUsed": "2025-08-14T22:03:27.310Z"
+        "avgLatency": 1498.5,
+        "lastUsed": "2025-08-14T22:48:31.124Z"
       },
       "source": "./models/tinyllama/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
       "path": "./models/tinyllama/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
@@ -44,7 +44,7 @@
         "completion": true
       },
       "metrics": {
-        "loadTime": 1755210612191,
+        "loadTime": 1755211711029,
         "inferenceCount": 0,
         "totalTokens": 0,
         "avgLatency": 0,
@@ -52,6 +52,33 @@
       },
       "source": "models/phi-2/phi-2.Q4_K_M.gguf",
       "path": "models/phi-2/phi-2.Q4_K_M.gguf"
+    },
+    {
+      "id": "llama-2-7b-chat",
+      "name": "llama-2-7b-chat.Q4_K_M",
+      "version": "1.0.0",
+      "format": "gguf",
+      "architecture": {
+        "type": "llama"
+      },
+      "parameters": {},
+      "metadata": {},
+      "capabilities": {
+        "streaming": false,
+        "batching": false,
+        "quantization": false,
+        "embedding": false,
+        "completion": true
+      },
+      "metrics": {
+        "loadTime": 1755211785508,
+        "inferenceCount": 0,
+        "totalTokens": 0,
+        "avgLatency": 0,
+        "lastUsed": null
+      },
+      "source": "models/llama-2-7b-chat/llama-2-7b-chat.Q4_K_M.gguf",
+      "path": "models/llama-2-7b-chat/llama-2-7b-chat.Q4_K_M.gguf"
     }
   ]
 }

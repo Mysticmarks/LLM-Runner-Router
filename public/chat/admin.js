@@ -25,6 +25,9 @@ class AdminPanel {
         this.setupMonitoring();
         this.setupImportExport();
         
+        // Initialize template selector with all available templates
+        this.updateTemplateSelector();
+        
         // Load config first
         this.loadCurrentConfig();
         // Then load models, which will restore the saved selection
@@ -109,6 +112,8 @@ class AdminPanel {
             this.saveCurrentTemplate();
         });
 
+        // Initialize the template selector and list
+        this.updateTemplateSelector();
         this.loadTemplateList();
     }
 
@@ -246,20 +251,110 @@ class AdminPanel {
                     <p><strong>Context:</strong> ${model.contextSize || 'Unknown'}</p>
                     <p><strong>Status:</strong> ${model.loaded ? 'Loaded' : 'Not loaded'}</p>
                 `;
+                
+                // Auto-select the appropriate template for this model
+                this.autoSelectTemplate(modelId, model.name);
+                
+                // Also apply any model-specific parameters if available
+                if (model.contextSize) {
+                    document.getElementById('contextSize').value = model.contextSize;
+                    document.getElementById('contextSizeValue').textContent = model.contextSize;
+                    this.config.parameters.contextSize = model.contextSize;
+                }
             }
         }
         this.config.activeModel = modelId;
     }
 
+    autoSelectTemplate(modelId, modelName) {
+        // Get the appropriate template for this model
+        const template = window.ModelTemplates.getTemplateForModel(modelId, modelName);
+        const templateId = window.ModelTemplates.getTemplateIdForModel(modelId, modelName);
+        
+        // Update the template dropdown if we're on the templates section
+        const templateSelect = document.getElementById('activeTemplate');
+        if (templateSelect) {
+            // Check if this template exists in our saved templates
+            if (!this.templates[templateId]) {
+                // Add the template to our saved templates
+                this.templates[templateId] = template;
+                this.saveTemplates();
+                
+                // Update the dropdown
+                this.updateTemplateSelector();
+            }
+            
+            // Select the template
+            templateSelect.value = templateId;
+            this.loadTemplate(templateId);
+            
+            // Show notification
+            this.showNotification(`Auto-selected ${template.name} template for ${modelName || modelId}`, 'info');
+        }
+        
+        // Also update the template in config
+        this.config.activeTemplate = templateId;
+        this.config.templateSettings = template;
+    }
+
+    updateTemplateSelector() {
+        const selector = document.getElementById('activeTemplate');
+        if (!selector) return;
+        
+        const currentValue = selector.value;
+        selector.innerHTML = '';
+        
+        // Add all predefined templates from ModelTemplates
+        const allTemplates = window.ModelTemplates.getAllTemplates();
+        allTemplates.forEach(template => {
+            const option = document.createElement('option');
+            option.value = template.id;
+            option.textContent = template.name;
+            selector.appendChild(option);
+        });
+        
+        // Add any custom saved templates
+        Object.keys(this.templates).forEach(name => {
+            if (!allTemplates.find(t => t.id === name)) {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = `Custom: ${name.charAt(0).toUpperCase() + name.slice(1)}`;
+                selector.appendChild(option);
+            }
+        });
+        
+        // Restore selection if it exists
+        if (currentValue && Array.from(selector.options).some(opt => opt.value === currentValue)) {
+            selector.value = currentValue;
+        }
+    }
+
     // Template Management
     loadTemplate(templateName) {
-        const template = this.templates[templateName] || this.templates.default;
+        // First check if it's a predefined template from ModelTemplates
+        const predefinedTemplate = window.ModelTemplates.templates[templateName];
+        const template = predefinedTemplate || this.templates[templateName] || this.templates.default;
+        
         document.getElementById('systemPrefix').value = template.systemPrefix || '';
         document.getElementById('userPrefix').value = template.userPrefix || '';
         document.getElementById('assistantPrefix').value = template.assistantPrefix || '';
-        document.getElementById('messageSeparator').value = template.separator || '\\n\\n';
-        document.getElementById('stopSequences').value = (template.stopSequences || []).join(', ');
+        document.getElementById('messageSeparator').value = template.messageSeparator || template.separator || '\\n\\n';
+        
+        // Handle stop sequences - could be array or string
+        const stopSeq = template.stopSequences;
+        if (Array.isArray(stopSeq)) {
+            document.getElementById('stopSequences').value = stopSeq.join(', ');
+        } else if (typeof stopSeq === 'string') {
+            document.getElementById('stopSequences').value = stopSeq;
+        } else {
+            document.getElementById('stopSequences').value = '';
+        }
+        
         this.updateTemplatePreview();
+        
+        // Update config
+        this.config.activeTemplate = templateName;
+        this.config.templateSettings = template;
     }
 
     updateTemplatePreview() {
@@ -292,15 +387,31 @@ class AdminPanel {
         const container = document.getElementById('templateList');
         container.innerHTML = '';
         
-        Object.keys(this.templates).forEach(name => {
+        // First add all predefined templates from ModelTemplates
+        const predefinedTemplates = window.ModelTemplates.getAllTemplates();
+        predefinedTemplates.forEach(template => {
             const div = document.createElement('div');
             div.className = 'template-item';
             div.innerHTML = `
-                <span>${name}</span>
-                <button class="btn btn-sm" onclick="adminPanel.loadTemplate('${name}')">Load</button>
-                <button class="btn btn-sm" onclick="adminPanel.deleteTemplate('${name}')">Delete</button>
+                <span>${template.name} (Built-in)</span>
+                <button class="btn btn-sm" onclick="adminPanel.loadTemplate('${template.id}')">Load</button>
             `;
             container.appendChild(div);
+        });
+        
+        // Then add any custom saved templates
+        Object.keys(this.templates).forEach(name => {
+            // Skip if it's already in predefined templates
+            if (!predefinedTemplates.find(t => t.id === name)) {
+                const div = document.createElement('div');
+                div.className = 'template-item';
+                div.innerHTML = `
+                    <span>${name}</span>
+                    <button class="btn btn-sm" onclick="adminPanel.loadTemplate('${name}')">Load</button>
+                    <button class="btn btn-sm" onclick="adminPanel.deleteTemplate('${name}')">Delete</button>
+                `;
+                container.appendChild(div);
+            }
         });
     }
 
