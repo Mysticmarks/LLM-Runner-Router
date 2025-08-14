@@ -215,10 +215,10 @@ export class ErrorHandler extends EventEmitter {
   async clearCache() {
     logger.info('🧹 Clearing caches and freeing memory');
     
-    // Clear module cache
-    Object.keys(require.cache).forEach(key => {
-      delete require.cache[key];
-    });
+    // In ES modules, we can't clear require.cache
+    // Instead, we'll clear any internal caches we maintain
+    this.errorCounts.clear();
+    this.recoveryAttempts.clear();
     
     // Force garbage collection if available
     if (global.gc) {

@@ -108,7 +108,8 @@ async function initializeRouter() {
 }
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+// Health check endpoints (both paths for compatibility)
+const healthHandler = (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -122,7 +123,11 @@ app.get('/health', (req, res) => {
       memoryUsage: process.memoryUsage()
     } : { initialized: false }
   });
-});
+};
+
+// Register health check on both paths for compatibility
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
 
 // Chat interface will be served by the static middleware above
 
