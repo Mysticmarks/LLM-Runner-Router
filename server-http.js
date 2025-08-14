@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import { LLMRouter } from './src/index.js';
 import { ErrorHandler } from './src/core/ErrorHandler.js';
 import { SelfHealingMonitor } from './src/core/SelfHealingMonitor.js';
+import { modelDownloader } from './src/services/ModelDownloader.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import winston from 'winston';
@@ -336,6 +337,193 @@ app.get('/api/diagnostics', async (req, res) => {
   } catch (error) {
     res.status(500).json({ 
       error: 'Diagnostics failed',
+      message: error.message
+    });
+  }
+});
+
+// Model management endpoints
+app.post('/api/models/load', async (req, res) => {
+  const { modelId, path } = req.body;
+  
+  try {
+    if (!isReady) {
+      return res.status(503).json({ 
+        error: 'Service unavailable',
+        message: 'Router is still initializing' 
+      });
+    }
+    
+    // Load the model
+    const model = await router.load({
+      source: path || modelId,
+      type: 'gguf',
+      id: modelId
+    });
+    
+    res.json({ 
+      success: true, 
+      message: `Model ${modelId} loaded successfully`,
+      model 
+    });
+  } catch (error) {
+    logger.error(`Failed to load model: ${error.message}`);
+    res.status(500).json({ 
+      error: 'Failed to load model',
+      message: error.message
+    });
+  }
+});
+
+app.post('/api/models/unload', async (req, res) => {
+  const { modelId } = req.body;
+  
+  try {
+    // Unload model from registry
+    if (router && router.registry) {
+      const model = router.registry.get(modelId);
+      if (model && model.unload) {
+        await model.unload();
+      }
+      router.registry.remove(modelId);
+    }
+    
+    logger.info(`Unloaded model: ${modelId}`);
+    res.json({ 
+      success: true, 
+      message: `Model ${modelId} unloaded`
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Failed to unload model',
+      message: error.message
+    });
+  }
+});
+
+app.post('/api/models/switch', async (req, res) => {
+  const { modelId } = req.body;
+  
+  try {
+    // Set the active model for inference
+    if (router) {
+      router.defaultModelId = modelId;
+    }
+    
+    logger.info(`Switched to model: ${modelId}`);
+    res.json({ 
+      success: true, 
+      message: `Switched to model ${modelId}`
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Failed to switch model',
+      message: error.message
+    });
+  }
+});
+
+// Model download endpoints
+app.post('/api/models/download', async (req, res) => {
+  const { modelId, url } = req.body;
+  
+  try {
+    logger.info(`Starting download: ${modelId} from ${url}`);
+    
+    // Start download (async, returns immediately)
+    modelDownloader.download(modelId, url).catch(err => {
+      logger.error(`Download failed: ${err.message}`);
+    });
+    
+    res.json({ 
+      success: true, 
+      message: `Download started for ${modelId}`
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Failed to start download',
+      message: error.message
+    });
+  }
+});
+
+// Get download progress
+app.get('/api/models/download/progress', async (req, res) => {
+  try {
+    const downloads = modelDownloader.getActiveDownloads();
+    res.json({ downloads });
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Failed to get download progress',
+      message: error.message
+    });
+  }
+});
+
+// List downloaded models
+app.get('/api/models/downloaded', async (req, res) => {
+  try {
+    const models = await modelDownloader.listDownloaded();
+    res.json({ models });
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Failed to list downloaded models',
+      message: error.message
+    });
+  }
+});
+
+// Delete a model
+app.delete('/api/models/:modelId', async (req, res) => {
+  const { modelId } = req.params;
+  
+  try {
+    // First unload if loaded
+    if (router && router.registry) {
+      const model = router.registry.get(modelId);
+      if (model) {
+        if (model.unload) await model.unload();
+        router.registry.remove(modelId);
+      }
+    }
+    
+    // Delete from disk
+    const deleted = await modelDownloader.deleteModel(modelId);
+    
+    if (deleted) {
+      res.json({ 
+        success: true, 
+        message: `Model ${modelId} deleted`
+      });
+    } else {
+      res.status(404).json({ 
+        error: 'Model not found',
+        message: `Model ${modelId} not found on disk`
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Failed to delete model',
+      message: error.message
+    });
+  }
+});
+
+// Get storage info
+app.get('/api/models/storage', async (req, res) => {
+  try {
+    const used = await modelDownloader.getStorageUsed();
+    const models = await modelDownloader.listDownloaded();
+    
+    res.json({ 
+      used,
+      usedMB: (used / 1024 / 1024).toFixed(2),
+      usedGB: (used / 1024 / 1024 / 1024).toFixed(2),
+      modelCount: models.length
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Failed to get storage info',
       message: error.message
     });
   }
