@@ -256,7 +256,22 @@ app.post('/api/inference', async (req, res) => {
     });
   }
   
-  const { prompt, model, temperature = 0.7, maxTokens = 150, stream = false } = req.body;
+  // Extract parameters from request, with fallbacks to global config
+  const config = global.userConfig || {};
+  const { 
+    prompt, 
+    model = config.activeModel,
+    temperature = config.parameters?.temperature || 0.7, 
+    maxTokens = config.parameters?.maxTokens || 150,
+    topP = config.parameters?.topP,
+    topK = config.parameters?.topK,
+    repetitionPenalty = config.parameters?.repetitionPenalty,
+    presencePenalty = config.advanced?.presencePenalty,
+    frequencyPenalty = config.advanced?.frequencyPenalty,
+    seed = config.advanced?.seed,
+    stream = config.behavior?.streamResponses || false,
+    stopSequences = req.body.stopSequences || config.templateSettings?.stopSequences
+  } = req.body;
   
   if (!prompt) {
     return res.status(400).json({ 
@@ -284,7 +299,14 @@ app.post('/api/inference', async (req, res) => {
         modelId: model,
         temperature,
         maxTokens,
-        stream
+        topP,
+        topK,
+        repetitionPenalty,
+        presencePenalty,
+        frequencyPenalty,
+        seed,
+        stream,
+        stopSequences
       }),
       timeoutPromise
     ]);
@@ -337,6 +359,45 @@ app.get('/api/diagnostics', async (req, res) => {
   } catch (error) {
     res.status(500).json({ 
       error: 'Diagnostics failed',
+      message: error.message
+    });
+  }
+});
+
+// Configuration management endpoints
+app.get('/api/config', async (req, res) => {
+  try {
+    // For now, return empty config - client will use localStorage
+    // In production, this would load from a database or config file
+    res.json({});
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Failed to load configuration',
+      message: error.message
+    });
+  }
+});
+
+app.post('/api/config', async (req, res) => {
+  try {
+    const config = req.body;
+    
+    // Store config in memory for this session
+    // In production, this would save to a database
+    global.userConfig = config;
+    
+    logger.info('Configuration updated', { 
+      activeModel: config.activeModel,
+      systemPromptLength: config.systemPrompt?.length || 0
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'Configuration saved'
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Failed to save configuration',
       message: error.message
     });
   }

@@ -17,9 +17,13 @@ class LLMRouterChat {
         // Auto-detect API URL based on current location
         this.apiUrl = this.getApiUrl();
         
+        // Initialize config manager
+        this.configManager = new ConfigManager();
+        
         this.initializeUI();
         this.bindEvents();
         this.checkServerStatus();
+        this.loadConfigSettings();
     }
 
     getApiUrl() {
@@ -148,16 +152,49 @@ class LLMRouterChat {
     }
 
     async callAPI(prompt) {
-        const temperature = parseFloat(document.getElementById('temperatureSlider').value);
-        const maxTokens = parseInt(document.getElementById('maxTokensSlider').value);
-        const streaming = document.getElementById('streamingCheckbox').checked;
+        // Get parameters from config manager (which loads from admin panel settings)
+        const params = this.configManager.getGenerationParams();
+        const systemPrompt = this.configManager.getSystemPrompt();
+        const template = this.configManager.getTemplateSettings();
+        
+        // Override with local UI controls if they exist
+        const temperature = document.getElementById('temperatureSlider') 
+            ? parseFloat(document.getElementById('temperatureSlider').value)
+            : params.temperature;
+        const maxTokens = document.getElementById('maxTokensSlider')
+            ? parseInt(document.getElementById('maxTokensSlider').value)
+            : params.maxTokens;
+        const streaming = document.getElementById('streamingCheckbox')
+            ? document.getElementById('streamingCheckbox').checked
+            : this.configManager.isStreamingEnabled();
+        
+        // Build the full prompt with system message if enabled
+        let fullPrompt = prompt;
+        if (this.configManager.isSystemPromptEnabled() && systemPrompt) {
+            // Format with template if context is maintained
+            if (this.configManager.shouldMaintainContext()) {
+                const allMessages = [...this.messages, { role: 'user', content: prompt }];
+                fullPrompt = this.configManager.formatMessages(allMessages);
+            } else {
+                // Just prepend system prompt for single-turn
+                fullPrompt = `${template.systemPrefix} ${systemPrompt}${template.separator}${template.userPrefix} ${prompt}`;
+            }
+        }
         
         const requestBody = {
-            prompt,
+            prompt: fullPrompt,
             temperature,
             maxTokens,
-            strategy: this.currentStrategy,
-            stream: streaming
+            topP: params.topP,
+            topK: params.topK,
+            repetitionPenalty: params.repetitionPenalty,
+            presencePenalty: params.presencePenalty,
+            frequencyPenalty: params.frequencyPenalty,
+            seed: params.seed,
+            model: this.configManager.getActiveModel(),
+            strategy: this.configManager.getRoutingStrategy(),
+            stream: streaming,
+            stopSequences: template.stopSequences
         };
         
         const response = await fetch(`${this.apiUrl}/api/inference`, {
@@ -398,6 +435,45 @@ class LLMRouterChat {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+    
+    async loadConfigSettings() {
+        // Load configuration and update UI
+        await this.configManager.loadConfig();
+        
+        // Update strategy selector if it exists
+        const strategySelect = document.getElementById('strategySelect');
+        if (strategySelect) {
+            strategySelect.value = this.configManager.getRoutingStrategy();
+            this.currentStrategy = this.configManager.getRoutingStrategy();
+        }
+        
+        // Update sliders if they exist and config has values
+        const params = this.configManager.getGenerationParams();
+        
+        const tempSlider = document.getElementById('temperatureSlider');
+        if (tempSlider && params.temperature !== undefined) {
+            tempSlider.value = params.temperature;
+            const tempValue = document.getElementById('tempValue');
+            if (tempValue) tempValue.textContent = params.temperature;
+        }
+        
+        const tokensSlider = document.getElementById('maxTokensSlider');
+        if (tokensSlider && params.maxTokens !== undefined) {
+            tokensSlider.value = params.maxTokens;
+            const tokensValue = document.getElementById('tokensValue');
+            if (tokensValue) tokensValue.textContent = params.maxTokens;
+        }
+        
+        const streamCheckbox = document.getElementById('streamingCheckbox');
+        if (streamCheckbox) {
+            streamCheckbox.checked = this.configManager.isStreamingEnabled();
+        }
+        
+        // Show system prompt status
+        if (this.configManager.isSystemPromptEnabled() && this.configManager.getSystemPrompt()) {
+            console.log('System prompt active:', this.configManager.getSystemPrompt().substring(0, 50) + '...');
+        }
     }
 }
 
