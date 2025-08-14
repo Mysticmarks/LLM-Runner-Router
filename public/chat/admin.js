@@ -16,7 +16,7 @@ class AdminPanel {
         this.init();
     }
 
-    init() {
+    async init() {
         this.setupNavigation();
         this.setupModelControls();
         this.setupTemplateControls();
@@ -25,9 +25,11 @@ class AdminPanel {
         this.setupMonitoring();
         this.setupImportExport();
         
-        this.loadModels();
-        this.startMonitoring();
+        // Load config first
         this.loadCurrentConfig();
+        // Then load models, which will restore the saved selection
+        await this.loadModels();
+        this.startMonitoring();
     }
 
     // Navigation
@@ -200,6 +202,11 @@ class AdminPanel {
                 const data = await response.json();
                 this.models = data.models || [];
                 this.updateModelSelector();
+                // Restore saved model selection after models are loaded
+                if (this.config.activeModel) {
+                    document.getElementById('activeModel').value = this.config.activeModel;
+                    this.selectModel(this.config.activeModel);
+                }
                 this.showNotification('Models loaded successfully', 'success');
             }
         } catch (error) {
@@ -210,6 +217,7 @@ class AdminPanel {
 
     updateModelSelector() {
         const selector = document.getElementById('activeModel');
+        const currentValue = selector.value; // Save current selection
         selector.innerHTML = '<option value="auto">Auto-Select (Router)</option>';
         
         this.models.forEach(model => {
@@ -218,6 +226,11 @@ class AdminPanel {
             option.textContent = `${model.name} (${model.format})`;
             selector.appendChild(option);
         });
+        
+        // Try to restore previous selection if it still exists
+        if (currentValue && Array.from(selector.options).some(opt => opt.value === currentValue)) {
+            selector.value = currentValue;
+        }
     }
 
     selectModel(modelId) {
@@ -480,6 +493,12 @@ class AdminPanel {
     }
 
     async saveConfig() {
+        // Make sure to capture the current model selection
+        const currentModel = document.getElementById('activeModel').value;
+        if (currentModel) {
+            this.config.activeModel = currentModel;
+        }
+        
         localStorage.setItem('llmRouterConfig', JSON.stringify(this.config));
         
         // Also save to server
