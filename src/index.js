@@ -11,6 +11,8 @@ import { Logger } from './utils/Logger.js';
 import { Config } from './config/Config.js';
 import { GGUFLoader } from './loaders/GGUFLoader.js';
 import { MockLoader } from './loaders/MockLoader.js';
+import { PyTorchLoader } from './loaders/PyTorchLoader.js';
+import { BinaryLoader } from './loaders/BinaryLoader.js';
 // import BitNetLoader from './loaders/BitNetLoader.js'; // Commented out - missing dependencies
 
 const logger = new Logger('LLMRouter');
@@ -50,6 +52,12 @@ class LLMRouter {
       
       this.registry.registerLoader('mock', new MockLoader());
       logger.info('📦 Registered Mock loader');
+      
+      this.registry.registerLoader('pytorch', new PyTorchLoader());
+      logger.info('🔥 Registered PyTorch loader (.pth, .pt)');
+      
+      this.registry.registerLoader('binary', new BinaryLoader());
+      logger.info('📦 Registered Binary loader (.bin)');
       
       // Register BitNet loader with graceful fallback
       // Commented out - BitNetLoader has missing dependencies
