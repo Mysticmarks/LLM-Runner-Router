@@ -75,15 +75,61 @@ build/
 jest.config.js
 
 # Models directory (large files)
+models/
 models/**/*.gguf
 models/**/*.onnx
 models/**/*.bin
 models/**/*.safetensors
 models/**/*.model
+models/**/*.pt
+models/**/*.pth
+models/**/*.h5
+models/**/*.ckpt
+models/**/*.pkl
+models/**/*.weights
+models/**/*.tar
+models/**/*.tar.gz
+models/**/*.zip
+
+# Model files anywhere in the repository
 *.gguf
 *.onnx
 *.bin
 *.safetensors
+*.pt
+*.pth
+*.h5
+*.ckpt
+*.pkl
+*.weights
+*.model
+*.mlmodel
+*.tflite
+*.pb
+*.ort
+
+# Hugging Face model files
+*.msgpack
+*.joblib
+pytorch_model.bin
+tf_model.h5
+model.safetensors
+flax_model.msgpack
+
+# Large data files
+*.parquet
+*.arrow
+*.feather
+*.hdf5
+*.hdf
+*.nc
+
+# Temporary model downloads
+.cache/huggingface/
+.cache/models/
+temp/**/*.gguf
+temp/**/*.bin
+temp/**/*.model
 
 # Cache directories
 .cache/
