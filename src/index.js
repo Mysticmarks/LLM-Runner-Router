@@ -11,6 +11,7 @@ import { Logger } from './utils/Logger.js';
 import { Config } from './config/Config.js';
 import { GGUFLoader } from './loaders/GGUFLoader.js';
 import { MockLoader } from './loaders/MockLoader.js';
+import BitNetLoader from './loaders/BitNetLoader.js';
 
 const logger = new Logger('LLMRouter');
 
@@ -49,6 +50,9 @@ class LLMRouter {
       
       this.registry.registerLoader('mock', new MockLoader());
       logger.info('📦 Registered Mock loader');
+      
+      this.registry.registerLoader('bitnet', new BitNetLoader({ bitnetPath: './temp/bitnet-repo' }));
+      logger.info('📦 Registered BitNet loader (1-bit LLMs)');
       
       // Initialize the registry
       await this.registry.initialize();

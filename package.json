@@ -13,6 +13,8 @@
     "test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/.bin/jest --coverage",
     "benchmark": "node examples/benchmarks/performance.js",
+    "setup:bitnet": "node scripts/setup-bitnet.js",
+    "test:bitnet": "node scripts/test-bitnet.js",
     "lint": "eslint src/**/*.js",
     "format": "prettier --write src/**/*.js",
     "docs": "jsdoc -c jsdoc.json",
