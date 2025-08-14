@@ -215,8 +215,8 @@ app.get('/api/status', authenticateApiKey, (req, res) => {
   });
 });
 
-// Get available models
-app.get('/api/models', authenticateApiKey, async (req, res) => {
+// Get available models (no auth for admin panel)
+app.get('/api/models', async (req, res) => {
   if (!isReady) {
     return res.status(503).json({ 
       error: 'Service unavailable',
@@ -321,8 +321,8 @@ app.post('/api/inference', authenticateApiKey, async (req, res) => {
   }
 });
 
-// System diagnostics endpoint
-app.get('/api/diagnostics', authenticateApiKey, async (req, res) => {
+// System diagnostics endpoint (no auth for admin panel)
+app.get('/api/diagnostics', async (req, res) => {
   if (!selfHealingMonitor) {
     return res.status(503).json({ 
       error: 'Diagnostics unavailable'
@@ -341,8 +341,8 @@ app.get('/api/diagnostics', authenticateApiKey, async (req, res) => {
   }
 });
 
-// Configuration endpoints
-app.get('/api/config', authenticateApiKey, async (req, res) => {
+// Configuration endpoints (no auth for admin panel)
+app.get('/api/config', async (req, res) => {
   try {
     const config = {
       activeModel: 'auto',
@@ -373,7 +373,7 @@ app.get('/api/config', authenticateApiKey, async (req, res) => {
   }
 });
 
-app.post('/api/config', authenticateApiKey, async (req, res) => {
+app.post('/api/config', async (req, res) => {
   try {
     // In a real implementation, save config to database or file
     logger.info('Configuration updated', req.body);
