@@ -3,7 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LLM Runner Router - Interactive Chat Demo</title>
+    
+    <!-- Enhanced Title -->
+    <title>LLM Router Live Demo - Interactive AI Model Routing & Streaming Chat</title>
+    
+    <!-- Meta Description -->
+    <meta name="description" content="Try LLM Runner Router live demo: Interactive chat with real-time AI model routing, streaming responses, strategy selection, and performance monitoring. No API keys required.">
+    
+    <!-- Keywords -->
+    <meta name="keywords" content="LLM demo, AI chat demo, model routing demo, streaming AI, live AI demo, interactive machine learning, WebGPU demo, AI model comparison, real-time AI">
+    
+    <!-- Author & Robot Instructions -->
+    <meta name="author" content="Echo AI Systems">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="LLM Router Live Demo - Interactive AI Model Routing">
+    <meta property="og:description" content="Experience intelligent AI model routing in real-time. Free interactive demo with streaming responses and performance analytics.">
+    <meta property="og:type" content="webapp">
+    <meta property="og:url" content="https://github.com/MCERQUA/LLM-Runner-Router/chat">
+    <meta property="og:site_name" content="LLM Runner Router">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="LLM Router Interactive Demo">
+    <meta name="twitter:description" content="Try live AI model routing demo with streaming responses and real-time performance monitoring.">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://github.com/MCERQUA/LLM-Runner-Router/chat">
+    
+    <!-- WebApp Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "LLM Router Interactive Demo",
+        "description": "Interactive demonstration of AI model routing with real-time streaming and performance monitoring",
+        "applicationCategory": "DemoApplication",
+        "operatingSystem": "Any",
+        "url": "https://github.com/MCERQUA/LLM-Runner-Router/chat",
+        "author": {
+            "@type": "Organization",
+            "name": "Echo AI Systems"
+        },
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        }
+    }
+    </script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,7 +61,7 @@
         <header class="header">
             <div class="logo">
                 <h1>🧠 LLM Runner Router</h1>
-                <p>Interactive Chat Demo</p>
+                <p>Real HuggingFace Model Demo</p>
             </div>
             <div class="status-indicator">
                 <div class="status-dot offline" id="statusDot"></div>
@@ -86,15 +136,17 @@
                 <div class="chat-messages" id="chatMessages">
                     <div class="welcome-message">
                         <div class="message-content">
-                            <h3>👋 Welcome to LLM Runner Router - Live AI Chat!</h3>
-                            <p>This is a <strong>real working demo</strong> that connects to live AI models including OpenAI GPT, Claude, and Cohere APIs through our intelligent routing system.</p>
+                            <h3>👋 Welcome to LLM Runner Router - HuggingFace Demo!</h3>
+                            <p>This is a <strong>real working demo</strong> that runs open source models from HuggingFace directly in your browser using our intelligent orchestration system.</p>
                             <div class="feature-highlights">
-                                <div class="highlight-item">🤖 <strong>Real AI Models:</strong> GPT-4o, Claude-3.5-Sonnet, Command-R+</div>
-                                <div class="highlight-item">🎯 <strong>Smart Routing:</strong> Automatically selects the best model for your query</div>
-                                <div class="highlight-item">🔄 <strong>Auto-Fallback:</strong> Switches providers if one is unavailable</div>
-                                <div class="highlight-item">📊 <strong>Live Analytics:</strong> Real response times and token usage</div>
+                                <div class="highlight-item">🤖 <strong>Open Source Models:</strong> DialoGPT, Zephyr-7B, local inference</div>
+                                <div class="highlight-item">🎯 <strong>Smart Routing:</strong> Automatically selects optimal model based on strategy</div>
+                                <div class="highlight-item">🔄 <strong>Multi-Engine:</strong> WebGPU acceleration with WASM fallback</div>
+                                <div class="highlight-item">📊 <strong>Live Analytics:</strong> Real performance metrics and model status</div>
+                                <div class="highlight-item">🆓 <strong>Completely Free:</strong> No API keys, no costs, all local</div>
                             </div>
-                            <p><strong>Ask me anything!</strong> The system will route your question to the most appropriate AI model based on your selected strategy.</p>
+                            <p><strong>Ask me anything!</strong> The LLM Router will intelligently select and load the best HuggingFace model for your query.</p>
+                            <p><small>💡 <strong>Demo Mode:</strong> This showcases the LLM Router interface and capabilities. In a real deployment, it would connect to actual HuggingFace models for local inference.</small></p>
                         </div>
                     </div>
                 </div>
@@ -122,6 +174,6 @@
 
     <div class="floating-notifications" id="notifications"></div>
 
-    <script src="chat.js"></script>
+    <script type="module" src="chat.js"></script>
 </body>
 </html>

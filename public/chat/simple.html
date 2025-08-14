@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Router Chat - Simple Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+        }
+        
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 5px;
+            color: #2e7d32;
+        }
+        
+        .container {
+            flex: 1;
+            display: flex;
+            max-width: 1200px;
+            margin: 20px auto;
+            gap: 20px;
+            padding: 0 20px;
+            width: 100%;
+        }
+        
+        .chat-area {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .messages {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            overflow-y: auto;
+            min-height: 400px;
+            margin-bottom: 20px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .message.user {
+            background: #e3f2fd;
+            margin-left: 20%;
+        }
+        
+        .message.assistant {
+            background: #f5f5f5;
+            margin-right: 20%;
+        }
+        
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        
+        input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        button {
+            padding: 10px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .info-box {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .info-box h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 LLM Router Chat - Simple Version</h1>
+        <div class="status" id="status">
+            Initializing...
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="chat-area">
+            <div class="messages" id="messages">
+                <div class="message assistant">
+                    <strong>System:</strong> Welcome to LLM Router Chat! This is a simplified interface for testing.
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <input type="text" id="messageInput" placeholder="Type your message..." maxlength="500">
+                <button id="sendBtn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+        
+        <div class="sidebar">
+            <div class="info-box">
+                <h3>Connection Status</h3>
+                <div id="connectionStatus">Checking...</div>
+            </div>
+            
+            <div class="info-box">
+                <h3>API Server</h3>
+                <div id="apiStatus">Checking...</div>
+            </div>
+            
+            <div class="info-box">
+                <h3>Debug Info</h3>
+                <div id="debugInfo" style="font-family: monospace; font-size: 12px;">
+                    Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration
+        const API_URL = `http://${window.location.hostname}:3000`;
+        let isProcessing = false;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded');
+            updateStatus('Page loaded successfully', 'success');
+            checkConnection();
+            
+            // Enter key to send
+            document.getElementById('messageInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !isProcessing) {
+                    sendMessage();
+                }
+            });
+        });
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+            
+            // Also log to debug
+            const debugInfo = document.getElementById('debugInfo');
+            const time = new Date().toLocaleTimeString();
+            debugInfo.innerHTML = `[${time}] ${message}<br>` + debugInfo.innerHTML;
+        }
+        
+        async function checkConnection() {
+            const connStatus = document.getElementById('connectionStatus');
+            const apiStatus = document.getElementById('apiStatus');
+            
+            // Check if we can reach the API
+            try {
+                updateStatus('Checking API connection...', 'info');
+                connStatus.innerHTML = '<span style="color: orange;">Connecting...</span>';
+                
+                const response = await fetch(`${API_URL}/api/health`);
+                const data = await response.json();
+                
+                if (data.status === 'healthy') {
+                    connStatus.innerHTML = '<span style="color: green;">✅ Connected</span>';
+                    apiStatus.innerHTML = `<span style="color: green;">✅ Healthy<br>Models: ${data.modelsLoaded}<br>Engine: ${data.engine}</span>`;
+                    updateStatus('Connected to API server', 'success');
+                } else {
+                    throw new Error('API not healthy');
+                }
+            } catch (error) {
+                connStatus.innerHTML = '<span style="color: red;">❌ Failed</span>';
+                apiStatus.innerHTML = `<span style="color: red;">Error: ${error.message}</span>`;
+                updateStatus(`Connection failed: ${error.message}`, 'error');
+                
+                // Retry after 5 seconds
+                setTimeout(checkConnection, 5000);
+            }
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message || isProcessing) return;
+            
+            isProcessing = true;
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+            
+            // Add user message
+            addMessage('user', message);
+            input.value = '';
+            
+            try {
+                updateStatus('Sending message to AI...', 'info');
+                
+                // Call API
+                const response = await fetch(`${API_URL}/api/inference`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: message,
+                        temperature: 0.7,
+                        maxTokens: 150,
+                        strategy: 'balanced'
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'API error');
+                }
+                
+                const data = await response.json();
+                
+                // Add AI response
+                const responseText = data.response || data.text || 'No response received';
+                addMessage('assistant', responseText);
+                updateStatus('Response received', 'success');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('assistant', `Error: ${error.message}`);
+                updateStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                isProcessing = false;
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send';
+            }
+        }
+        
+        function addMessage(role, content) {
+            const messages = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const time = new Date().toLocaleTimeString();
+            messageDiv.innerHTML = `
+                <strong>${role === 'user' ? 'You' : 'AI'}:</strong> ${escapeHtml(content)}
+                <div style="font-size: 11px; color: #666; margin-top: 5px;">${time}</div>
+            `;
+            
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Show page is working
+        console.log('LLM Router Chat Simple - Loaded');
+        updateStatus('JavaScript loaded and running', 'success');
+    </script>
+</body>
+</html>

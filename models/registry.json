@@ -1,0 +1,61 @@
+{
+  "version": "1.0.0",
+  "models": [
+    {
+      "id": "tinyllama-1.1b-chat",
+      "name": "tinyllama-1.1b-chat-v1.0.Q4_K_M",
+      "version": "1.0.0",
+      "format": "gguf",
+      "architecture": {
+        "type": "llama"
+      },
+      "parameters": {},
+      "metadata": {},
+      "capabilities": {
+        "streaming": false,
+        "batching": false,
+        "quantization": false,
+        "embedding": false,
+        "completion": true
+      },
+      "metrics": {
+        "loadTime": 1755115792641,
+        "inferenceCount": 0,
+        "totalTokens": 0,
+        "avgLatency": 0,
+        "lastUsed": null
+      },
+      "source": "./models/tinyllama/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+      "path": "./models/tinyllama/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
+    },
+    {
+      "id": "mock-assistant",
+      "name": "Mock Assistant Model",
+      "version": "1.0.0",
+      "format": "mock",
+      "architecture": {
+        "type": "mock"
+      },
+      "parameters": {},
+      "metadata": {
+        "description": "A mock model for testing the LLM Router without native dependencies"
+      },
+      "capabilities": {
+        "streaming": true,
+        "batching": false,
+        "quantization": false,
+        "embedding": false,
+        "completion": true
+      },
+      "metrics": {
+        "loadTime": null,
+        "inferenceCount": 0,
+        "totalTokens": 0,
+        "avgLatency": 0,
+        "lastUsed": null
+      },
+      "source": "mock-model.test",
+      "path": "mock-model.test"
+    }
+  ]
+}

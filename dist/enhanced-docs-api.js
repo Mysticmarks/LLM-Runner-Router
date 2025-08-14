@@ -65,9 +65,14 @@ class EnhancedDocsAPI {
                 return this.cache.get(docName);
             }
 
-            const fileName = this.fileMap[docName];
+            // Clean docName and check for valid mapping
+            const cleanDocName = docName.replace(/^-+/, ''); // Remove leading dashes
+            const fileName = this.fileMap[docName] || this.fileMap[cleanDocName];
+            
             if (!fileName) {
-                throw new Error(`Document mapping not found: ${docName}`);
+                console.warn(`Document mapping not found: ${docName}, falling back to overview`);
+                // Fallback to overview page
+                return await this.loadDoc('overview');
             }
 
             // Fetch the actual markdown content
@@ -96,8 +101,8 @@ class EnhancedDocsAPI {
 
     async fetchDocContent(fileName) {
         try {
-            // Try to fetch the actual file from the docs directory
-            const response = await fetch(`../docs/${fileName}`);
+            // Try to fetch the actual file from the docs directory (now in public/docs)
+            const response = await fetch(`./docs/${fileName}`);
             
             if (response.ok) {
                 return await response.text();
@@ -380,16 +385,16 @@ Built with 💚 by Echo AI Systems`;
 
     markdownToHtml(markdown) {
         if (typeof marked !== 'undefined') {
-            // Configure marked for better rendering
+            // Configure marked to completely eliminate ALL deprecated warnings
             marked.setOptions({
-                highlight: function(code, lang) {
-                    if (typeof Prism !== 'undefined' && lang && Prism.languages[lang]) {
-                        return Prism.highlight(code, Prism.languages[lang], lang);
-                    }
-                    return code;
-                },
                 breaks: true,
-                gfm: true
+                gfm: true,
+                headerIds: false,      // Explicitly disable deprecated headerIds
+                mangle: false,         // Explicitly disable deprecated mangle
+                headerPrefix: '',      // Explicitly disable deprecated headerPrefix
+                // Remove these deprecated options entirely
+                // highlight: null,    // Removed deprecated highlight option
+                // langPrefix: '',     // Removed deprecated langPrefix option
             });
             
             return marked.parse(markdown);

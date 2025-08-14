@@ -9,6 +9,8 @@ import { Pipeline } from './core/Pipeline.js';
 import { EngineSelector } from './engines/EngineSelector.js';
 import { Logger } from './utils/Logger.js';
 import { Config } from './config/Config.js';
+import { GGUFLoader } from './loaders/GGUFLoader.js';
+import { MockLoader } from './loaders/MockLoader.js';
 
 const logger = new Logger('LLMRouter');
 
@@ -40,6 +42,13 @@ class LLMRouter {
       // Auto-detect and select best engine
       this.engine = await EngineSelector.getBest(this.config);
       logger.info(`✅ Selected engine: ${this.engine.name}`);
+      
+      // Register format loaders
+      this.registry.registerLoader('gguf', new GGUFLoader());
+      logger.info('📦 Registered GGUF loader');
+      
+      this.registry.registerLoader('mock', new MockLoader());
+      logger.info('📦 Registered Mock loader');
       
       // Initialize the registry
       await this.registry.initialize();
@@ -94,8 +103,30 @@ class LLMRouter {
   async quick(prompt, options = {}) {
     await this.initialize();
     
-    const model = await this.router.selectModel(prompt, options);
-    return this.generate(model, prompt, options);
+    try {
+      // If a specific model is requested, try to get it
+      if (options.modelId) {
+        const model = await this.registry.get(options.modelId);
+        if (model) {
+          return this.generate(model, prompt, options);
+        }
+      }
+      
+      // Otherwise use router to select best model
+      const model = await this.router.selectModel(prompt, options);
+      return this.generate(model, prompt, options);
+    } catch (error) {
+      // If no models available, try to get any registered model
+      const allModels = this.registry.getAll();
+      if (allModels.length > 0) {
+        const model = allModels[0];
+        if (!model.loaded) {
+          await model.load();
+        }
+        return this.generate(model, prompt, options);
+      }
+      throw error;
+    }
   }
 
   /**

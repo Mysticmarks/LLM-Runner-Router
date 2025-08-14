@@ -1,11 +1,12 @@
 /**
- * LLM Runner Router - Interactive Chat Demo
- * Simulates the behavior of the LLM Router system with realistic responses
+ * LLM Runner Router - Production Chat Interface
+ * ONLY uses API calls - no module imports, no demo mode
  */
 
-class LLMRouterDemo {
+class LLMRouterChat {
     constructor() {
         this.messages = [];
+        this.conversationHistory = [];
         this.stats = {
             messageCount: 0,
             totalTokens: 0,
@@ -13,23 +14,56 @@ class LLMRouterDemo {
         };
         this.isProcessing = false;
         this.currentStrategy = 'balanced';
+        // Automatically detect hostname for API URL
+        this.apiBaseUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000' 
+            : `http://${window.location.hostname}:3000`;
+        this.apiConnected = false;
         
         this.initializeUI();
         this.bindEvents();
-        this.updateStatus('online', 'Demo Ready');
-        this.showNotification('🚀 LLM Router Demo initialized successfully!', 'success');
+        this.checkAPIConnection();
+    }
+
+    async checkAPIConnection() {
+        try {
+            this.updateStatus('connecting', 'Connecting to API...');
+            
+            const response = await fetch(`${this.apiBaseUrl}/api/health`);
+            const health = await response.json();
+            
+            if (health.status === 'healthy') {
+                this.apiConnected = true;
+                this.updateStatus('online', `Connected - ${health.modelsLoaded} model(s) loaded`);
+                this.showNotification('✅ Connected to LLM Router API', 'success');
+                
+                // Get model info
+                const modelsResp = await fetch(`${this.apiBaseUrl}/api/models`);
+                const models = await modelsResp.json();
+                console.log('Available models:', models);
+                this.updateModelStatus(models);
+            } else {
+                throw new Error('API not ready');
+            }
+        } catch (error) {
+            console.error('API connection failed:', error);
+            this.updateStatus('error', 'API Offline - Start server on port 3000');
+            this.showNotification('⚠️ Cannot connect to API. Make sure server.js is running.', 'error');
+            
+            // Retry in 3 seconds
+            setTimeout(() => this.checkAPIConnection(), 3000);
+        }
     }
 
     initializeUI() {
-        // Initialize sliders and controls
+        // Update sliders
         this.updateSliderValue('temperatureSlider', 'tempValue');
         this.updateSliderValue('maxTokensSlider', 'tokensValue');
         this.updateStats();
-        this.updateModelStatus();
     }
 
     bindEvents() {
-        // Send message events
+        // Send button
         const sendButton = document.getElementById('sendButton');
         const messageInput = document.getElementById('messageInput');
         
@@ -41,7 +75,7 @@ class LLMRouterDemo {
             }
         });
 
-        // Input character counter
+        // Character counter
         messageInput.addEventListener('input', () => {
             const count = messageInput.value.length;
             document.getElementById('charCount').textContent = `${count}/1000`;
@@ -52,25 +86,25 @@ class LLMRouterDemo {
             this.clearChat();
         });
 
-        // Control panel events
+        // Strategy selector
         document.getElementById('strategySelect').addEventListener('change', (e) => {
             this.currentStrategy = e.target.value;
-            this.showNotification(`🎯 Routing strategy changed to: ${this.getStrategyName(e.target.value)}`, 'info');
+            this.showNotification(`Strategy changed to: ${e.target.value}`, 'info');
         });
 
-        // Slider events
-        document.getElementById('temperatureSlider').addEventListener('input', (e) => {
+        // Sliders
+        document.getElementById('temperatureSlider').addEventListener('input', () => {
             this.updateSliderValue('temperatureSlider', 'tempValue');
         });
 
-        document.getElementById('maxTokensSlider').addEventListener('input', (e) => {
+        document.getElementById('maxTokensSlider').addEventListener('input', () => {
             this.updateSliderValue('maxTokensSlider', 'tokensValue');
         });
 
         // Streaming checkbox
         document.getElementById('streamingCheckbox').addEventListener('change', (e) => {
             const status = e.target.checked ? 'enabled' : 'disabled';
-            this.showNotification(`⚡ Streaming ${status}`, 'info');
+            this.showNotification(`Streaming ${status}`, 'info');
         });
     }
 
@@ -79,210 +113,93 @@ class LLMRouterDemo {
         const message = messageInput.value.trim();
         
         if (!message || this.isProcessing) return;
+        
+        if (!this.apiConnected) {
+            this.showNotification('⚠️ API not connected. Please wait...', 'warning');
+            return;
+        }
 
         // Add user message
         this.addMessage('user', message);
         messageInput.value = '';
         document.getElementById('charCount').textContent = '0/1000';
 
-        // Update processing state
+        // Update state
         this.isProcessing = true;
         this.updateStatus('processing', 'Generating response...');
         this.updateSendButton(false);
-
-        // Show typing indicator
         this.showTypingIndicator();
 
-        // Simulate routing decision
-        const routingResult = this.simulateRouting(message);
-        
         try {
-            // Simulate response generation
-            const response = await this.generateResponse(message, routingResult);
+            // Add to conversation history
+            this.conversationHistory.push({ role: 'user', content: message });
             
-            // Remove typing indicator
-            this.hideTypingIndicator();
+            // Keep last 10 messages
+            if (this.conversationHistory.length > 10) {
+                this.conversationHistory = this.conversationHistory.slice(-10);
+            }
+
+            const temperature = parseFloat(document.getElementById('temperatureSlider').value);
+            const maxTokens = parseInt(document.getElementById('maxTokensSlider').value);
             
-            // Add assistant response
-            this.addMessage('assistant', response.text, {
-                strategy: response.provider,
-                model: response.model,
-                responseTime: response.responseTime,
-                tokens: response.tokens
-            });
-
-            // Update stats
-            this.updateSessionStats(response);
+            const startTime = Date.now();
             
-        } catch (error) {
-            this.hideTypingIndicator();
-            this.showNotification('❌ Error generating response. Please try again.', 'error');
-        } finally {
-            this.isProcessing = false;
-            this.updateStatus('online', 'Demo Ready');
-            this.updateSendButton(true);
-        }
-    }
-
-    simulateRouting(message) {
-        const models = {
-            'balanced': ['GPT-4o-mini', 'Claude-3-Haiku', 'Llama-3.1-8B'],
-            'quality-first': ['GPT-4o', 'Claude-3.5-Sonnet', 'Gemini-Pro'],
-            'cost-optimized': ['GPT-3.5-Turbo', 'Claude-3-Haiku', 'Llama-3.1-8B'],
-            'speed-priority': ['GPT-4o-mini', 'Gemini-Flash', 'Mistral-7B'],
-            'random': ['GPT-4o', 'Claude-3.5', 'Llama-3.1', 'Gemini-Pro'],
-            'round-robin': ['Model-A', 'Model-B', 'Model-C']
-        };
-
-        const availableModels = models[this.currentStrategy] || models['balanced'];
-        const selectedModel = availableModels[Math.floor(Math.random() * availableModels.length)];
-        
-        return {
-            strategy: this.currentStrategy,
-            selectedModel,
-            confidence: 0.85 + Math.random() * 0.15,
-            alternatives: availableModels.filter(m => m !== selectedModel)
-        };
-    }
-
-    async generateResponse(message, routingResult) {
-        const startTime = Date.now();
-        const streaming = document.getElementById('streamingCheckbox').checked;
-        const temperature = parseFloat(document.getElementById('temperatureSlider').value);
-        const maxTokens = parseInt(document.getElementById('maxTokensSlider').value);
-        
-        try {
-            // Make real API call to Netlify Functions
-            const response = await fetch('/.netlify/functions/chat', {
+            // Call the actual API
+            const response = await fetch(`${this.apiBaseUrl}/api/chat`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    message,
-                    strategy: this.currentStrategy,
-                    options: {
-                        temperature,
-                        maxTokens,
-                        streaming
-                    }
+                    messages: this.conversationHistory,
+                    maxTokens,
+                    temperature
                 })
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `API request failed: ${response.status}`);
+                throw new Error(`API error: ${response.status}`);
             }
 
             const data = await response.json();
             const responseTime = Date.now() - startTime;
-
-            return {
-                text: data.text,
-                responseTime: data.responseTime || responseTime,
-                tokens: data.tokensUsed || 0,
-                model: data.model || 'Unknown',
-                provider: data.provider || 'Unknown',
-                strategy: data.strategy || this.currentStrategy
-            };
-
-        } catch (error) {
-            console.error('API Error:', error);
             
-            // Fallback to demo mode if API fails
-            this.showNotification('⚠️ API unavailable, using demo mode', 'error');
+            // Add to history
+            this.conversationHistory.push({ 
+                role: 'assistant', 
+                content: data.response 
+            });
             
-            const response = this.generateFallbackResponse(message, temperature);
-            const responseTime = Date.now() - startTime;
+            // Hide typing indicator
+            this.hideTypingIndicator();
             
-            return {
-                text: response,
+            // Add assistant message
+            this.addMessage('assistant', data.response, {
+                model: data.model || 'tinyllama-1.1b',
                 responseTime,
-                tokens: Math.floor(response.length / 4),
-                model: 'Demo Mode',
-                provider: 'Fallback',
-                strategy: 'demo'
-            };
+                tokens: Math.floor(data.response.length / 4),
+                strategy: this.currentStrategy
+            });
+
+            // Update stats
+            this.stats.messageCount++;
+            this.stats.totalTokens += Math.floor(data.response.length / 4);
+            this.stats.responseTimes.push(responseTime);
+            this.updateStats();
+            
+        } catch (error) {
+            console.error('Chat error:', error);
+            this.hideTypingIndicator();
+            this.showNotification('❌ Error generating response', 'error');
+            
+            // Add error message
+            this.addMessage('assistant', 
+                'Sorry, I encountered an error. Please make sure the API server is running.', 
+                { model: 'error', responseTime: 0, tokens: 0 }
+            );
+        } finally {
+            this.isProcessing = false;
+            this.updateStatus('online', 'Ready');
+            this.updateSendButton(true);
         }
-    }
-
-    generateFallbackResponse(message, temperature) {
-        const lowerMessage = message.toLowerCase();
-        
-        // Pattern-based responses for demo purposes
-        const responses = {
-            greeting: [
-                "Hello! I'm the LLM Runner Router demo. I can help demonstrate intelligent model routing and response generation.",
-                "Hi there! Welcome to our advanced LLM orchestration system. What would you like to explore?",
-                "Greetings! I'm powered by our universal model routing technology. How can I assist you today?"
-            ],
-            quantum: [
-                "Quantum computing leverages quantum mechanical phenomena like superposition and entanglement to process information in fundamentally different ways than classical computers. Unlike classical bits that exist in definite states of 0 or 1, quantum bits (qubits) can exist in superposition states, allowing quantum computers to explore multiple computational paths simultaneously.",
-                "Imagine a quantum computer as a multidimensional maze solver that can explore all possible paths at once, rather than trying them one by one like a classical computer. This quantum parallelism, combined with phenomena like quantum interference and entanglement, enables quantum algorithms to solve certain problems exponentially faster than classical approaches."
-            ],
-            ai: [
-                "Artificial Intelligence encompasses machine learning, natural language processing, computer vision, and other technologies that enable machines to perform tasks typically requiring human intelligence. Modern AI systems like this demo use neural networks trained on vast datasets to understand patterns and generate human-like responses.",
-                "AI has evolved from rule-based expert systems to today's large language models and multimodal systems. The LLM Router you're interacting with represents a new paradigm in AI deployment - intelligently orchestrating multiple models to optimize for quality, cost, and performance based on your specific needs."
-            ],
-            haiku: [
-                "Code flows like water,\nIntelligent routing guides—\nAI finds its way.",
-                "Models dance in sync,\nRouting strategies converge—\nWisdom emerges.",
-                "Bits and bytes align,\nSmart orchestration blooms here—\nTech poetry flows."
-            ],
-            router: [
-                "The LLM Router is a sophisticated orchestration system that intelligently selects and manages multiple language models based on your requirements. It can optimize for quality, cost, speed, or balanced performance while providing seamless fallback mechanisms and real-time streaming capabilities.",
-                "Our routing system analyzes your input, evaluates available models against your configured strategy, and dynamically routes requests to the most appropriate model. This ensures optimal performance while managing costs and maintaining high availability through intelligent load balancing."
-            ],
-            default: [
-                "That's an interesting question! The LLM Router would analyze your query, select the most appropriate model based on the current strategy, and generate a thoughtful response while optimizing for the parameters you've configured.",
-                "Based on your current settings, I would route this query through our intelligent selection algorithm, considering factors like response quality, processing speed, and cost efficiency to deliver the best possible answer.",
-                "This demo showcases how our universal LLM orchestration system would handle your request - evaluating context, applying the selected routing strategy, and generating responses while tracking performance metrics."
-            ]
-        };
-
-        let responseOptions = responses.default;
-        
-        if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
-            responseOptions = responses.greeting;
-        } else if (lowerMessage.includes('quantum')) {
-            responseOptions = responses.quantum;
-        } else if (lowerMessage.includes('haiku') || lowerMessage.includes('poem')) {
-            responseOptions = responses.haiku;
-        } else if (lowerMessage.includes('ai') || lowerMessage.includes('artificial intelligence')) {
-            responseOptions = responses.ai;
-        } else if (lowerMessage.includes('router') || lowerMessage.includes('routing') || lowerMessage.includes('llm')) {
-            responseOptions = responses.router;
-        }
-
-        // Add some variability based on temperature
-        const baseResponse = responseOptions[Math.floor(Math.random() * responseOptions.length)];
-        
-        if (temperature > 0.8) {
-            // High temperature: add some creative variations
-            const variations = [
-                `${baseResponse}\n\nAdditionally, it's worth noting that this represents just one perspective in the vast landscape of possibilities.`,
-                `${baseResponse}\n\n*This response was generated with high creativity settings, showcasing the dynamic nature of AI-powered conversations.*`,
-                `Interestingly, ${baseResponse.toLowerCase()}`
-            ];
-            return variations[Math.floor(Math.random() * variations.length)];
-        } else if (temperature < 0.3) {
-            // Low temperature: more direct and concise
-            return baseResponse.split('.')[0] + '.';
-        }
-        
-        return baseResponse;
-    }
-
-    getStrategyDelay(strategy) {
-        const delays = {
-            'speed-priority': 800,
-            'cost-optimized': 1200,
-            'balanced': 1000,
-            'quality-first': 1800,
-            'random': 1000 + Math.random() * 1000,
-            'round-robin': 900
-        };
-        return delays[strategy] || 1000;
     }
 
     addMessage(type, content, metadata = {}) {
@@ -296,11 +213,13 @@ class LLMRouterDemo {
         });
 
         let metaHtml = '';
-        if (metadata.strategy) {
+        if (metadata.strategy || metadata.model) {
             metaHtml = `
                 <div class="message-meta">
                     <span class="message-time">${timestamp}</span>
-                    <span class="message-strategy">${metadata.strategy}</span>
+                    ${metadata.strategy ? `<span class="message-strategy">${metadata.strategy}</span>` : ''}
+                    ${metadata.model ? `<span class="message-model">${metadata.model}</span>` : ''}
+                    ${metadata.responseTime ? `<span class="message-latency">${metadata.responseTime}ms</span>` : ''}
                 </div>
             `;
         } else {
@@ -321,30 +240,29 @@ class LLMRouterDemo {
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
-        // Store message
-        this.messages.push({
-            type,
-            content,
-            timestamp: new Date(),
-            metadata
-        });
+        this.messages.push({ type, content, metadata, timestamp });
     }
 
     formatMessageContent(content) {
-        // Simple formatting for code blocks and emphasis
+        // Basic markdown-like formatting
         return content
-            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\n/g, '<br>')
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/\n/g, '<br>');
+            .replace(/`(.*?)`/g, '<code>$1</code>');
     }
 
     showTypingIndicator() {
         const chatMessages = document.getElementById('chatMessages');
-        const typingDiv = document.createElement('div');
-        typingDiv.className = 'message assistant typing';
-        typingDiv.id = 'typingIndicator';
-        typingDiv.innerHTML = `
+        const existing = document.getElementById('typingIndicator');
+        if (existing) existing.remove();
+        
+        const indicator = document.createElement('div');
+        indicator.id = 'typingIndicator';
+        indicator.className = 'message assistant typing';
+        indicator.innerHTML = `
             <div class="message-content">
                 <div class="typing-indicator">
                     <div class="typing-dot"></div>
@@ -353,125 +271,123 @@ class LLMRouterDemo {
                 </div>
             </div>
         `;
-        chatMessages.appendChild(typingDiv);
+        chatMessages.appendChild(indicator);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
     hideTypingIndicator() {
-        const typingIndicator = document.getElementById('typingIndicator');
-        if (typingIndicator) {
-            typingIndicator.remove();
+        const indicator = document.getElementById('typingIndicator');
+        if (indicator) indicator.remove();
+    }
+
+    updateStatus(status, message) {
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        
+        if (statusDot && statusText) {
+            statusDot.className = `status-dot ${status}`;
+            statusText.textContent = message;
         }
+    }
+
+    updateSendButton(enabled) {
+        const sendButton = document.getElementById('sendButton');
+        if (sendButton) {
+            sendButton.disabled = !enabled;
+            sendButton.innerHTML = enabled 
+                ? '<span class="btn-text">Send</span><span class="btn-icon">📤</span>'
+                : '<span class="btn-text">Processing...</span><span class="btn-icon">⚡</span>';
+        }
+    }
+
+    updateSliderValue(sliderId, displayId) {
+        const slider = document.getElementById(sliderId);
+        const display = document.getElementById(displayId);
+        if (slider && display) {
+            display.textContent = slider.value;
+        }
+    }
+
+    updateStats() {
+        const messageCountEl = document.getElementById('messageCount');
+        const totalTokensEl = document.getElementById('totalTokens');
+        const avgResponseEl = document.getElementById('avgResponse');
+        
+        if (messageCountEl) messageCountEl.textContent = this.stats.messageCount;
+        if (totalTokensEl) totalTokensEl.textContent = this.stats.totalTokens;
+        
+        if (avgResponseEl) {
+            if (this.stats.responseTimes.length > 0) {
+                const avgTime = Math.round(
+                    this.stats.responseTimes.reduce((a, b) => a + b, 0) / 
+                    this.stats.responseTimes.length
+                );
+                avgResponseEl.textContent = `${avgTime}ms`;
+            } else {
+                avgResponseEl.textContent = '-';
+            }
+        }
+    }
+
+    updateModelStatus(modelsData) {
+        const modelList = document.getElementById('modelList');
+        if (!modelList) return;
+        
+        if (modelsData && modelsData.models) {
+            modelList.innerHTML = modelsData.models.map(model => `
+                <div class="model-item">
+                    <div class="model-name">${model.name || model.id}</div>
+                    <div class="model-status-badge online">Loaded</div>
+                </div>
+            `).join('');
+        } else {
+            modelList.innerHTML = `
+                <div class="model-item">
+                    <div class="model-name">Checking models...</div>
+                    <div class="model-status-badge loading">Loading</div>
+                </div>
+            `;
+        }
+    }
+
+    showNotification(message, type = 'info') {
+        const container = document.getElementById('notifications');
+        if (!container) return;
+        
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        
+        container.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
     }
 
     clearChat() {
         const chatMessages = document.getElementById('chatMessages');
-        // Keep the welcome message, remove others
-        const welcomeMessage = chatMessages.querySelector('.welcome-message').parentElement;
+        const welcomeMessage = chatMessages.querySelector('.welcome-message')?.parentElement;
+        
         chatMessages.innerHTML = '';
-        chatMessages.appendChild(welcomeMessage);
+        if (welcomeMessage) {
+            chatMessages.appendChild(welcomeMessage);
+        }
         
         this.messages = [];
+        this.conversationHistory = [];
         this.stats = {
             messageCount: 0,
             totalTokens: 0,
             responseTimes: []
         };
         this.updateStats();
-        this.showNotification('💬 Chat cleared', 'info');
-    }
-
-    updateSessionStats(response) {
-        this.stats.messageCount++;
-        this.stats.totalTokens += response.tokens;
-        this.stats.responseTimes.push(response.responseTime);
-        this.updateStats();
-    }
-
-    updateStats() {
-        document.getElementById('messageCount').textContent = this.stats.messageCount;
-        document.getElementById('totalTokens').textContent = this.stats.totalTokens;
-        
-        if (this.stats.responseTimes.length > 0) {
-            const avgResponse = this.stats.responseTimes.reduce((a, b) => a + b, 0) / this.stats.responseTimes.length;
-            document.getElementById('avgResponse').textContent = `${Math.round(avgResponse)}ms`;
-        } else {
-            document.getElementById('avgResponse').textContent = '-';
-        }
-    }
-
-    updateModelStatus() {
-        const modelList = document.getElementById('modelList');
-        const models = [
-            { name: 'OpenAI GPT-4o', status: 'Ready', class: 'online' },
-            { name: 'Claude-3.5-Sonnet', status: 'Ready', class: 'online' },
-            { name: 'Cohere Command-R+', status: 'Ready', class: 'online' },
-            { name: 'Fallback Demo', status: 'Backup', class: 'simulated' }
-        ];
-
-        modelList.innerHTML = models.map(model => `
-            <div class="model-item">
-                <div class="model-name">${model.name}</div>
-                <div class="model-status-badge ${model.class}">${model.status}</div>
-            </div>
-        `).join('');
-    }
-
-    updateStatus(status, text) {
-        const statusDot = document.getElementById('statusDot');
-        const statusText = document.getElementById('statusText');
-        
-        statusDot.className = `status-dot ${status}`;
-        statusText.textContent = text;
-    }
-
-    updateSendButton(enabled) {
-        const sendButton = document.getElementById('sendButton');
-        sendButton.disabled = !enabled;
-        
-        if (enabled) {
-            sendButton.innerHTML = '<span class="btn-text">Send</span><span class="btn-icon">📤</span>';
-        } else {
-            sendButton.innerHTML = '<span class="btn-text">Processing...</span><span class="btn-icon">⚡</span>';
-        }
-    }
-
-    updateSliderValue(sliderId, valueId) {
-        const slider = document.getElementById(sliderId);
-        const valueSpan = document.getElementById(valueId);
-        valueSpan.textContent = slider.value;
-    }
-
-    getStrategyName(strategy) {
-        const names = {
-            'balanced': 'Balanced',
-            'quality-first': 'Quality First',
-            'cost-optimized': 'Cost Optimized',
-            'speed-priority': 'Speed Priority',
-            'random': 'Random',
-            'round-robin': 'Round Robin'
-        };
-        return names[strategy] || strategy;
-    }
-
-    showNotification(message, type = 'info') {
-        const notifications = document.getElementById('notifications');
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.textContent = message;
-        
-        notifications.appendChild(notification);
-        
-        // Auto remove after 4 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 4000);
+        this.showNotification('Chat cleared', 'info');
     }
 }
 
-// Initialize the demo when the page loads
+// Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    new LLMRouterDemo();
+    window.chatApp = new LLMRouterChat();
 });

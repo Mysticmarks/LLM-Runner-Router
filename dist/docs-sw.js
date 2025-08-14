@@ -66,8 +66,21 @@ self.addEventListener('fetch', event => {
     const { request } = event;
     const { url, method } = request;
 
-    // Only handle GET requests
+    // Only handle GET requests from same origin
     if (method !== 'GET') return;
+    
+    // Skip chrome extensions, data URLs, and other unsupported schemes
+    if (url.startsWith('chrome-extension://') || 
+        url.startsWith('moz-extension://') || 
+        url.startsWith('data:') || 
+        url.startsWith('blob:')) {
+        return;
+    }
+    
+    // Only handle requests from same origin
+    if (!url.startsWith(self.location.origin)) {
+        return;
+    }
 
     // Handle documentation content requests
     if (url.includes('/docs/') && url.endsWith('.md')) {
@@ -127,7 +140,11 @@ async function handleDocsRequest(request) {
                 headers: headers
             });
             
-            cache.put(request, cachedResponse);
+            try {
+                await cache.put(request, cachedResponse);
+            } catch (cacheError) {
+                console.warn('SW: Failed to cache docs request:', request.url, cacheError);
+            }
             return networkResponse;
         }
         
@@ -177,7 +194,11 @@ async function handleApiRequest(request) {
                 headers: headers
             });
             
-            cache.put(request, cachedResponse);
+            try {
+                await cache.put(request, cachedResponse);
+            } catch (cacheError) {
+                console.warn('SW: Failed to cache docs request:', request.url, cacheError);
+            }
             return networkResponse;
         }
         
@@ -216,8 +237,13 @@ async function handleStaticRequest(request) {
         const networkResponse = await fetch(request);
         
         if (networkResponse.ok) {
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(request, networkResponse.clone());
+            try {
+                const cache = await caches.open(CACHE_NAME);
+                await cache.put(request, networkResponse.clone());
+            } catch (cacheError) {
+                console.warn('SW: Failed to cache request:', request.url, cacheError);
+                // Continue without caching
+            }
         }
         
         return networkResponse;
@@ -235,8 +261,12 @@ async function handlePageRequest(request) {
         const networkResponse = await fetch(request);
         
         if (networkResponse.ok) {
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(request, networkResponse.clone());
+            try {
+                const cache = await caches.open(CACHE_NAME);
+                await cache.put(request, networkResponse.clone());
+            } catch (cacheError) {
+                console.warn('SW: Failed to cache HTML request:', request.url, cacheError);
+            }
             return networkResponse;
         }
         

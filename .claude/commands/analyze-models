@@ -1,0 +1,52 @@
+#!/bin/bash
+# Analyze available models and their performance
+
+echo "🔍 Analyzing LLM Router Models..."
+
+cd /home/mikecerqua/projects/LLM-Runner-Router
+
+# Check model registry
+echo "📚 Checking model registry..."
+if [ -f "models/registry.json" ]; then
+    echo "Available models:"
+    python3 -m json.tool models/registry.json | grep -E '"(id|name|format|size)"' | head -20
+else
+    echo "❌ No model registry found"
+fi
+
+# Check cache usage
+echo ""
+echo "💾 Cache analysis..."
+if [ -d "models/cache" ]; then
+    CACHE_SIZE=$(du -sh models/cache 2>/dev/null | cut -f1)
+    CACHE_FILES=$(find models/cache -type f 2>/dev/null | wc -l)
+    echo "Cache size: $CACHE_SIZE"
+    echo "Cached files: $CACHE_FILES"
+else
+    echo "No cache directory found"
+fi
+
+# Check model files
+echo ""
+echo "📁 Model files:"
+for dir in models/*/; do
+    if [ -d "$dir" ] && [ "$dir" != "models/cache/" ]; then
+        echo "  $(basename $dir):"
+        ls -lh "$dir" | grep -E '\.(gguf|bin|pt|safetensors|json)$' | awk '{print "    -", $9, "("$5")"}'
+    fi
+done
+
+# Check model compatibility
+echo ""
+echo "🔧 Model Status:"
+node -e "
+import fs from 'fs';
+const registry = JSON.parse(fs.readFileSync('models/registry.json', 'utf8'));
+registry.models.forEach(model => {
+    const exists = fs.existsSync(model.path);
+    console.log(\`  \${model.id}: \${exists ? '✅ Ready' : '❌ Missing'} (\${model.format}, \${model.parameters.size})\`);
+});
+" 2>/dev/null || echo "  Status check unavailable"
+
+echo ""
+echo "✅ Model analysis complete"

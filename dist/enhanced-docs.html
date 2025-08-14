@@ -3,14 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="LLM Runner Router - Universal Model Orchestration System Documentation. Complete guide to neural network routing, model loading, and intelligent AI orchestration.">
-    <meta name="keywords" content="LLM, AI, machine learning, model routing, neural networks, documentation">
+    <meta name="description" content="LLM Runner Router - Universal Model Orchestration System Documentation. Complete guide to neural network routing, model loading, and intelligent AI orchestration with GGUF, ONNX, and HuggingFace support.">
+    <meta name="keywords" content="LLM, AI, machine learning, model routing, neural networks, documentation, GGUF, ONNX, HuggingFace, WebGPU, WASM, model orchestration, AI routing strategies">
     <meta name="author" content="Echo AI Systems">
-    <meta property="og:title" content="LLM Runner Router Documentation">
-    <meta property="og:description" content="Comprehensive documentation for the Universal Model Orchestration System">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    
+    <!-- Enhanced Open Graph Tags -->
+    <meta property="og:title" content="LLM Runner Router Documentation - Enhanced Interactive Guide">
+    <meta property="og:description" content="Comprehensive interactive documentation for the Universal Model Orchestration System with search, navigation, and live examples.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://llm-runner-router.com/docs">
+    <meta property="og:url" content="https://github.com/MCERQUA/LLM-Runner-Router/enhanced-docs.html">
+    <meta property="og:site_name" content="LLM Runner Router">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Enhanced Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="LLM Router Enhanced Documentation">
+    <meta name="twitter:description" content="Interactive documentation with search, navigation, and comprehensive guides for AI model orchestration.">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://github.com/MCERQUA/LLM-Runner-Router/enhanced-docs.html">
     
     <title>LLM Runner Router - Documentation</title>
     
@@ -612,12 +624,21 @@
         }
 
         .toc h4 {
-            margin-bottom: 1.5rem;
+            margin-bottom: 0;
             color: var(--text-dark);
             font-size: 1.1rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--radius-sm);
+            transition: background-color 0.2s ease;
+            user-select: none;
+        }
+
+        .toc h4:hover {
+            background-color: var(--bg-light);
         }
 
         .toc h4::before {
@@ -627,9 +648,38 @@
             color: var(--primary-color);
         }
 
+        .toc-toggle {
+            margin-left: auto;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            transition: transform 0.3s ease;
+        }
+
+        .toc-toggle.expanded {
+            transform: rotate(180deg);
+        }
+
+        .toc-content {
+            margin-top: 1rem;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+        }
+
+        .toc-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+        .toc-content.expanded {
+            max-height: 1000px;
+            opacity: 1;
+        }
+
         .toc ul {
             margin-left: 0;
             list-style: none;
+            margin-bottom: 0;
         }
 
         .toc li {
@@ -1211,7 +1261,7 @@
     <script>
         class EnhancedDocsApp {
             constructor() {
-                this.currentPage = 'overview';
+                this.currentPage = null; // Will be set in init()
                 this.docsAPI = new EnhancedDocsAPI();
                 this.searchTimeout = null;
                 this.isSearching = false;
@@ -1233,6 +1283,7 @@
                     
                     // Load initial page
                     const initialPage = this.getPageFromHash() || 'overview';
+                    this.currentPage = initialPage; // Set current page
                     await this.loadPage(initialPage);
                     this.updateActiveNav(initialPage);
                     
@@ -1265,6 +1316,13 @@
 
                 // Handle browser back/forward
                 window.addEventListener('popstate', (e) => {
+                    const page = this.getPageFromHash() || 'overview';
+                    this.loadPage(page, false);
+                    this.updateActiveNav(page);
+                });
+                
+                // Handle direct hash navigation
+                window.addEventListener('hashchange', (e) => {
                     const page = this.getPageFromHash() || 'overview';
                     this.loadPage(page, false);
                     this.updateActiveNav(page);
@@ -1419,7 +1477,18 @@
             }
 
             getPageFromHash() {
-                return window.location.hash.slice(1);
+                const hash = window.location.hash.slice(1);
+                // Clean hash and validate
+                const cleanHash = hash.replace(/^-+/, ''); // Remove leading dashes
+                const validPages = [
+                    'overview', 'architecture', 'api-reference', 'config-reference',
+                    'routing-strategies', 'model-formats', 'performance', 'security',
+                    'troubleshooting', 'deployment', 'plugin-development', 'faq',
+                    'glossary', 'examples', 'basic-examples', 'streaming-examples',
+                    'api-examples', 'docker-examples', 'monitoring-examples'
+                ];
+                
+                return validPages.includes(cleanHash) ? cleanHash : '';
             }
 
             async loadPage(page, updateHistory = true) {
@@ -1466,14 +1535,19 @@
                 if (doc.toc && doc.toc.length > 0) {
                     tocHtml = `
                         <div class="toc">
-                            <h4>Table of Contents</h4>
-                            <ul>
-                                ${doc.toc.map(item => `
-                                    <li class="toc-level-${item.level}">
-                                        <a href="${item.anchor}">${item.text}</a>
-                                    </li>
-                                `).join('')}
-                            </ul>
+                            <h4 class="toc-header">
+                                Table of Contents
+                                <span class="toc-toggle">▼</span>
+                            </h4>
+                            <div class="toc-content collapsed">
+                                <ul>
+                                    ${doc.toc.map(item => `
+                                        <li class="toc-level-${item.level}">
+                                            <a href="${item.anchor}">${item.text}</a>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
                         </div>
                     `;
                 }
@@ -1482,6 +1556,9 @@
 
                 // Add anchor links to headings
                 this.addAnchorLinks();
+                
+                // Setup TOC toggle functionality
+                this.setupTOCToggle();
             }
 
             addAnchorLinks() {
@@ -1521,6 +1598,32 @@
                         anchor.style.opacity = '0';
                     });
                 });
+            }
+
+            setupTOCToggle() {
+                const tocHeader = document.querySelector('.toc-header');
+                const tocContent = document.querySelector('.toc-content');
+                const tocToggle = document.querySelector('.toc-toggle');
+                
+                if (tocHeader && tocContent && tocToggle) {
+                    tocHeader.addEventListener('click', () => {
+                        const isCollapsed = tocContent.classList.contains('collapsed');
+                        
+                        if (isCollapsed) {
+                            // Expand
+                            tocContent.classList.remove('collapsed');
+                            tocContent.classList.add('expanded');
+                            tocToggle.classList.add('expanded');
+                            tocToggle.textContent = '▲';
+                        } else {
+                            // Collapse
+                            tocContent.classList.remove('expanded');
+                            tocContent.classList.add('collapsed');
+                            tocToggle.classList.remove('expanded');
+                            tocToggle.textContent = '▼';
+                        }
+                    });
+                }
             }
 
             showLoading() {

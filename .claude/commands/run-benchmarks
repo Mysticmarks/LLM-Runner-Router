@@ -1,0 +1,47 @@
+#!/bin/bash
+# Run comprehensive performance benchmarks
+
+echo "⚡ Running LLM Router Performance Benchmarks..."
+echo ""
+
+cd /home/mikecerqua/projects/LLM-Runner-Router
+
+# Run the benchmark suite
+echo "📊 Starting benchmark suite..."
+npm run benchmark
+
+# Additional performance metrics
+echo ""
+echo "🧠 System Resource Analysis..."
+echo "─────────────────────────────"
+
+# Memory usage
+echo "Memory Usage:"
+free -h | grep -E "^Mem:" | awk '{print "  Total: "$2", Used: "$3", Free: "$4}'
+
+# CPU info
+echo ""
+echo "CPU Information:"
+lscpu | grep -E "Model name|CPU\(s\):|Thread|Core" | sed 's/^/  /'
+
+# Node.js version
+echo ""
+echo "Runtime:"
+echo "  Node.js: $(node --version)"
+echo "  NPM: $(npm --version)"
+
+# Model files analysis
+echo ""
+echo "📦 Model Files Analysis:"
+echo "─────────────────────────────"
+if [ -d "models" ]; then
+    for model in models/*/; do
+        if [ -d "$model" ] && [ "$model" != "models/cache/" ]; then
+            size=$(du -sh "$model" 2>/dev/null | cut -f1)
+            echo "  $(basename $model): $size"
+        fi
+    done
+fi
+
+echo ""
+echo "✅ Benchmark suite completed"
