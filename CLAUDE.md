@@ -45,6 +45,16 @@ Project-specific commands available in `.claude/commands/`:
 
 These commands provide specialized workflows for LLM orchestration development including model testing, performance analysis, and environment setup.
 
+## Environment
+
+**IMPORTANT**: This project is running on a VPS (Virtual Private Server), not a local machine.
+
+### VPS Specifications:
+- **vCPUs**: 4
+- **RAM**: 16 GB
+- **Environment**: Virtual server (not local development)
+- **Note**: Some model loaders (particularly GGUF with node-llama-cpp) may not work properly in VPS environments. The SimpleLoader is provided as a lightweight fallback.
+
 ## Architecture Overview
 
 This is a **Universal LLM Model Orchestration System** that provides format-agnostic model loading and intelligent routing. The system is designed with a modular architecture for maximum flexibility and performance.
