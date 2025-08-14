@@ -59,6 +59,8 @@ async function initializeRouter() {
     
     // Load models from registry
     const registryPath = path.join(__dirname, 'models', 'registry.json');
+    let modelsLoaded = 0;
+    
     try {
       const registryData = await fs.readFile(registryPath, 'utf8');
       const registry = JSON.parse(registryData);
@@ -81,6 +83,7 @@ async function initializeRouter() {
               ...modelConfig.parameters
             });
             console.log(`  ✅ Loaded: ${modelConfig.name} (${model.id})`);
+            modelsLoaded++;
           } else {
             console.log(`  ⚠️  Skipped: ${modelConfig.name} (file not found at ${modelPath})`);
           }
@@ -90,6 +93,22 @@ async function initializeRouter() {
       }
     } catch (error) {
       console.log('  ⚠️  No registry file found or invalid JSON');
+    }
+    
+    // Load Simple fallback model for VPS environments
+    // This ensures we always have at least one working model
+    try {
+      console.log('\n🤖 Loading Simple fallback model for VPS...');
+      const simpleModel = await router.load({
+        source: 'simple',
+        format: 'simple',
+        id: 'simple-fallback',
+        name: 'Simple VPS Fallback Model'
+      });
+      console.log('  ✅ Simple fallback model loaded successfully');
+      modelsLoaded++;
+    } catch (error) {
+      console.log('  ⚠️  Could not load simple fallback:', error.message);
     }
     
     const status = router.getStatus();

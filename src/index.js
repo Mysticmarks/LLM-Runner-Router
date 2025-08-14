@@ -13,6 +13,7 @@ import { GGUFLoader } from './loaders/GGUFLoader.js';
 import { MockLoader } from './loaders/MockLoader.js';
 import { PyTorchLoader } from './loaders/PyTorchLoader.js';
 import { BinaryLoader } from './loaders/BinaryLoader.js';
+import { SimpleLoader } from './loaders/SimpleLoader.js';
 // import BitNetLoader from './loaders/BitNetLoader.js'; // Commented out - missing dependencies
 
 const logger = new Logger('LLMRouter');
@@ -58,6 +59,9 @@ class LLMRouter {
       
       this.registry.registerLoader('binary', new BinaryLoader());
       logger.info('📦 Registered Binary loader (.bin)');
+      
+      this.registry.registerLoader('simple', new SimpleLoader());
+      logger.info('🤖 Registered Simple loader (VPS fallback)');
       
       // Register BitNet loader with graceful fallback
       // Commented out - BitNetLoader has missing dependencies
