@@ -6,8 +6,8 @@
 module.exports = {
   apps: [{
     // Application Configuration
-    name: 'llm-router',
-    script: './server-secure.js',
+    name: 'llm-router-http',
+    script: './server-http.js',
     
     // Cluster Mode Configuration
     instances: process.env.PM2_INSTANCES || 'max',  // Use all available CPUs

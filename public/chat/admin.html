@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Router Admin - Model Configuration & Chat Templates</title>
+    <link rel="stylesheet" href="/chat/admin-styles.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="header-content">
+                <h1>🎛️ LLM Router Admin Panel</h1>
+                <div class="header-actions">
+                    <button id="saveConfig" class="btn btn-primary">💾 Save Configuration</button>
+                    <button id="exportConfig" class="btn btn-secondary">📤 Export</button>
+                    <button id="importConfig" class="btn btn-secondary">📥 Import</button>
+                    <a href="/chat/" class="btn btn-info">💬 Back to Chat</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="admin-content">
+            <!-- Sidebar Navigation -->
+            <nav class="admin-sidebar">
+                <ul class="nav-menu">
+                    <li class="nav-item active" data-section="models">
+                        <span class="icon">🤖</span>
+                        <span>Model Controls</span>
+                    </li>
+                    <li class="nav-item" data-section="templates">
+                        <span class="icon">📝</span>
+                        <span>Chat Templates</span>
+                    </li>
+                    <li class="nav-item" data-section="system">
+                        <span class="icon">⚙️</span>
+                        <span>System Instructions</span>
+                    </li>
+                    <li class="nav-item" data-section="parameters">
+                        <span class="icon">🎚️</span>
+                        <span>Parameters</span>
+                    </li>
+                    <li class="nav-item" data-section="monitoring">
+                        <span class="icon">📊</span>
+                        <span>Monitoring</span>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Settings Panels -->
+            <div class="settings-panels">
+                <!-- Model Controls Section -->
+                <section id="models-section" class="settings-section active">
+                    <h2>Model Configuration</h2>
+                    
+                    <div class="model-selector">
+                        <label>Active Model:</label>
+                        <select id="activeModel" class="form-control">
+                            <option value="auto">Auto-Select (Router)</option>
+                        </select>
+                        <button id="refreshModels" class="btn btn-sm">🔄 Refresh</button>
+                    </div>
+
+                    <div class="model-details">
+                        <h3>Model Information</h3>
+                        <div id="modelInfo" class="info-box">
+                            <p>Select a model to view details</p>
+                        </div>
+                    </div>
+
+                    <div class="model-parameters">
+                        <h3>Generation Parameters</h3>
+                        
+                        <div class="param-group">
+                            <label for="temperature">Temperature: <span id="tempValue">0.7</span></label>
+                            <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7">
+                            <small>Controls randomness (0 = deterministic, 2 = very random)</small>
+                        </div>
+
+                        <div class="param-group">
+                            <label for="maxTokens">Max Tokens: <span id="maxTokensValue">500</span></label>
+                            <input type="range" id="maxTokens" min="1" max="4096" step="1" value="500">
+                            <small>Maximum response length in tokens</small>
+                        </div>
+
+                        <div class="param-group">
+                            <label for="topP">Top P: <span id="topPValue">0.9</span></label>
+                            <input type="range" id="topP" min="0" max="1" step="0.01" value="0.9">
+                            <small>Nucleus sampling threshold</small>
+                        </div>
+
+                        <div class="param-group">
+                            <label for="topK">Top K: <span id="topKValue">40</span></label>
+                            <input type="range" id="topK" min="1" max="100" step="1" value="40">
+                            <small>Limits vocabulary to top K tokens</small>
+                        </div>
+
+                        <div class="param-group">
+                            <label for="repetitionPenalty">Repetition Penalty: <span id="repPenaltyValue">1.1</span></label>
+                            <input type="range" id="repetitionPenalty" min="0.5" max="2" step="0.1" value="1.1">
+                            <small>Penalizes repeated tokens</small>
+                        </div>
+
+                        <div class="param-group">
+                            <label for="contextSize">Context Size: <span id="contextSizeValue">2048</span></label>
+                            <input type="range" id="contextSize" min="512" max="8192" step="512" value="2048">
+                            <small>Model context window size</small>
+                        </div>
+                    </div>
+
+                    <div class="routing-strategy">
+                        <h3>Routing Strategy</h3>
+                        <select id="routingStrategy" class="form-control">
+                            <option value="balanced">Balanced</option>
+                            <option value="quality-first">Quality First</option>
+                            <option value="speed-priority">Speed Priority</option>
+                            <option value="cost-optimized">Cost Optimized</option>
+                            <option value="random">Random</option>
+                        </select>
+                    </div>
+                </section>
+
+                <!-- Chat Templates Section -->
+                <section id="templates-section" class="settings-section">
+                    <h2>Chat Templates</h2>
+                    
+                    <div class="template-selector">
+                        <label>Active Template:</label>
+                        <select id="activeTemplate" class="form-control">
+                            <option value="default">Default</option>
+                            <option value="alpaca">Alpaca</option>
+                            <option value="chatml">ChatML</option>
+                            <option value="llama">Llama</option>
+                            <option value="vicuna">Vicuna</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+
+                    <div class="template-editor">
+                        <h3>Template Format</h3>
+                        <div class="template-inputs">
+                            <div class="input-group">
+                                <label>System Prefix:</label>
+                                <input type="text" id="systemPrefix" class="form-control" placeholder="### System:">
+                            </div>
+                            
+                            <div class="input-group">
+                                <label>User Prefix:</label>
+                                <input type="text" id="userPrefix" class="form-control" placeholder="### User:">
+                            </div>
+                            
+                            <div class="input-group">
+                                <label>Assistant Prefix:</label>
+                                <input type="text" id="assistantPrefix" class="form-control" placeholder="### Assistant:">
+                            </div>
+                            
+                            <div class="input-group">
+                                <label>Message Separator:</label>
+                                <input type="text" id="messageSeparator" class="form-control" placeholder="\n\n">
+                            </div>
+
+                            <div class="input-group">
+                                <label>Stop Sequences (comma-separated):</label>
+                                <input type="text" id="stopSequences" class="form-control" placeholder="### User:, ### System:">
+                            </div>
+                        </div>
+
+                        <div class="template-preview">
+                            <h4>Preview:</h4>
+                            <pre id="templatePreview" class="code-preview"></pre>
+                        </div>
+                    </div>
+
+                    <div class="saved-templates">
+                        <h3>Saved Templates</h3>
+                        <div id="templateList" class="template-list">
+                            <!-- Templates will be loaded here -->
+                        </div>
+                        <button id="saveTemplate" class="btn btn-primary">Save Current Template</button>
+                    </div>
+                </section>
+
+                <!-- System Instructions Section -->
+                <section id="system-section" class="settings-section">
+                    <h2>System Instructions</h2>
+                    
+                    <div class="system-prompt">
+                        <label>System Prompt:</label>
+                        <textarea id="systemPrompt" class="form-control large-textarea" rows="10" 
+                                  placeholder="You are a helpful AI assistant..."></textarea>
+                        <small>This prompt is prepended to every conversation</small>
+                    </div>
+
+                    <div class="instruction-presets">
+                        <h3>Preset Instructions</h3>
+                        <div class="preset-grid">
+                            <button class="preset-btn" data-preset="helpful">
+                                <span class="icon">🤝</span>
+                                <span>Helpful Assistant</span>
+                            </button>
+                            <button class="preset-btn" data-preset="creative">
+                                <span class="icon">🎨</span>
+                                <span>Creative Writer</span>
+                            </button>
+                            <button class="preset-btn" data-preset="technical">
+                                <span class="icon">💻</span>
+                                <span>Technical Expert</span>
+                            </button>
+                            <button class="preset-btn" data-preset="teacher">
+                                <span class="icon">📚</span>
+                                <span>Teacher</span>
+                            </button>
+                            <button class="preset-btn" data-preset="analyst">
+                                <span class="icon">📊</span>
+                                <span>Data Analyst</span>
+                            </button>
+                            <button class="preset-btn" data-preset="translator">
+                                <span class="icon">🌍</span>
+                                <span>Translator</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="behavior-settings">
+                        <h3>Behavior Settings</h3>
+                        <div class="checkbox-group">
+                            <label>
+                                <input type="checkbox" id="useSystemPrompt" checked>
+                                Enable System Prompt
+                            </label>
+                            <label>
+                                <input type="checkbox" id="maintainContext">
+                                Maintain Conversation Context
+                            </label>
+                            <label>
+                                <input type="checkbox" id="streamResponses" checked>
+                                Stream Responses
+                            </label>
+                            <label>
+                                <input type="checkbox" id="showTokenCount">
+                                Show Token Count
+                            </label>
+                            <label>
+                                <input type="checkbox" id="enableCache">
+                                Enable Response Cache
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Advanced Parameters Section -->
+                <section id="parameters-section" class="settings-section">
+                    <h2>Advanced Parameters</h2>
+
+                    <div class="param-category">
+                        <h3>Sampling Parameters</h3>
+                        
+                        <div class="param-grid">
+                            <div class="param-item">
+                                <label>Min Length:</label>
+                                <input type="number" id="minLength" class="form-control" value="1" min="1">
+                            </div>
+                            
+                            <div class="param-item">
+                                <label>Presence Penalty:</label>
+                                <input type="number" id="presencePenalty" class="form-control" value="0" step="0.1">
+                            </div>
+                            
+                            <div class="param-item">
+                                <label>Frequency Penalty:</label>
+                                <input type="number" id="frequencyPenalty" class="form-control" value="0" step="0.1">
+                            </div>
+                            
+                            <div class="param-item">
+                                <label>Seed (for reproducibility):</label>
+                                <input type="number" id="seed" class="form-control" placeholder="Random">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="param-category">
+                        <h3>Performance Settings</h3>
+                        
+                        <div class="param-grid">
+                            <div class="param-item">
+                                <label>Batch Size:</label>
+                                <input type="number" id="batchSize" class="form-control" value="1" min="1">
+                            </div>
+                            
+                            <div class="param-item">
+                                <label>Threads:</label>
+                                <input type="number" id="threads" class="form-control" value="4" min="1">
+                            </div>
+                            
+                            <div class="param-item">
+                                <label>GPU Layers:</label>
+                                <input type="number" id="gpuLayers" class="form-control" value="0" min="0">
+                            </div>
+                            
+                            <div class="param-item">
+                                <label>Timeout (ms):</label>
+                                <input type="number" id="timeout" class="form-control" value="30000" min="1000">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="param-category">
+                        <h3>Memory Management</h3>
+                        
+                        <div class="param-grid">
+                            <div class="param-item">
+                                <label>Cache Size (MB):</label>
+                                <input type="number" id="cacheSize" class="form-control" value="100" min="0">
+                            </div>
+                            
+                            <div class="param-item">
+                                <label>Cache TTL (seconds):</label>
+                                <input type="number" id="cacheTTL" class="form-control" value="300" min="0">
+                            </div>
+                            
+                            <div class="param-item">
+                                <label>Max Concurrent:</label>
+                                <input type="number" id="maxConcurrent" class="form-control" value="10" min="1">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Monitoring Section -->
+                <section id="monitoring-section" class="settings-section">
+                    <h2>System Monitoring</h2>
+
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <h3>Model Status</h3>
+                            <div id="modelStatus" class="metric-value">Loading...</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h3>Memory Usage</h3>
+                            <div id="memoryUsage" class="metric-value">0 MB</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h3>Requests Processed</h3>
+                            <div id="requestCount" class="metric-value">0</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h3>Average Latency</h3>
+                            <div id="avgLatency" class="metric-value">0 ms</div>
+                        </div>
+                    </div>
+
+                    <div class="performance-chart">
+                        <h3>Performance History</h3>
+                        <canvas id="perfChart"></canvas>
+                    </div>
+
+                    <div class="logs-viewer">
+                        <h3>System Logs</h3>
+                        <div id="logsContainer" class="logs-container">
+                            <!-- Logs will be displayed here -->
+                        </div>
+                        <div class="log-controls">
+                            <button id="clearLogs" class="btn btn-sm">Clear Logs</button>
+                            <button id="downloadLogs" class="btn btn-sm">Download Logs</button>
+                            <label>
+                                <input type="checkbox" id="autoScroll" checked>
+                                Auto-scroll
+                            </label>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="notification hidden">
+        <span id="notificationText"></span>
+    </div>
+
+    <script src="/chat/admin.js"></script>
+</body>
+</html>
