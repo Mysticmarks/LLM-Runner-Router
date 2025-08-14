@@ -247,8 +247,8 @@ app.get('/api/models', async (req, res) => {
   }
 });
 
-// Inference endpoint with timeout and retry
-app.post('/api/inference', authenticateApiKey, async (req, res) => {
+// Inference endpoint with timeout and retry (no auth for demo)
+app.post('/api/inference', async (req, res) => {
   if (!isReady) {
     return res.status(503).json({ 
       error: 'Service unavailable',
@@ -382,10 +382,14 @@ app.post('/api/models/unload', async (req, res) => {
     // Unload model from registry
     if (router && router.registry) {
       const model = router.registry.get(modelId);
-      if (model && model.unload) {
-        await model.unload();
+      if (model) {
+        // Unload the model if it has unload method
+        if (model.unload) {
+          await model.unload();
+        }
+        // Remove from registry using delete method
+        router.registry.models.delete(modelId);
       }
-      router.registry.remove(modelId);
     }
     
     logger.info(`Unloaded model: ${modelId}`);
@@ -483,7 +487,7 @@ app.delete('/api/models/:modelId', async (req, res) => {
       const model = router.registry.get(modelId);
       if (model) {
         if (model.unload) await model.unload();
-        router.registry.remove(modelId);
+        router.registry.models.delete(modelId);
       }
     }
     

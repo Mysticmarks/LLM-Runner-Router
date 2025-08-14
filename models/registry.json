@@ -19,14 +19,39 @@
         "completion": true
       },
       "metrics": {
-        "loadTime": 1755196887626,
+        "loadTime": 1755209001275,
+        "inferenceCount": 2,
+        "totalTokens": 2,
+        "avgLatency": 1504,
+        "lastUsed": "2025-08-14T22:03:27.310Z"
+      },
+      "source": "./models/tinyllama/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+      "path": "./models/tinyllama/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
+    },
+    {
+      "id": "phi-2",
+      "name": "phi-2.Q4_K_M",
+      "version": "1.0.0",
+      "format": "gguf",
+      "architecture": {},
+      "parameters": {},
+      "metadata": {},
+      "capabilities": {
+        "streaming": false,
+        "batching": false,
+        "quantization": false,
+        "embedding": false,
+        "completion": true
+      },
+      "metrics": {
+        "loadTime": 1755210612191,
         "inferenceCount": 0,
         "totalTokens": 0,
         "avgLatency": 0,
         "lastUsed": null
       },
-      "source": "./models/tinyllama/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
-      "path": "./models/tinyllama/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
+      "source": "models/phi-2/phi-2.Q4_K_M.gguf",
+      "path": "models/phi-2/phi-2.Q4_K_M.gguf"
     }
   ]
 }
