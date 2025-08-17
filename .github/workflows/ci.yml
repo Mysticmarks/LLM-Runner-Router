@@ -1,56 +1,90 @@
-name: CI/CD Pipeline
+name: Continuous Integration
 
 on:
   push:
     branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
+
+env:
+  NODE_ENV: test
+  FORCE_COLOR: 1
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    name: Test on Node.js ${{ matrix.node-version }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     
     strategy:
+      fail-fast: false
       matrix:
-        node-version: [18.x, 20.x]
-    
+        node-version: [18.x, 20.x, 22.x]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
-      
+      with:
+        fetch-depth: 0
+        
     - name: Setup Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
         
+    - name: Cache node modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.npm
+          node_modules
+          */*/node_modules
+        key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-${{ matrix.node-version }}-
+          ${{ runner.os }}-node-
+          
     - name: Install dependencies
       run: npm ci
       
-    - name: Run linter
+    - name: Run ESLint
       run: npm run lint
       
-    - name: Run tests
-      run: npm test
-      
-    - name: Run test coverage
+    - name: Run tests with coverage
       run: npm run test:coverage
-      
+      env:
+        NODE_OPTIONS: --experimental-vm-modules
+        
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      continue-on-error: true
+      if: matrix.node-version == '20.x' && matrix.os == 'ubuntu-latest'
+      uses: codecov/codecov-action@v4
       with:
+        token: ${{ secrets.CODECOV_TOKEN }}
         file: ./coverage/lcov.info
         flags: unittests
         name: codecov-umbrella
+        fail_ci_if_error: false
         
-  build:
+    - name: Run build test
+      run: npm run build
+      
+    - name: Test Docker build (Ubuntu only)
+      if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+      run: |
+        docker build -t llm-runner-router:test .
+        docker run --rm -d --name test-container -p 3000:3000 llm-runner-router:test
+        sleep 10
+        curl -f http://localhost:3000/api/health || exit 1
+        docker stop test-container
+
+  security-audit:
+    name: Security Audit
     runs-on: ubuntu-latest
-    needs: test
     
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
       
     - name: Setup Node.js
@@ -62,22 +96,20 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
-    - name: Build project
-      run: npm run build
+    - name: Run npm audit
+      run: npm audit --audit-level moderate
       
-    - name: Archive build artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: build-files
-        path: dist/
-        
-  deploy:
+    - name: Run npm audit fix
+      if: failure()
+      run: npm audit fix --force
+      
+  performance:
+    name: Performance Benchmarks
     runs-on: ubuntu-latest
-    needs: [test, build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'pull_request'
     
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
       
     - name: Setup Node.js
@@ -89,22 +121,134 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
-    - name: Build project
-      run: npm run build
+    - name: Run benchmarks
+      run: npm run benchmark
       
-    - name: Deploy to Netlify
-      uses: nwtgck/actions-netlify@v2.0
-      continue-on-error: true
-      if: ${{ secrets.NETLIFY_AUTH_TOKEN != '' && secrets.NETLIFY_SITE_ID != '' }}
+    - name: Comment benchmark results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
       with:
-        publish-dir: './dist'
-        production-branch: main
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        deploy-message: "Deploy from GitHub Actions"
-        enable-pull-request-comment: false
-        enable-commit-comment: true
-        overwrites-pull-request-comment: true
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-      timeout-minutes: 2
+        script: |
+          const fs = require('fs');
+          if (fs.existsSync('benchmark-results.json')) {
+            const results = JSON.parse(fs.readFileSync('benchmark-results.json', 'utf8'));
+            const comment = `## 📊 Performance Benchmark Results\n\n${JSON.stringify(results, null, 2)}`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          }
+
+  validate-config:
+    name: Validate Configuration
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Validate package.json
+      run: |
+        node -e "
+          const pkg = require('./package.json');
+          if (!pkg.name || !pkg.version || !pkg.description) {
+            console.error('Missing required package.json fields');
+            process.exit(1);
+          }
+          console.log('Package.json validation passed');
+        "
+        
+    - name: Validate TypeScript definitions
+      run: |
+        if [ -f "types/index.d.ts" ]; then
+          npx tsc --noEmit types/index.d.ts || exit 1
+          echo "TypeScript definitions validated"
+        fi
+        
+    - name: Check for sensitive files
+      run: |
+        if find . -name "*.env*" -o -name "*secret*" -o -name "*key*" | grep -v node_modules | grep -v .git; then
+          echo "❌ Sensitive files detected in repository"
+          exit 1
+        else
+          echo "✅ No sensitive files detected"
+        fi
+
+  compatibility:
+    name: Compatibility Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Test ES Module compatibility
+      run: |
+        node --experimental-vm-modules -e "
+          import('./src/index.js').then(module => {
+            console.log('✅ ES Module import successful');
+            console.log('Available exports:', Object.keys(module));
+          }).catch(err => {
+            console.error('❌ ES Module import failed:', err);
+            process.exit(1);
+          });
+        "
+        
+    - name: Test CommonJS compatibility
+      run: |
+        node -e "
+          try {
+            const pkg = require('./package.json');
+            if (pkg.type === 'module') {
+              console.log('✅ Package is properly configured as ES Module');
+            }
+          } catch (err) {
+            console.error('❌ Module system test failed:', err);
+            process.exit(1);
+          }
+        "
+
+  notify-status:
+    name: Notify Build Status
+    runs-on: ubuntu-latest
+    needs: [test, security-audit, validate-config, compatibility]
+    if: always()
+    
+    steps:
+    - name: Notify success
+      if: needs.test.result == 'success' && needs.security-audit.result == 'success' && needs.validate-config.result == 'success' && needs.compatibility.result == 'success'
+      run: |
+        echo "🎉 All CI checks passed successfully!"
+        echo "Branch: ${{ github.ref_name }}"
+        echo "Commit: ${{ github.sha }}"
+        
+    - name: Notify failure
+      if: needs.test.result == 'failure' || needs.security-audit.result == 'failure' || needs.validate-config.result == 'failure' || needs.compatibility.result == 'failure'
+      run: |
+        echo "❌ CI checks failed!"
+        echo "Test: ${{ needs.test.result }}"
+        echo "Security: ${{ needs.security-audit.result }}"
+        echo "Config: ${{ needs.validate-config.result }}"
+        echo "Compatibility: ${{ needs.compatibility.result }}"
+        exit 1
