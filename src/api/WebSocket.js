@@ -10,7 +10,7 @@ import { StreamProcessor } from '../runtime/StreamProcessor.js';
 import { EventEmitter } from 'events';
 import crypto from 'crypto';
 
-export class WebSocketAPI extends EventEmitter {
+class WebSocketAPI extends EventEmitter {
   constructor(config = {}) {
     super();
     this.logger = new Logger('WebSocketAPI');
@@ -602,3 +602,5 @@ export class WebSocketAPI extends EventEmitter {
     await this.streamProcessor.cleanup();
   }
 }
+export default WebSocketAPI;
+export { WebSocketAPI };

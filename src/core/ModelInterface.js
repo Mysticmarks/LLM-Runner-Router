@@ -13,7 +13,7 @@ const logger = new Logger('ModelInterface');
  * Abstract Model Interface - The DNA of every model
  * All models, regardless of format, must implement this interface
  */
-export class ModelInterface extends EventEmitter {
+class ModelInterface extends EventEmitter {
   constructor(config = {}) {
     super();
     
@@ -354,4 +354,7 @@ export const Architectures = {
   CUSTOM: 'custom'
 };
 
+
+
 export default ModelInterface;
+export { ModelInterface };

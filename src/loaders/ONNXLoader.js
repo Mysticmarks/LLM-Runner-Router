@@ -7,7 +7,7 @@
 import { BaseLoader } from './BaseLoader.js';
 import { Logger } from '../utils/Logger.js';
 
-export class ONNXLoader extends BaseLoader {
+class ONNXLoader extends BaseLoader {
   constructor() {
     super();
     this.logger = new Logger('ONNXLoader');
@@ -368,3 +368,5 @@ export class ONNXLoader extends BaseLoader {
     }
   }
 }
+export default ONNXLoader;
+export { ONNXLoader };

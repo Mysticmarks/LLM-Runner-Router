@@ -9,7 +9,7 @@ import crypto from 'crypto';
 
 const logger = new Logger('Validator');
 
-export class ModelValidator {
+class ModelValidator {
   constructor() {
     this.rules = new Map();
     this.checksums = new Map();
@@ -133,4 +133,8 @@ export class ModelValidator {
   }
 }
 
-export default ModelValidator;
+// Create a singleton instance
+const Validator = new ModelValidator();
+
+export default Validator;
+export { ModelValidator, Validator };

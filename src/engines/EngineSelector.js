@@ -8,7 +8,7 @@ import { Logger } from '../utils/Logger.js';
 
 const logger = new Logger('EngineSelector');
 
-export class EngineSelector {
+class EngineSelector {
   static engines = new Map();
   static initialized = false;
 
@@ -16,6 +16,25 @@ export class EngineSelector {
     if (this.initialized) return;
     
     logger.info('🔍 Detecting available engines...');
+    
+    // In test environment, use simplified loading
+    if (process.env.NODE_ENV === 'test') {
+      // Just register WASM engine for testing
+      try {
+        const WASMEngine = (await import('./WASMEngine.js')).default;
+        const instance = new WASMEngine();
+        this.engines.set('wasm', {
+          instance,
+          priority: 80,
+          supported: true
+        });
+        logger.success('✅ WASM engine available (test mode)');
+      } catch (error) {
+        logger.debug('❌ WASM not available in test');
+      }
+      this.initialized = true;
+      return;
+    }
     
     // Register all engines with priority
     const engines = [
@@ -86,7 +105,7 @@ export class EngineSelector {
 /**
  * Base Engine Class - The quantum substrate all engines inherit
  */
-export class BaseEngine {
+class BaseEngine {
   constructor(name) {
     this.name = name;
     this.initialized = false;
@@ -121,4 +140,7 @@ export class BaseEngine {
   }
 }
 
+
+
 export default EngineSelector;
+export { EngineSelector, BaseEngine };

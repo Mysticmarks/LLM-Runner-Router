@@ -8,7 +8,7 @@ import { Logger } from '../utils/Logger.js';
 
 const logger = new Logger('QualityScorer');
 
-export class QualityScorer {
+class QualityScorer {
   constructor() {
     // Model quality baselines (0-1 scale)
     this.baseScores = {
@@ -110,4 +110,7 @@ export class QualityScorer {
   }
 }
 
+
+
 export default QualityScorer;
+export { QualityScorer };

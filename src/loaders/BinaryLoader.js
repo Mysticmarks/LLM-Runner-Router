@@ -278,7 +278,7 @@ class BinaryModel extends ModelInterface {
 /**
  * Binary Loader - Handles generic .bin files
  */
-export class BinaryLoader {
+class BinaryLoader {
   constructor(config = {}) {
     this.config = config;
     this.models = new Map();

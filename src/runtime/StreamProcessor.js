@@ -9,7 +9,7 @@ import { EventEmitter } from 'events';
 import { Transform, Readable, pipeline } from 'stream';
 import { performance } from 'perf_hooks';
 
-export class StreamProcessor extends EventEmitter {
+class StreamProcessor extends EventEmitter {
   constructor(config = {}) {
     super();
     this.logger = new Logger('StreamProcessor');
@@ -565,3 +565,5 @@ export class StreamProcessor extends EventEmitter {
     this.batches.clear();
   }
 }
+export default StreamProcessor;
+export { StreamProcessor };

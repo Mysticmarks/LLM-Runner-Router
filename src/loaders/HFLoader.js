@@ -10,7 +10,7 @@ import { ModelDownloader } from '../services/ModelDownloader.js';
 import path from 'path';
 import fs from 'fs/promises';
 
-export class HFLoader extends BaseLoader {
+class HFLoader extends BaseLoader {
   constructor() {
     super();
     this.logger = new Logger('HFLoader');
@@ -523,3 +523,5 @@ export class HFLoader extends BaseLoader {
     }
   }
 }
+export default HFLoader;
+export { HFLoader };

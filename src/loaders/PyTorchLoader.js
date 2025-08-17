@@ -180,7 +180,7 @@ class PyTorchModel extends ModelInterface {
 /**
  * PyTorch Loader - Handles .pth, .pt, and .bin files
  */
-export class PyTorchLoader {
+class PyTorchLoader {
   constructor(config = {}) {
     this.config = config;
     this.models = new Map();

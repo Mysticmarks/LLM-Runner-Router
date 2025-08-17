@@ -10,7 +10,7 @@ import { Logger } from '../utils/Logger.js';
 
 const logger = new Logger('ErrorHandler');
 
-export class ErrorHandler extends EventEmitter {
+class ErrorHandler extends EventEmitter {
   constructor(config = {}) {
     super();
     
@@ -521,4 +521,6 @@ export class ErrorHandler extends EventEmitter {
   }
 }
 
+
 export default ErrorHandler;
+export { ErrorHandler };

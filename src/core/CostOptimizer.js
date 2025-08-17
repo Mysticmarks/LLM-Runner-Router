@@ -8,7 +8,7 @@ import { Logger } from '../utils/Logger.js';
 
 const logger = new Logger('CostOptimizer');
 
-export class CostOptimizer {
+class CostOptimizer {
   constructor() {
     // Pricing per million tokens (simplified)
     this.pricing = {
@@ -77,4 +77,7 @@ export class CostOptimizer {
   }
 }
 
+
+
 export default CostOptimizer;
+export { CostOptimizer };

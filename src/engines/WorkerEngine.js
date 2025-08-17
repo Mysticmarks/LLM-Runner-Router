@@ -6,7 +6,7 @@
 
 import { Logger } from '../utils/Logger.js';
 
-export class WorkerEngine {
+class WorkerEngine {
   constructor(config = {}) {
     this.logger = new Logger('WorkerEngine');
     this.config = {
@@ -546,3 +546,5 @@ export class WorkerEngine {
     this.initialized = false;
   }
 }
+export default WorkerEngine;
+export { WorkerEngine };

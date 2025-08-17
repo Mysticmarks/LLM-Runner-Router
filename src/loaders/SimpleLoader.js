@@ -217,7 +217,7 @@ class SimpleModel extends ModelInterface {
 /**
  * Simple Loader - Lightweight fallback for VPS environments
  */
-export class SimpleLoader {
+class SimpleLoader {
   constructor(config = {}) {
     this.config = config;
     this.models = new Map();
@@ -274,3 +274,4 @@ export class SimpleLoader {
 }
 
 export default SimpleLoader;
+export { SimpleLoader };

@@ -10,7 +10,7 @@ import path from 'path';
 
 const logger = new Logger('Config');
 
-export class Config {
+class Config {
   constructor(options = {}) {
     // Default configuration matrix
     this.defaults = {
@@ -189,4 +189,7 @@ export class Config {
   }
 }
 
+
+
 export default Config;
+export { Config };

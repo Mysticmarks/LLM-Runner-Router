@@ -12,7 +12,7 @@ import { PubSub } from 'graphql-subscriptions';
 import { GraphQLScalarType, Kind } from 'graphql';
 import { Logger } from '../utils/Logger.js';
 
-export class GraphQLAPI {
+class GraphQLAPI {
   constructor(config = {}) {
     this.logger = new Logger('GraphQLAPI');
     this.config = {
@@ -738,3 +738,5 @@ export class GraphQLAPI {
     this.subscriptionClients.clear();
   }
 }
+export default GraphQLAPI;
+export { GraphQLAPI };

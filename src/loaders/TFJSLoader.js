@@ -7,7 +7,7 @@
 import { BaseLoader } from './BaseLoader.js';
 import { Logger } from '../utils/Logger.js';
 
-export class TFJSLoader extends BaseLoader {
+class TFJSLoader extends BaseLoader {
   constructor() {
     super();
     this.logger = new Logger('TFJSLoader');
@@ -442,3 +442,5 @@ export class TFJSLoader extends BaseLoader {
     this.logger.info(`TensorFlow.js backend set to: ${backend}`);
   }
 }
+export default TFJSLoader;
+export { TFJSLoader };

@@ -107,3 +107,4 @@ class BaseLoader extends EventEmitter {
 }
 
 export default BaseLoader;
+export { BaseLoader };

@@ -29,7 +29,7 @@ export const RoutingStrategies = {
 /**
  * Intelligent Router - The brain of model orchestration
  */
-export class Router extends EventEmitter {
+class Router extends EventEmitter {
   constructor(registry, config = {}) {
     super();
     
@@ -446,4 +446,7 @@ export class Router extends EventEmitter {
   }
 }
 
+
+
 export default Router;
+export { Router };

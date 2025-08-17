@@ -9,7 +9,7 @@ import { Logger } from '../utils/Logger.js';
 
 const logger = new Logger('WASMEngine');
 
-export class WASMEngine extends BaseEngine {
+class WASMEngine extends BaseEngine {
   constructor() {
     super('WASM');
     this.wasmModule = null;
@@ -162,4 +162,7 @@ export class WASMEngine extends BaseEngine {
   }
 }
 
+
+
 export default WASMEngine;
+export { WASMEngine };

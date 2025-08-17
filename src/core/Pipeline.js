@@ -8,7 +8,7 @@ import { Logger } from '../utils/Logger.js';
 
 const logger = new Logger('Pipeline');
 
-export class Pipeline extends EventEmitter {
+class Pipeline extends EventEmitter {
   constructor(config = {}) {
     super();
     this.config = {
@@ -161,4 +161,6 @@ export class Pipeline extends EventEmitter {
   }
 }
 
+
 export default Pipeline;
+export { Pipeline };

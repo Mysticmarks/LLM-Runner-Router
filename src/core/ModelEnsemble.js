@@ -7,7 +7,7 @@
 import { Logger } from '../utils/Logger.js';
 import { EventEmitter } from 'events';
 
-export class ModelEnsemble extends EventEmitter {
+class ModelEnsemble extends EventEmitter {
   constructor(config = {}) {
     super();
     this.logger = new Logger('ModelEnsemble');
@@ -609,3 +609,6 @@ export class ModelEnsemble extends EventEmitter {
     this.initialized = false;
   }
 }
+
+export default ModelEnsemble;
+export { ModelEnsemble };

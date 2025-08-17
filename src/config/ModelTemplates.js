@@ -3,7 +3,7 @@
  * Automatically provides the correct template for each model type
  */
 
-export class ModelTemplates {
+class ModelTemplates {
     static templates = {
         // Llama family templates
         llama: {
@@ -286,4 +286,6 @@ export class ModelTemplates {
     }
 }
 
+
 export default ModelTemplates;
+export { ModelTemplates };

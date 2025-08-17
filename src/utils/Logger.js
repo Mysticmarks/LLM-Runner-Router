@@ -15,7 +15,7 @@ const colors = {
   cyan: '\x1b[36m'
 };
 
-export class Logger {
+class Logger {
   constructor(context = 'System') {
     this.context = context;
     this.level = process.env.LOG_LEVEL || 'info';
@@ -62,3 +62,4 @@ export class Logger {
 }
 
 export default Logger;
+export { Logger };

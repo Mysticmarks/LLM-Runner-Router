@@ -10,7 +10,7 @@ import { cpus } from 'os';
 import path from 'path';
 import { Logger } from '../utils/Logger.js';
 
-export class NodeNativeEngine extends EventEmitter {
+class NodeNativeEngine extends EventEmitter {
   constructor(config = {}) {
     super();
     this.logger = new Logger('NodeNativeEngine');
@@ -562,3 +562,5 @@ export class NodeNativeEngine extends EventEmitter {
     this.initialized = false;
   }
 }
+export default NodeNativeEngine;
+export { NodeNativeEngine };

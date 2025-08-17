@@ -11,7 +11,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { performance } from 'perf_hooks';
 
-export class CacheManager {
+class CacheManager {
   constructor(config = {}) {
     this.logger = new Logger('CacheManager');
     this.config = {
@@ -615,3 +615,5 @@ export class CacheManager {
     }
   }
 }
+export default CacheManager;
+export { CacheManager };

@@ -10,7 +10,7 @@ import path from 'path';
 
 const logger = new Logger('Registry');
 
-export class ModelRegistry extends EventEmitter {
+class ModelRegistry extends EventEmitter {
   constructor(config = {}) {
     super();
     this.config = {
@@ -180,4 +180,7 @@ export class ModelRegistry extends EventEmitter {
   }
 }
 
+
+
 export default ModelRegistry;
+export { ModelRegistry };

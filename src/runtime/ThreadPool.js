@@ -10,7 +10,7 @@ import { cpus } from 'os';
 import { Logger } from '../utils/Logger.js';
 import PQueue from 'p-queue';
 
-export class ThreadPool extends EventEmitter {
+class ThreadPool extends EventEmitter {
   constructor(config = {}) {
     super();
     this.logger = new Logger('ThreadPool');
@@ -676,3 +676,5 @@ export class ThreadPool extends EventEmitter {
     this.initialized = false;
   }
 }
+export default ThreadPool;
+export { ThreadPool };

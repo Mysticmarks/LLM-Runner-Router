@@ -12,7 +12,7 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 const logger = new Logger('SelfHealing');
 
-export class SelfHealingMonitor extends EventEmitter {
+class SelfHealingMonitor extends EventEmitter {
   constructor(router, config = {}) {
     super();
     
@@ -544,4 +544,6 @@ export class SelfHealingMonitor extends EventEmitter {
   }
 }
 
+
 export default SelfHealingMonitor;
+export { SelfHealingMonitor };

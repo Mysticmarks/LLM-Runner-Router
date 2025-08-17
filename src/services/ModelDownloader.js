@@ -13,7 +13,7 @@ import { Logger } from '../utils/Logger.js';
 const streamPipeline = promisify(pipeline);
 const logger = new Logger('ModelDownloader');
 
-export class ModelDownloader {
+class ModelDownloader {
   constructor() {
     this.downloads = new Map(); // Track active downloads
     this.modelsDir = path.join(process.cwd(), 'models');
@@ -324,4 +324,5 @@ export class ModelDownloader {
 
 // Export singleton instance
 export const modelDownloader = new ModelDownloader();
-export default modelDownloader;
+export default ModelDownloader;
+export { ModelDownloader };

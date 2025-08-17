@@ -107,7 +107,7 @@ class MockModel extends ModelInterface {
 /**
  * Mock Loader - Creates mock models for testing
  */
-export class MockLoader {
+class MockLoader {
   constructor() {
     this.format = 'mock';
     this.models = new Map();
@@ -155,3 +155,5 @@ export class MockLoader {
     return new MockModel(data);
   }
 }
+export default MockLoader;
+export { MockLoader };

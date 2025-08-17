@@ -9,7 +9,7 @@ import { Logger } from '../utils/Logger.js';
 
 const logger = new Logger('WebGPUEngine');
 
-export class WebGPUEngine extends BaseEngine {
+class WebGPUEngine extends BaseEngine {
   constructor() {
     super('WebGPU');
     this.device = null;
@@ -167,4 +167,7 @@ export class WebGPUEngine extends BaseEngine {
   }
 }
 
+
+
 export default WebGPUEngine;
+export { WebGPUEngine };

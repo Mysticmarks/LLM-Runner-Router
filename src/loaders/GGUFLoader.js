@@ -218,7 +218,7 @@ class GGUFModel extends ModelInterface {
 /**
  * GGUF Loader - The quantum gateway to quantized models
  */
-export class GGUFLoader {
+class GGUFLoader {
   static format = 'gguf';
   static extensions = ['.gguf', '.ggml', '.bin'];
 
@@ -331,3 +331,4 @@ export class GGUFLoader {
 }
 
 export default GGUFLoader;
+

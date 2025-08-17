@@ -9,7 +9,7 @@ import { Logger } from '../utils/Logger.js';
 import fs from 'fs/promises';
 import { createReadStream } from 'fs';
 
-export class SafetensorsLoader extends BaseLoader {
+class SafetensorsLoader extends BaseLoader {
   constructor() {
     super();
     this.logger = new Logger('SafetensorsLoader');
@@ -410,3 +410,5 @@ export class SafetensorsLoader extends BaseLoader {
     }
   }
 }
+export default SafetensorsLoader;
+export { SafetensorsLoader };

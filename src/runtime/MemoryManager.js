@@ -8,7 +8,7 @@ import { Logger } from '../utils/Logger.js';
 import os from 'os';
 import { performance } from 'perf_hooks';
 
-export class MemoryManager {
+class MemoryManager {
   constructor(config = {}) {
     this.logger = new Logger('MemoryManager');
     this.config = {
@@ -464,3 +464,5 @@ export class MemoryManager {
     this.performGarbageCollection();
   }
 }
+export default MemoryManager;
+export { MemoryManager };

@@ -8,7 +8,7 @@ import { Logger } from '../utils/Logger.js';
 
 const logger = new Logger('LoadBalancer');
 
-export class LoadBalancer {
+class LoadBalancer {
   constructor() {
     this.roundRobinIndex = 0;
     this.modelLoads = new Map();
@@ -212,4 +212,7 @@ export class LoadBalancer {
   }
 }
 
+
+
 export default LoadBalancer;
+export { LoadBalancer };

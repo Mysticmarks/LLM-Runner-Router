@@ -6,7 +6,7 @@
 
 import { Logger } from '../utils/Logger.js';
 
-export class EdgeEngine {
+class EdgeEngine {
   constructor(config = {}) {
     this.logger = new Logger('EdgeEngine');
     this.config = {
@@ -641,3 +641,5 @@ export class EdgeEngine {
     this.initialized = false;
   }
 }
+export default EdgeEngine;
+export { EdgeEngine };
