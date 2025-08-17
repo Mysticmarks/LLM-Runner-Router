@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: engines/WorkerEngine.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: engines/WorkerEngine.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Worker Engine
+ * Runs model inference in Web Workers or Service Workers
+ * Provides non-blocking execution in browser environments
+ */
+
+import { Logger } from '../utils/Logger.js';
+
+class WorkerEngine {
+  constructor(config = {}) {
+    this.logger = new Logger('WorkerEngine');
+    this.config = {
+      maxWorkers: config.maxWorkers || navigator?.hardwareConcurrency || 4,
+      workerScript: config.workerScript || null,
+      useSharedArrayBuffer: config.useSharedArrayBuffer !== false,
+      transferableObjects: config.transferableObjects !== false,
+      timeout: config.timeout || 30000,
+      retryAttempts: config.retryAttempts || 3,
+      loadBalancing: config.loadBalancing || 'round-robin'
+    };
+    
+    this.workers = [];
+    this.workerPool = [];
+    this.taskQueue = [];
+    this.currentWorkerIndex = 0;
+    this.initialized = false;
+    this.isServiceWorker = false;
+    this.isBrowser = typeof window !== 'undefined';
+  }
+
+  /**
+   * Initialize the engine
+   */
+  async initialize() {
+    if (this.initialized) return true;
+    
+    try {
+      this.logger.info('Initializing Worker Engine');
+      
+      // Detect environment
+      this.detectEnvironment();
+      
+      // Create worker pool
+      if (this.isBrowser) {
+        await this.createWorkerPool();
+      }
+      
+      this.initialized = true;
+      this.logger.info(`Worker Engine initialized with ${this.config.maxWorkers} workers`);
+      
+      return true;
+    } catch (error) {
+      this.logger.error(`Initialization failed: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Detect execution environment
+   */
+  detectEnvironment() {
+    if (typeof WorkerGlobalScope !== 'undefined' &amp;&amp; self instanceof WorkerGlobalScope) {
+      this.isServiceWorker = true;
+      this.logger.info('Running in Service Worker context');
+    } else if (typeof window !== 'undefined') {
+      this.isBrowser = true;
+      this.logger.info('Running in Browser context');
+    } else {
+      this.logger.info('Running in Node.js context (Worker threads)');
+    }
+  }
+
+  /**
+   * Create worker pool
+   */
+  async createWorkerPool() {
+    const workerCount = Math.min(this.config.maxWorkers, navigator.hardwareConcurrency || 4);
+    
+    for (let i = 0; i &lt; workerCount; i++) {
+      const worker = await this.createWorker(i);
+      if (worker) {
+        this.workerPool.push(worker);
+      }
+    }
+    
+    this.logger.info(`Worker pool created with ${this.workerPool.length} workers`);
+  }
+
+  /**
+   * Create a single worker
+   */
+  async createWorker(id) {
+    try {
+      let worker;
+      
+      if (this.config.workerScript) {
+        // Use provided worker script
+        worker = new Worker(this.config.workerScript);
+      } else {
+        // Create inline worker
+        const workerCode = this.getWorkerCode();
+        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(blob);
+        worker = new Worker(workerUrl);
+      }
+      
+      // Setup worker
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error(`Worker ${id} initialization timeout`));
+        }, 5000);
+        
+        worker.onmessage = (e) => {
+          if (e.data.type === 'ready') {
+            clearTimeout(timeout);
+            
+            const workerWrapper = {
+              id,
+              worker,
+              busy: false,
+              taskCount: 0,
+              lastUsed: Date.now()
+            };
+            
+            // Setup message handler
+            worker.onmessage = (event) => this.handleWorkerMessage(workerWrapper, event);
+            worker.onerror = (error) => this.handleWorkerError(workerWrapper, error);
+            
+            resolve(workerWrapper);
+          }
+        };
+        
+        worker.onerror = (error) => {
+          clearTimeout(timeout);
+          reject(error);
+        };
+        
+        // Initialize worker
+        worker.postMessage({ type: 'init', config: this.config });
+      });
+    } catch (error) {
+      this.logger.error(`Failed to create worker ${id}: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Get inline worker code
+   */
+  getWorkerCode() {
+    return `
+      // Worker Engine - Inline Worker Code
+      let initialized = false;
+      let models = new Map();
+      let config = {};
+      
+      // Message handler
+      self.onmessage = async function(e) {
+        const { type, id, data } = e.data;
+        
+        try {
+          let result;
+          
+          switch (type) {
+            case 'init':
+              config = data.config || {};
+              initialized = true;
+              self.postMessage({ type: 'ready' });
+              break;
+              
+            case 'loadModel':
+              result = await loadModel(data);
+              self.postMessage({ type: 'modelLoaded', id, result });
+              break;
+              
+            case 'inference':
+              result = await runInference(data);
+              self.postMessage({ type: 'result', id, result });
+              break;
+              
+            case 'compute':
+              result = await compute(data);
+              self.postMessage({ type: 'result', id, result });
+              break;
+              
+            case 'transform':
+              result = await transform(data);
+              self.postMessage({ type: 'result', id, result });
+              break;
+              
+            default:
+              throw new Error('Unknown message type: ' + type);
+          }
+        } catch (error) {
+          self.postMessage({ 
+            type: 'error', 
+            id, 
+            error: error.message 
+          });
+        }
+      };
+      
+      // Load model in worker
+      async function loadModel(data) {
+        const { modelId, source, format } = data;
+        
+        // Simulate model loading
+        models.set(modelId, {
+          source,
+          format,
+          loaded: true,
+          timestamp: Date.now()
+        });
+        
+        return { modelId, loaded: true };
+      }
+      
+      // Run inference
+      async function runInference(data) {
+        const { modelId, input } = data;
+        const model = models.get(modelId);
+        
+        if (!model) {
+          throw new Error('Model not loaded: ' + modelId);
+        }
+        
+        // Simulate inference
+        const output = processInput(input);
+        
+        return {
+          modelId,
+          output,
+          duration: Math.random() * 100
+        };
+      }
+      
+      // Compute operation
+      async function compute(data) {
+        const { operation, input } = data;
+        
+        switch (operation) {
+          case 'matmul':
+            return matrixMultiply(input.a, input.b);
+          case 'activation':
+            return applyActivation(input.tensor, input.type);
+          case 'normalize':
+            return normalize(input.tensor);
+          default:
+            return input;
+        }
+      }
+      
+      // Transform operation
+      async function transform(data) {
+        const { tensor, shape, operation } = data;
+        
+        switch (operation) {
+          case 'reshape':
+            return reshape(tensor, shape);
+          case 'transpose':
+            return transpose(tensor);
+          case 'pad':
+            return pad(tensor, data.padding);
+          default:
+            return tensor;
+        }
+      }
+      
+      // Helper functions
+      function processInput(input) {
+        if (Array.isArray(input)) {
+          return input.map(val => Math.random());
+        }
+        return Math.random();
+      }
+      
+      function matrixMultiply(a, b) {
+        // Simplified matrix multiplication
+        const result = [];
+        for (let i = 0; i &lt; a.length; i++) {
+          result[i] = [];
+          for (let j = 0; j &lt; b[0].length; j++) {
+            let sum = 0;
+            for (let k = 0; k &lt; b.length; k++) {
+              sum += a[i][k] * b[k][j];
+            }
+            result[i][j] = sum;
+          }
+        }
+        return result;
+      }
+      
+      function applyActivation(tensor, type) {
+        const flat = tensor.flat();
+        switch (type) {
+          case 'relu':
+            return flat.map(v => Math.max(0, v));
+          case 'sigmoid':
+            return flat.map(v => 1 / (1 + Math.exp(-v)));
+          case 'tanh':
+            return flat.map(v => Math.tanh(v));
+          default:
+            return flat;
+        }
+      }
+      
+      function normalize(tensor) {
+        const flat = tensor.flat();
+        const mean = flat.reduce((a, b) => a + b, 0) / flat.length;
+        const variance = flat.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / flat.length;
+        const std = Math.sqrt(variance);
+        return flat.map(v => (v - mean) / (std + 1e-7));
+      }
+      
+      function reshape(tensor, shape) {
+        return { data: tensor.flat(), shape };
+      }
+      
+      function transpose(matrix) {
+        if (!Array.isArray(matrix) || !Array.isArray(matrix[0])) {
+          return matrix;
+        }
+        return matrix[0].map((_, i) => matrix.map(row => row[i]));
+      }
+      
+      function pad(tensor, padding) {
+        // Simplified padding
+        return tensor.map(row => [0, ...row, 0]);
+      }
+      
+      // Signal ready
+      self.postMessage({ type: 'ready' });
+    `;
+  }
+
+  /**
+   * Handle worker message
+   */
+  handleWorkerMessage(workerWrapper, event) {
+    const { type, id, result, error } = event.data;
+    
+    // Find pending task
+    const taskIndex = this.taskQueue.findIndex(t => t.id === id);
+    if (taskIndex === -1) return;
+    
+    const task = this.taskQueue[taskIndex];
+    this.taskQueue.splice(taskIndex, 1);
+    
+    // Mark worker as available
+    workerWrapper.busy = false;
+    workerWrapper.taskCount++;
+    workerWrapper.lastUsed = Date.now();
+    
+    // Process result
+    if (type === 'error') {
+      task.reject(new Error(error));
+    } else {
+      task.resolve(result);
+    }
+    
+    // Process next task in queue
+    this.processQueue();
+  }
+
+  /**
+   * Handle worker error
+   */
+  handleWorkerError(workerWrapper, error) {
+    this.logger.error(`Worker ${workerWrapper.id} error: ${error.message}`);
+    
+    // Mark worker as available (might be in error state)
+    workerWrapper.busy = false;
+    
+    // Restart worker if needed
+    this.restartWorker(workerWrapper);
+  }
+
+  /**
+   * Restart a worker
+   */
+  async restartWorker(workerWrapper) {
+    try {
+      // Terminate old worker
+      workerWrapper.worker.terminate();
+      
+      // Create new worker
+      const newWorker = await this.createWorker(workerWrapper.id);
+      if (newWorker) {
+        const index = this.workerPool.findIndex(w => w.id === workerWrapper.id);
+        if (index !== -1) {
+          this.workerPool[index] = newWorker;
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Failed to restart worker: ${error.message}`);
+    }
+  }
+
+  /**
+   * Execute task using worker
+   */
+  async execute(type, data) {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+    
+    return new Promise((resolve, reject) => {
+      const taskId = `task-${Date.now()}-${Math.random()}`;
+      
+      const task = {
+        id: taskId,
+        type,
+        data,
+        resolve,
+        reject,
+        attempts: 0,
+        created: Date.now()
+      };
+      
+      // Add to queue
+      this.taskQueue.push(task);
+      
+      // Process queue
+      this.processQueue();
+      
+      // Set timeout
+      setTimeout(() => {
+        const index = this.taskQueue.findIndex(t => t.id === taskId);
+        if (index !== -1) {
+          this.taskQueue.splice(index, 1);
+          reject(new Error('Task timeout'));
+        }
+      }, this.config.timeout);
+    });
+  }
+
+  /**
+   * Process task queue
+   */
+  processQueue() {
+    if (this.taskQueue.length === 0) return;
+    
+    // Find available worker based on load balancing strategy
+    const worker = this.selectWorker();
+    if (!worker) return;
+    
+    // Get next task
+    const task = this.taskQueue.find(t => t.attempts &lt; this.config.retryAttempts);
+    if (!task) return;
+    
+    // Mark worker as busy
+    worker.busy = true;
+    task.attempts++;
+    
+    // Send task to worker
+    worker.worker.postMessage({
+      type: task.type,
+      id: task.id,
+      data: task.data
+    });
+  }
+
+  /**
+   * Select worker based on load balancing strategy
+   */
+  selectWorker() {
+    const availableWorkers = this.workerPool.filter(w => !w.busy);
+    if (availableWorkers.length === 0) return null;
+    
+    switch (this.config.loadBalancing) {
+      case 'round-robin':
+        this.currentWorkerIndex = (this.currentWorkerIndex + 1) % availableWorkers.length;
+        return availableWorkers[this.currentWorkerIndex];
+        
+      case 'least-used':
+        return availableWorkers.reduce((min, w) => 
+          w.taskCount &lt; min.taskCount ? w : min
+        );
+        
+      case 'random':
+        return availableWorkers[Math.floor(Math.random() * availableWorkers.length)];
+        
+      default:
+        return availableWorkers[0];
+    }
+  }
+
+  /**
+   * Load model in worker
+   */
+  async loadModel(modelId, source, format) {
+    return await this.execute('loadModel', { modelId, source, format });
+  }
+
+  /**
+   * Run inference in worker
+   */
+  async inference(modelId, input) {
+    return await this.execute('inference', { modelId, input });
+  }
+
+  /**
+   * Run computation in worker
+   */
+  async compute(operation, input) {
+    return await this.execute('compute', { operation, input });
+  }
+
+  /**
+   * Run transformation in worker
+   */
+  async transform(tensor, shape, operation) {
+    return await this.execute('transform', { tensor, shape, operation });
+  }
+
+  /**
+   * Get engine info
+   */
+  getInfo() {
+    return {
+      name: 'WorkerEngine',
+      initialized: this.initialized,
+      isBrowser: this.isBrowser,
+      isServiceWorker: this.isServiceWorker,
+      workers: this.workerPool.length,
+      busyWorkers: this.workerPool.filter(w => w.busy).length,
+      queueLength: this.taskQueue.length,
+      config: this.config
+    };
+  }
+
+  /**
+   * Cleanup resources
+   */
+  async cleanup() {
+    this.logger.info('Cleaning up Worker Engine');
+    
+    // Terminate all workers
+    for (const wrapper of this.workerPool) {
+      wrapper.worker.terminate();
+    }
+    
+    // Clear queues
+    this.workerPool = [];
+    this.taskQueue = [];
+    this.initialized = false;
+  }
+}
+export default WorkerEngine;
+export { WorkerEngine };
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ABTestingManager.html">ABTestingManager</a></li><li><a href="AuditLogger.html">AuditLogger</a></li><li><a href="AuthMiddleware.html">AuthMiddleware</a></li><li><a href="BPETokenizer.html">BPETokenizer</a></li><li><a href="BaseEngine.html">BaseEngine</a></li><li><a href="BaseLoader.html">BaseLoader</a></li><li><a href="BinaryLoader.html">BinaryLoader</a></li><li><a href="BinaryModel.html">BinaryModel</a></li><li><a href="BitNetLoader.html">BitNetLoader</a></li><li><a href="ConversionConfig.html">ConversionConfig</a></li><li><a href="ConversionResult.html">ConversionResult</a></li><li><a href="EnterpriseAuthManager.html">EnterpriseAuthManager</a></li><li><a href="EnterpriseManager.html">EnterpriseManager</a></li><li><a href="EnterpriseRouter.html">EnterpriseRouter</a></li><li><a href="FormatConverter.html">FormatConverter</a></li><li><a href="GGUFLoader.html">GGUFLoader</a></li><li><a href="GGUFModel.html">GGUFModel</a></li><li><a href="GRPCClient.html">GRPCClient</a></li><li><a href="LLMRouter.html">LLMRouter</a></li><li><a href="MockLoader.html">MockLoader</a></li><li><a href="MockModel.html">MockModel</a></li><li><a href="ModelInterface.html">ModelInterface</a></li><li><a href="ModelQuantizer.html">ModelQuantizer</a></li><li><a href="ModelTemplates.html">ModelTemplates</a></li><li><a href="MultiTenancyManager.html">MultiTenancyManager</a></li><li><a href="PyTorchLoader.html">PyTorchLoader</a></li><li><a href="PyTorchModel.html">PyTorchModel</a></li><li><a href="QuantizationConfig.html">QuantizationConfig</a></li><li><a href="QuantizationResult.html">QuantizationResult</a></li><li><a href="Router.html">Router</a></li><li><a href="SLAMonitor.html">SLAMonitor</a></li><li><a href="SentencePieceTokenizer.html">SentencePieceTokenizer</a></li><li><a href="SimpleLoader.html">SimpleLoader</a></li><li><a href="SimpleModel.html">SimpleModel</a></li><li><a href="TokenizationResult.html">TokenizationResult</a></li><li><a href="TokenizerConfig.html">TokenizerConfig</a></li><li><a href="UniversalTokenizer.html">UniversalTokenizer</a></li><li><a href="ValidationConfig.html">ValidationConfig</a></li><li><a href="ValidationSuite.html">ValidationSuite</a></li><li><a href="ValidationSuiteResult.html">ValidationSuiteResult</a></li><li><a href="ValidationTestResult.html">ValidationTestResult</a></li><li><a href="WordPieceTokenizer.html">WordPieceTokenizer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Architectures">Architectures</a></li><li><a href="global.html#AuditEventTypes">AuditEventTypes</a></li><li><a href="global.html#AuthMethods">AuthMethods</a></li><li><a href="global.html#BreachSeverity">BreachSeverity</a></li><li><a href="global.html#Capabilities">Capabilities</a></li><li><a href="global.html#ComplianceFrameworks">ComplianceFrameworks</a></li><li><a href="global.html#EnterpriseFeatures">EnterpriseFeatures</a></li><li><a href="global.html#ExperimentStatus">ExperimentStatus</a></li><li><a href="global.html#IsolationLevels">IsolationLevels</a></li><li><a href="global.html#ModelFormat">ModelFormat</a></li><li><a href="global.html#ModelFormats">ModelFormats</a></li><li><a href="global.html#Permissions">Permissions</a></li><li><a href="global.html#QuantizationMethod">QuantizationMethod</a></li><li><a href="global.html#QuantizationPrecision">QuantizationPrecision</a></li><li><a href="global.html#QuotaTypes">QuotaTypes</a></li><li><a href="global.html#RiskLevels">RiskLevels</a></li><li><a href="global.html#RoutingStrategies">RoutingStrategies</a></li><li><a href="global.html#SLAMetricTypes">SLAMetricTypes</a></li><li><a href="global.html#SLAStatus">SLAStatus</a></li><li><a href="global.html#SessionTypes">SessionTypes</a></li><li><a href="global.html#SplittingAlgorithms">SplittingAlgorithms</a></li><li><a href="global.html#StatisticalTests">StatisticalTests</a></li><li><a href="global.html#TimeWindows">TimeWindows</a></li><li><a href="global.html#TokenizerType">TokenizerType</a></li><li><a href="global.html#UserRoles">UserRoles</a></li><li><a href="global.html#ValidationSeverity">ValidationSeverity</a></li><li><a href="global.html#ValidationTestType">ValidationTestType</a></li><li><a href="global.html#colors">colors</a></li><li><a href="global.html#createEnterpriseExpressRoutes">createEnterpriseExpressRoutes</a></li><li><a href="global.html#createEnterpriseRouter">createEnterpriseRouter</a></li><li><a href="global.html#createEnterpriseWebSocketHandlers">createEnterpriseWebSocketHandlers</a></li><li><a href="global.html#defaultEnterpriseConfig">defaultEnterpriseConfig</a></li><li><a href="global.html#enterpriseVersion">enterpriseVersion</a></li><li><a href="global.html#errorMonitoringMiddleware">errorMonitoringMiddleware</a></li><li><a href="global.html#getEnabledFeatures">getEnabledFeatures</a></li><li><a href="global.html#getMonitoringStatus">getMonitoringStatus</a></li><li><a href="global.html#httpMonitoringMiddleware">httpMonitoringMiddleware</a></li><li><a href="global.html#isFeatureEnabled">isFeatureEnabled</a></li><li><a href="global.html#recordCustomMetric">recordCustomMetric</a></li><li><a href="global.html#registerAlertRule">registerAlertRule</a></li><li><a href="global.html#registerDependency">registerDependency</a></li><li><a href="global.html#registerHealthCheck">registerHealthCheck</a></li><li><a href="global.html#setupMonitoring">setupMonitoring</a></li><li><a href="global.html#startPerformanceProfile">startPerformanceProfile</a></li><li><a href="global.html#validateEnterpriseConfig">validateEnterpriseConfig</a></li><li><a href="global.html#withCacheMonitoring">withCacheMonitoring</a></li><li><a href="global.html#withDatabaseMonitoring">withDatabaseMonitoring</a></li><li><a href="global.html#withModelMonitoring">withModelMonitoring</a></li><li><a href="global.html#withQueueMonitoring">withQueueMonitoring</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Aug 17 2025 22:28:58 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

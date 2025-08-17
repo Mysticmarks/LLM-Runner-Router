@@ -1,0 +1,29 @@
+# Core HTTP and WebSocket dependencies
+httpx>=0.25.0
+websockets>=12.0
+
+# Data validation and parsing
+pydantic>=2.5.0
+
+# gRPC support
+grpcio>=1.60.0
+grpcio-tools>=1.60.0
+protobuf>=4.25.0
+
+# Async utilities
+asyncio-throttle>=1.0.2
+
+# Logging
+structlog>=23.2.0
+
+# Retry logic
+tenacity>=8.2.0
+
+# File upload support
+python-multipart>=0.0.6
+
+# Optional: Streaming response parsing
+orjson>=3.9.0
+
+# Optional: Progress bars
+tqdm>=4.66.0

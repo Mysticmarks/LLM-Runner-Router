@@ -1,0 +1,839 @@
+/**
+ * 🚨 Alerting System - Intelligent Notification Engine
+ * Multi-channel alerting with escalation policies and smart aggregation
+ * Echo AI Systems - Never miss what matters
+ */
+
+import EventEmitter from 'events';
+import { promises as fs } from 'fs';
+import path from 'path';
+import Logger from '../utils/Logger.js';
+
+class AlertingSystem extends EventEmitter {
+  constructor(config = {}) {
+    super();
+    this.logger = new Logger('Alerting');
+    this.config = {
+      enabled: config.enabled ?? true,
+      defaultSeverity: config.defaultSeverity || 'warning',
+      aggregationWindow: config.aggregationWindow || 300000, // 5 minutes
+      escalationDelay: config.escalationDelay || 900000, // 15 minutes
+      maxRetries: config.maxRetries || 3,
+      retryDelay: config.retryDelay || 5000, // 5 seconds
+      
+      // Alert channels configuration
+      channels: {
+        email: {
+          enabled: config.channels?.email?.enabled ?? false,
+          smtp: config.channels?.email?.smtp || {},
+          from: config.channels?.email?.from || 'alerts@llm-router.local',
+          to: config.channels?.email?.to || [],
+        },
+        slack: {
+          enabled: config.channels?.slack?.enabled ?? false,
+          webhookUrl: config.channels?.slack?.webhookUrl || '',
+          channel: config.channels?.slack?.channel || '#alerts',
+          username: config.channels?.slack?.username || 'LLM Router',
+        },
+        webhook: {
+          enabled: config.channels?.webhook?.enabled ?? false,
+          urls: config.channels?.webhook?.urls || [],
+          headers: config.channels?.webhook?.headers || {},
+        },
+        pagerduty: {
+          enabled: config.channels?.pagerduty?.enabled ?? false,
+          routingKey: config.channels?.pagerduty?.routingKey || '',
+          apiUrl: config.channels?.pagerduty?.apiUrl || 'https://events.pagerduty.com/v2/enqueue',
+        },
+        ...config.channels,
+      },
+      
+      // Alert rules configuration
+      rules: config.rules || [],
+      
+      // Storage configuration
+      storage: {
+        enabled: config.storage?.enabled ?? true,
+        maxHistory: config.storage?.maxHistory || 10000,
+        persistInterval: config.storage?.persistInterval || 60000, // 1 minute
+        filePath: config.storage?.filePath || './alerts.json',
+      },
+      
+      ...config,
+    };
+
+    this.alerts = new Map();
+    this.alertHistory = [];
+    this.aggregatedAlerts = new Map();
+    this.escalationTimers = new Map();
+    this.rules = new Map();
+    this.isRunning = false;
+    
+    this._loadRules();
+    this._setupPeriodicTasks();
+  }
+
+  /**
+   * Load alert rules from configuration
+   */
+  _loadRules() {
+    this.config.rules.forEach(rule => {
+      this.addRule(rule.id, rule);
+    });
+    
+    // Add default rules
+    this._addDefaultRules();
+  }
+
+  /**
+   * Add default alerting rules
+   */
+  _addDefaultRules() {
+    // High error rate rule
+    this.addRule('high_error_rate', {
+      name: 'High Error Rate',
+      description: 'Alert when error rate exceeds threshold',
+      severity: 'critical',
+      condition: (metrics) => {
+        const errorRate = metrics.errorRate || 0;
+        return errorRate > 0.05; // 5%
+      },
+      channels: ['slack', 'email'],
+      aggregationKey: 'error_rate',
+      escalation: true,
+    });
+
+    // High memory usage rule
+    this.addRule('high_memory_usage', {
+      name: 'High Memory Usage',
+      description: 'Alert when memory usage exceeds threshold',
+      severity: 'warning',
+      condition: (metrics) => {
+        const memoryUsage = metrics.memoryUsage || 0;
+        return memoryUsage > 0.85; // 85%
+      },
+      channels: ['slack'],
+      aggregationKey: 'memory_usage',
+    });
+
+    // Model inference failures
+    this.addRule('model_inference_failures', {
+      name: 'Model Inference Failures',
+      description: 'Alert when model inference fails repeatedly',
+      severity: 'critical',
+      condition: (metrics) => {
+        const failureRate = metrics.modelFailureRate || 0;
+        return failureRate > 0.1; // 10%
+      },
+      channels: ['slack', 'pagerduty'],
+      aggregationKey: 'model_failures',
+      escalation: true,
+    });
+
+    // System health degradation
+    this.addRule('system_health_degraded', {
+      name: 'System Health Degraded',
+      description: 'Alert when system health is degraded',
+      severity: 'warning',
+      condition: (metrics) => {
+        return metrics.healthStatus === 'degraded' || metrics.healthStatus === 'unhealthy';
+      },
+      channels: ['slack'],
+      aggregationKey: 'health_status',
+    });
+
+    // Performance degradation
+    this.addRule('performance_degradation', {
+      name: 'Performance Degradation',
+      description: 'Alert when response times are consistently high',
+      severity: 'warning',
+      condition: (metrics) => {
+        const avgResponseTime = metrics.avgResponseTime || 0;
+        return avgResponseTime > 5000; // 5 seconds
+      },
+      channels: ['slack'],
+      aggregationKey: 'performance',
+    });
+
+    this.logger.info('Default alert rules loaded');
+  }
+
+  /**
+   * Setup periodic tasks
+   */
+  _setupPeriodicTasks() {
+    // Periodic alert processing
+    setInterval(() => {
+      if (this.isRunning) {
+        this._processAggregatedAlerts();
+        this._cleanupOldAlerts();
+      }
+    }, 60000); // Every minute
+
+    // Periodic storage persistence
+    if (this.config.storage.enabled) {
+      setInterval(() => {
+        if (this.isRunning) {
+          this._persistAlerts();
+        }
+      }, this.config.storage.persistInterval);
+    }
+  }
+
+  /**
+   * Start the alerting system
+   */
+  async start() {
+    if (this.isRunning) {
+      this.logger.warn('Alerting system already running');
+      return;
+    }
+
+    this.isRunning = true;
+    this.logger.info('Starting alerting system');
+
+    // Load persisted alerts
+    if (this.config.storage.enabled) {
+      await this._loadPersistedAlerts();
+    }
+
+    this.emit('started');
+  }
+
+  /**
+   * Stop the alerting system
+   */
+  async stop() {
+    if (!this.isRunning) {
+      return;
+    }
+
+    this.isRunning = false;
+    this.logger.info('Stopping alerting system');
+
+    // Clear escalation timers
+    for (const timer of this.escalationTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.escalationTimers.clear();
+
+    // Persist final state
+    if (this.config.storage.enabled) {
+      await this._persistAlerts();
+    }
+
+    this.emit('stopped');
+  }
+
+  /**
+   * Add an alert rule
+   */
+  addRule(id, rule) {
+    this.rules.set(id, {
+      id,
+      enabled: true,
+      ...rule,
+    });
+    
+    this.logger.info(`Alert rule added: ${id}`);
+  }
+
+  /**
+   * Remove an alert rule
+   */
+  removeRule(id) {
+    if (this.rules.delete(id)) {
+      this.logger.info(`Alert rule removed: ${id}`);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Enable/disable an alert rule
+   */
+  toggleRule(id, enabled) {
+    const rule = this.rules.get(id);
+    if (rule) {
+      rule.enabled = enabled;
+      this.logger.info(`Alert rule ${id} ${enabled ? 'enabled' : 'disabled'}`);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Evaluate metrics against all rules
+   */
+  evaluateMetrics(metrics) {
+    if (!this.config.enabled || !this.isRunning) {
+      return;
+    }
+
+    for (const [ruleId, rule] of this.rules) {
+      if (!rule.enabled) continue;
+
+      try {
+        if (rule.condition(metrics)) {
+          this.triggerAlert(ruleId, {
+            message: rule.description,
+            severity: rule.severity,
+            metrics,
+            rule,
+          });
+        }
+      } catch (error) {
+        this.logger.error(`Error evaluating rule ${ruleId}:`, error);
+      }
+    }
+  }
+
+  /**
+   * Trigger an alert
+   */
+  async triggerAlert(ruleId, alertData) {
+    const rule = this.rules.get(ruleId);
+    if (!rule) {
+      this.logger.error(`Unknown rule: ${ruleId}`);
+      return;
+    }
+
+    const alertId = `${ruleId}_${Date.now()}`;
+    const alert = {
+      id: alertId,
+      ruleId,
+      timestamp: new Date(),
+      severity: alertData.severity || rule.severity || this.config.defaultSeverity,
+      message: alertData.message || rule.description,
+      data: alertData,
+      rule,
+      status: 'active',
+      notificationsSent: [],
+      escalated: false,
+    };
+
+    // Check for aggregation
+    if (rule.aggregationKey) {
+      this._aggregateAlert(rule.aggregationKey, alert);
+      return;
+    }
+
+    // Process alert immediately
+    await this._processAlert(alert);
+  }
+
+  /**
+   * Aggregate similar alerts
+   */
+  _aggregateAlert(aggregationKey, alert) {
+    if (!this.aggregatedAlerts.has(aggregationKey)) {
+      this.aggregatedAlerts.set(aggregationKey, {
+        key: aggregationKey,
+        alerts: [],
+        firstAlert: alert,
+        lastAlert: alert,
+        count: 0,
+        processed: false,
+      });
+
+      // Schedule processing after aggregation window
+      setTimeout(() => {
+        this._processAggregatedAlert(aggregationKey);
+      }, this.config.aggregationWindow);
+    }
+
+    const aggregated = this.aggregatedAlerts.get(aggregationKey);
+    aggregated.alerts.push(alert);
+    aggregated.lastAlert = alert;
+    aggregated.count++;
+  }
+
+  /**
+   * Process aggregated alerts
+   */
+  _processAggregatedAlerts() {
+    for (const [key, aggregated] of this.aggregatedAlerts) {
+      if (!aggregated.processed && Date.now() - aggregated.firstAlert.timestamp.getTime() >= this.config.aggregationWindow) {
+        this._processAggregatedAlert(key);
+      }
+    }
+  }
+
+  /**
+   * Process a single aggregated alert
+   */
+  async _processAggregatedAlert(aggregationKey) {
+    const aggregated = this.aggregatedAlerts.get(aggregationKey);
+    if (!aggregated || aggregated.processed) return;
+
+    aggregated.processed = true;
+
+    const alert = {
+      ...aggregated.firstAlert,
+      id: `aggregated_${aggregationKey}_${Date.now()}`,
+      message: aggregated.count > 1 
+        ? `${aggregated.firstAlert.message} (${aggregated.count} occurrences)`
+        : aggregated.firstAlert.message,
+      aggregated: true,
+      aggregationData: {
+        key: aggregationKey,
+        count: aggregated.count,
+        timespan: aggregated.lastAlert.timestamp.getTime() - aggregated.firstAlert.timestamp.getTime(),
+      },
+    };
+
+    await this._processAlert(alert);
+
+    // Clean up aggregated alerts
+    this.aggregatedAlerts.delete(aggregationKey);
+  }
+
+  /**
+   * Process an individual alert
+   */
+  async _processAlert(alert) {
+    this.alerts.set(alert.id, alert);
+    this.alertHistory.push(alert);
+
+    this.logger.warn(`Alert triggered: ${alert.message}`, {
+      severity: alert.severity,
+      ruleId: alert.ruleId,
+    });
+
+    // Send notifications
+    await this._sendNotifications(alert);
+
+    // Setup escalation if configured
+    if (alert.rule.escalation && !alert.escalated) {
+      this._setupEscalation(alert);
+    }
+
+    this.emit('alert', alert);
+  }
+
+  /**
+   * Send notifications for an alert
+   */
+  async _sendNotifications(alert) {
+    const channels = alert.rule.channels || ['slack'];
+    
+    for (const channelName of channels) {
+      if (!this.config.channels[channelName]?.enabled) {
+        continue;
+      }
+
+      try {
+        await this._sendNotification(channelName, alert);
+        alert.notificationsSent.push({
+          channel: channelName,
+          timestamp: new Date(),
+          status: 'success',
+        });
+      } catch (error) {
+        this.logger.error(`Failed to send ${channelName} notification:`, error);
+        alert.notificationsSent.push({
+          channel: channelName,
+          timestamp: new Date(),
+          status: 'failed',
+          error: error.message,
+        });
+      }
+    }
+  }
+
+  /**
+   * Send notification to specific channel
+   */
+  async _sendNotification(channelName, alert) {
+    switch (channelName) {
+      case 'slack':
+        return this._sendSlackNotification(alert);
+      case 'email':
+        return this._sendEmailNotification(alert);
+      case 'webhook':
+        return this._sendWebhookNotification(alert);
+      case 'pagerduty':
+        return this._sendPagerDutyNotification(alert);
+      default:
+        throw new Error(`Unknown notification channel: ${channelName}`);
+    }
+  }
+
+  /**
+   * Send Slack notification
+   */
+  async _sendSlackNotification(alert) {
+    const config = this.config.channels.slack;
+    if (!config.webhookUrl) {
+      throw new Error('Slack webhook URL not configured');
+    }
+
+    const emoji = this._getSeverityEmoji(alert.severity);
+    const color = this._getSeverityColor(alert.severity);
+    
+    const payload = {
+      channel: config.channel,
+      username: config.username,
+      icon_emoji: emoji,
+      attachments: [{
+        color,
+        title: `${emoji} ${alert.severity.toUpperCase()} Alert`,
+        text: alert.message,
+        fields: [
+          {
+            title: 'Rule',
+            value: alert.ruleId,
+            short: true,
+          },
+          {
+            title: 'Timestamp',
+            value: alert.timestamp.toISOString(),
+            short: true,
+          },
+        ],
+        footer: 'LLM Router Monitoring',
+        ts: Math.floor(alert.timestamp.getTime() / 1000),
+      }],
+    };
+
+    if (alert.aggregated) {
+      payload.attachments[0].fields.push({
+        title: 'Occurrences',
+        value: alert.aggregationData.count.toString(),
+        short: true,
+      });
+    }
+
+    const response = await fetch(config.webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Slack API error: ${response.status}`);
+    }
+  }
+
+  /**
+   * Send email notification
+   */
+  async _sendEmailNotification(alert) {
+    const config = this.config.channels.email;
+    
+    // Email implementation would require a proper email library like nodemailer
+    // This is a placeholder for the structure
+    const emailData = {
+      from: config.from,
+      to: config.to,
+      subject: `[${alert.severity.toUpperCase()}] ${alert.message}`,
+      html: this._generateEmailHTML(alert),
+    };
+
+    // Placeholder for actual email sending
+    this.logger.info('Email notification would be sent:', emailData);
+  }
+
+  /**
+   * Send webhook notification
+   */
+  async _sendWebhookNotification(alert) {
+    const config = this.config.channels.webhook;
+    
+    const payload = {
+      alert,
+      timestamp: alert.timestamp.toISOString(),
+      severity: alert.severity,
+      message: alert.message,
+    };
+
+    for (const url of config.urls) {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...config.headers,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Webhook error: ${response.status}`);
+      }
+    }
+  }
+
+  /**
+   * Send PagerDuty notification
+   */
+  async _sendPagerDutyNotification(alert) {
+    const config = this.config.channels.pagerduty;
+    if (!config.routingKey) {
+      throw new Error('PagerDuty routing key not configured');
+    }
+
+    const payload = {
+      routing_key: config.routingKey,
+      event_action: 'trigger',
+      dedup_key: alert.ruleId,
+      payload: {
+        summary: alert.message,
+        severity: alert.severity,
+        source: 'llm-router',
+        timestamp: alert.timestamp.toISOString(),
+        custom_details: {
+          rule_id: alert.ruleId,
+          alert_id: alert.id,
+          aggregated: alert.aggregated || false,
+        },
+      },
+    };
+
+    const response = await fetch(config.apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`PagerDuty API error: ${response.status}`);
+    }
+  }
+
+  /**
+   * Setup escalation for an alert
+   */
+  _setupEscalation(alert) {
+    const timer = setTimeout(async () => {
+      if (this.alerts.has(alert.id) && !alert.escalated) {
+        alert.escalated = true;
+        alert.severity = this._escalateSeverity(alert.severity);
+        
+        this.logger.warn(`Alert escalated: ${alert.id}`, {
+          newSeverity: alert.severity,
+        });
+
+        // Send escalated notifications
+        await this._sendNotifications(alert);
+        
+        this.emit('alert-escalated', alert);
+      }
+      
+      this.escalationTimers.delete(alert.id);
+    }, this.config.escalationDelay);
+
+    this.escalationTimers.set(alert.id, timer);
+  }
+
+  /**
+   * Escalate severity level
+   */
+  _escalateSeverity(currentSeverity) {
+    const escalationMap = {
+      'info': 'warning',
+      'warning': 'critical',
+      'critical': 'critical', // Already at highest level
+    };
+    
+    return escalationMap[currentSeverity] || 'critical';
+  }
+
+  /**
+   * Get emoji for severity level
+   */
+  _getSeverityEmoji(severity) {
+    const emojiMap = {
+      'info': ':information_source:',
+      'warning': ':warning:',
+      'critical': ':rotating_light:',
+    };
+    
+    return emojiMap[severity] || ':question:';
+  }
+
+  /**
+   * Get color for severity level
+   */
+  _getSeverityColor(severity) {
+    const colorMap = {
+      'info': '#36a64f',
+      'warning': '#ff9500',
+      'critical': '#ff0000',
+    };
+    
+    return colorMap[severity] || '#808080';
+  }
+
+  /**
+   * Generate email HTML
+   */
+  _generateEmailHTML(alert) {
+    return `
+      <html>
+        <body>
+          <h2>Alert: ${alert.message}</h2>
+          <p><strong>Severity:</strong> ${alert.severity}</p>
+          <p><strong>Rule:</strong> ${alert.ruleId}</p>
+          <p><strong>Timestamp:</strong> ${alert.timestamp.toISOString()}</p>
+          ${alert.aggregated ? `<p><strong>Occurrences:</strong> ${alert.aggregationData.count}</p>` : ''}
+          <hr>
+          <p><em>LLM Router Monitoring System</em></p>
+        </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Resolve an alert
+   */
+  resolveAlert(alertId) {
+    const alert = this.alerts.get(alertId);
+    if (alert) {
+      alert.status = 'resolved';
+      alert.resolvedAt = new Date();
+      
+      // Clear escalation timer
+      const timer = this.escalationTimers.get(alertId);
+      if (timer) {
+        clearTimeout(timer);
+        this.escalationTimers.delete(alertId);
+      }
+      
+      this.logger.info(`Alert resolved: ${alertId}`);
+      this.emit('alert-resolved', alert);
+      
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Clean up old alerts
+   */
+  _cleanupOldAlerts() {
+    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+    const cutoff = Date.now() - maxAge;
+    
+    let removed = 0;
+    for (const [alertId, alert] of this.alerts) {
+      if (alert.timestamp.getTime() < cutoff) {
+        this.alerts.delete(alertId);
+        removed++;
+      }
+    }
+    
+    // Clean up history
+    this.alertHistory = this.alertHistory.filter(alert => 
+      alert.timestamp.getTime() > cutoff
+    );
+    
+    if (this.alertHistory.length > this.config.storage.maxHistory) {
+      this.alertHistory = this.alertHistory.slice(-this.config.storage.maxHistory);
+    }
+    
+    if (removed > 0) {
+      this.logger.debug(`Cleaned up ${removed} old alerts`);
+    }
+  }
+
+  /**
+   * Persist alerts to storage
+   */
+  async _persistAlerts() {
+    try {
+      const data = {
+        alerts: Object.fromEntries(this.alerts),
+        history: this.alertHistory.slice(-1000), // Last 1000 alerts
+        timestamp: new Date(),
+      };
+      
+      await fs.writeFile(this.config.storage.filePath, JSON.stringify(data, null, 2));
+    } catch (error) {
+      this.logger.error('Failed to persist alerts:', error);
+    }
+  }
+
+  /**
+   * Load persisted alerts
+   */
+  async _loadPersistedAlerts() {
+    try {
+      const data = await fs.readFile(this.config.storage.filePath, 'utf8');
+      const parsed = JSON.parse(data);
+      
+      // Restore alerts
+      for (const [id, alert] of Object.entries(parsed.alerts || {})) {
+        this.alerts.set(id, {
+          ...alert,
+          timestamp: new Date(alert.timestamp),
+        });
+      }
+      
+      // Restore history
+      this.alertHistory = (parsed.history || []).map(alert => ({
+        ...alert,
+        timestamp: new Date(alert.timestamp),
+      }));
+      
+      this.logger.info(`Loaded ${this.alerts.size} persisted alerts`);
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        this.logger.error('Failed to load persisted alerts:', error);
+      }
+    }
+  }
+
+  /**
+   * Get alert statistics
+   */
+  getAlertStats() {
+    const now = Date.now();
+    const oneHour = 60 * 60 * 1000;
+    const oneDay = 24 * oneHour;
+    
+    const recentHistory = this.alertHistory.filter(alert => 
+      now - alert.timestamp.getTime() < oneDay
+    );
+    
+    const severityCounts = recentHistory.reduce((counts, alert) => {
+      counts[alert.severity] = (counts[alert.severity] || 0) + 1;
+      return counts;
+    }, {});
+    
+    return {
+      active: this.alerts.size,
+      totalHistory: this.alertHistory.length,
+      last24Hours: recentHistory.length,
+      lastHour: recentHistory.filter(alert => 
+        now - alert.timestamp.getTime() < oneHour
+      ).length,
+      bySeverity: severityCounts,
+      rules: this.rules.size,
+      escalationTimers: this.escalationTimers.size,
+    };
+  }
+
+  /**
+   * Get system status
+   */
+  getStatus() {
+    return {
+      isRunning: this.isRunning,
+      enabled: this.config.enabled,
+      channels: Object.fromEntries(
+        Object.entries(this.config.channels).map(([name, config]) => [
+          name,
+          { enabled: config.enabled }
+        ])
+      ),
+      stats: this.getAlertStats(),
+    };
+  }
+}
+
+// Export singleton instance
+const alertingSystem = new AlertingSystem();
+
+export default alertingSystem;
+export { AlertingSystem };

@@ -1,0 +1,41 @@
+prompt,expected_tokens,category
+"Hello, how are you?",25,short
+"What is artificial intelligence?",50,short
+"Explain machine learning in simple terms",75,medium
+"Write a product description for wireless headphones",150,medium
+"Create a comprehensive guide on remote work productivity",400,long
+"Implement a binary search algorithm in Python",250,technical
+"Write a short story about a time-traveling scientist",350,creative
+"What's the weather like today?",20,short
+"Define quantum computing",60,short
+"Summarize the benefits of renewable energy",120,medium
+"Develop a marketing strategy for a new app",300,long
+"Explain REST API design principles",200,technical
+"Create a poem about the ocean",100,creative
+"How does photosynthesis work?",80,medium
+"Write a business plan for an e-commerce startup",500,long
+"Implement a rate limiting algorithm",300,technical
+"Tell me a joke",15,short
+"Describe the solar system",100,medium
+"Create a training plan for marathon running",250,long
+"Debug this JavaScript code snippet",180,technical
+"Write dialogue between two robots",120,creative
+"What is blockchain technology?",90,medium
+"Develop a social media content calendar",200,long
+"Optimize SQL query performance",220,technical
+"Generate ideas for a science fiction novel",150,creative
+"Explain the greenhouse effect",70,medium
+"Create a project management framework",350,long
+"Review this code for security vulnerabilities",280,technical
+"Write a recipe for chocolate chip cookies",80,creative
+"What are the benefits of exercise?",60,medium
+"Design a database schema for a library system",300,technical
+"Create a character backstory for a fantasy game",200,creative
+"Explain climate change causes",100,medium
+"Develop a risk management strategy",250,long
+"Implement data validation in forms",180,technical
+"Write a haiku about programming",30,creative
+"How do vaccines work?",120,medium
+"Create a budget plan for small business",200,long
+"Explain microservices architecture",250,technical
+"Generate plot ideas for a mystery novel",180,creative

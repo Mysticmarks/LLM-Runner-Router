@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Router WASM - Basic Usage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #005a87;
+        }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .input-group {
+            margin: 10px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .input-group textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .status.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .stream-output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            min-height: 100px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007cba;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>🧠 LLM Router WebAssembly Client</h1>
+    <p>Interactive demo of the LLM Router WASM bindings</p>
+
+    <!-- Configuration Section -->
+    <div class="container">
+        <h2>⚙️ Configuration</h2>
+        <div class="input-group">
+            <label for="baseUrl">Base URL:</label>
+            <input type="text" id="baseUrl" value="http://localhost:3000" />
+        </div>
+        <div class="input-group">
+            <label for="apiKey">API Key (optional):</label>
+            <input type="text" id="apiKey" placeholder="Enter API key..." />
+        </div>
+        <div class="input-group">
+            <label for="timeout">Timeout (ms):</label>
+            <input type="number" id="timeout" value="30000" />
+        </div>
+        <button class="button" onclick="initializeClient()">Initialize Client</button>
+        <div id="initStatus"></div>
+    </div>
+
+    <!-- Health Check Section -->
+    <div class="container">
+        <h2>🏥 Health Check</h2>
+        <button class="button" onclick="healthCheck()" id="healthBtn">Check Health</button>
+        <button class="button" onclick="getStatus()">Get Status</button>
+        <div class="output" id="healthOutput">Click "Check Health" to test the connection...</div>
+    </div>
+
+    <!-- Model Management Section -->
+    <div class="container">
+        <h2>🤖 Model Management</h2>
+        <button class="button" onclick="listModels()">List Models</button>
+        <button class="button" onclick="loadExampleModel()">Load Example Model</button>
+        <div class="output" id="modelOutput">Click "List Models" to see available models...</div>
+    </div>
+
+    <!-- Inference Section -->
+    <div class="container">
+        <h2>💭 Inference</h2>
+        <div class="input-group">
+            <label for="prompt">Prompt:</label>
+            <textarea id="prompt" placeholder="Enter your prompt here...">What is the capital of France?</textarea>
+        </div>
+        <div class="input-group">
+            <label for="maxTokens">Max Tokens:</label>
+            <input type="number" id="maxTokens" value="100" min="1" max="2000" />
+        </div>
+        <div class="input-group">
+            <label for="temperature">Temperature:</label>
+            <input type="number" id="temperature" value="0.7" min="0" max="2" step="0.1" />
+        </div>
+        <button class="button" onclick="runInference()" id="inferenceBtn">Run Inference</button>
+        <button class="button" onclick="runStreamInference()" id="streamBtn">Stream Inference</button>
+        <div class="output" id="inferenceOutput">Enter a prompt and click "Run Inference"...</div>
+        <div class="stream-output" id="streamOutput" style="display: none;"></div>
+    </div>
+
+    <!-- Error Handling Section -->
+    <div class="container">
+        <h2>⚠️ Error Handling</h2>
+        <button class="button" onclick="testNetworkError()">Test Network Error</button>
+        <button class="button" onclick="testValidationError()">Test Validation Error</button>
+        <button class="button" onclick="testRetryLogic()">Test Retry Logic</button>
+        <div class="output" id="errorOutput">Click buttons to test error handling...</div>
+    </div>
+
+    <!-- Performance Section -->
+    <div class="container">
+        <h2>📊 Performance Testing</h2>
+        <div class="input-group">
+            <label for="batchSize">Batch Size:</label>
+            <input type="number" id="batchSize" value="5" min="1" max="20" />
+        </div>
+        <button class="button" onclick="runBatchTest()" id="batchBtn">Run Batch Test</button>
+        <button class="button" onclick="runPerformanceTest()">Performance Test</button>
+        <div class="output" id="performanceOutput">Click "Run Batch Test" to test multiple requests...</div>
+    </div>
+
+    <!-- WebAssembly Information -->
+    <div class="container">
+        <h2>🔧 WebAssembly Information</h2>
+        <button class="button" onclick="showWasmInfo()">Show WASM Info</button>
+        <div class="output" id="wasmInfo">Click "Show WASM Info" to see WebAssembly details...</div>
+    </div>
+
+    <!-- Load WASM module -->
+    <script type="module">
+        import init, * as wasm from '../pkg/llm_runner_router_wasm.js';
+
+        let client = null;
+        let wasmModule = null;
+
+        // Initialize WASM module
+        async function initWasm() {
+            try {
+                wasmModule = await init();
+                console.log('🎉 WASM module loaded successfully');
+                
+                // Initialize panic hook for better error messages
+                wasm.init_panic_hook();
+                
+                document.getElementById('initStatus').innerHTML = 
+                    '<div class="status success">WASM module loaded successfully! Version: ' + wasm.version() + '</div>';
+                
+                // Make functions available globally
+                window.wasm = wasm;
+                window.initializeClient = initializeClient;
+                window.healthCheck = healthCheck;
+                window.getStatus = getStatus;
+                window.listModels = listModels;
+                window.loadExampleModel = loadExampleModel;
+                window.runInference = runInference;
+                window.runStreamInference = runStreamInference;
+                window.testNetworkError = testNetworkError;
+                window.testValidationError = testValidationError;
+                window.testRetryLogic = testRetryLogic;
+                window.runBatchTest = runBatchTest;
+                window.runPerformanceTest = runPerformanceTest;
+                window.showWasmInfo = showWasmInfo;
+                
+            } catch (error) {
+                console.error('❌ Failed to load WASM module:', error);
+                document.getElementById('initStatus').innerHTML = 
+                    '<div class="status error">Failed to load WASM module: ' + error.message + '</div>';
+            }
+        }
+
+        // Initialize client
+        function initializeClient() {
+            try {
+                const baseUrl = document.getElementById('baseUrl').value;
+                const apiKey = document.getElementById('apiKey').value;
+                const timeout = parseInt(document.getElementById('timeout').value);
+
+                const config = new wasm.RouterConfig(baseUrl);
+                config.timeout_ms = timeout;
+                if (apiKey) {
+                    config.api_key = apiKey;
+                }
+
+                // Validate configuration
+                wasm.validateConfig(config);
+
+                client = new wasm.LLMRouterClient(config);
+                
+                document.getElementById('initStatus').innerHTML = 
+                    '<div class="status success">Client initialized successfully!</div>';
+                
+                console.log('✅ LLM Router client initialized');
+            } catch (error) {
+                document.getElementById('initStatus').innerHTML = 
+                    '<div class="status error">Failed to initialize client: ' + error.message + '</div>';
+                console.error('❌ Client initialization failed:', error);
+            }
+        }
+
+        // Health check
+        async function healthCheck() {
+            if (!client) {
+                document.getElementById('healthOutput').textContent = 'Please initialize client first';
+                return;
+            }
+
+            const btn = document.getElementById('healthBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Checking...';
+
+            try {
+                const measure = wasm.measurePerformance('health_check');
+                const result = await client.healthCheck();
+                const duration = measure.end();
+                
+                document.getElementById('healthOutput').textContent = 
+                    `Health Check Result (${duration.toFixed(2)}ms):\n` + JSON.stringify(result, null, 2);
+                
+                console.log('✅ Health check successful:', result);
+            } catch (error) {
+                document.getElementById('healthOutput').textContent = 
+                    'Health Check Failed:\n' + JSON.stringify(wasm.formatError(error), null, 2);
+                console.error('❌ Health check failed:', error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Check Health';
+            }
+        }
+
+        // Get status
+        async function getStatus() {
+            if (!client) {
+                document.getElementById('healthOutput').textContent = 'Please initialize client first';
+                return;
+            }
+
+            try {
+                const result = await client.getStatus();
+                document.getElementById('healthOutput').textContent = 
+                    'System Status:\n' + JSON.stringify(result, null, 2);
+            } catch (error) {
+                document.getElementById('healthOutput').textContent = 
+                    'Get Status Failed:\n' + JSON.stringify(wasm.formatError(error), null, 2);
+            }
+        }
+
+        // List models
+        async function listModels() {
+            if (!client) {
+                document.getElementById('modelOutput').textContent = 'Please initialize client first';
+                return;
+            }
+
+            try {
+                const models = await client.listModels(true);
+                const modelArray = Array.from(models);
+                
+                if (modelArray.length === 0) {
+                    document.getElementById('modelOutput').textContent = 'No models found';
+                } else {
+                    document.getElementById('modelOutput').textContent = 
+                        `Found ${modelArray.length} models:\n` + 
+                        modelArray.map((model, index) => 
+                            `${index + 1}. ${model.id || 'Unknown'} (${model.name || 'No name'}) - ${model.loaded ? 'Loaded' : 'Not loaded'}`
+                        ).join('\n');
+                }
+            } catch (error) {
+                document.getElementById('modelOutput').textContent = 
+                    'List Models Failed:\n' + JSON.stringify(wasm.formatError(error), null, 2);
+            }
+        }
+
+        // Load example model
+        async function loadExampleModel() {
+            if (!client) {
+                document.getElementById('modelOutput').textContent = 'Please initialize client first';
+                return;
+            }
+
+            try {
+                const loadRequest = new wasm.LoadModelRequest('./models/example.gguf');
+                loadRequest.format = 'gguf';
+                loadRequest.id = 'example-model';
+                
+                const result = await client.loadModel(loadRequest);
+                document.getElementById('modelOutput').textContent = 
+                    'Load Model Result:\n' + JSON.stringify(result, null, 2);
+            } catch (error) {
+                document.getElementById('modelOutput').textContent = 
+                    'Load Model Failed:\n' + JSON.stringify(wasm.formatError(error), null, 2);
+            }
+        }
+
+        // Run inference
+        async function runInference() {
+            if (!client) {
+                document.getElementById('inferenceOutput').textContent = 'Please initialize client first';
+                return;
+            }
+
+            const btn = document.getElementById('inferenceBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Processing...';
+
+            try {
+                const prompt = document.getElementById('prompt').value;
+                const maxTokens = parseInt(document.getElementById('maxTokens').value);
+                const temperature = parseFloat(document.getElementById('temperature').value);
+
+                const options = new wasm.InferenceOptions();
+                options.max_tokens = maxTokens;
+                options.temperature = temperature;
+
+                const measure = wasm.measurePerformance('inference');
+                const response = await client.quickInferenceWithOptions(prompt, options);
+                const duration = measure.end();
+
+                document.getElementById('inferenceOutput').textContent = 
+                    `Inference Result (${duration.toFixed(2)}ms):\n` +
+                    `Success: ${response.success}\n` +
+                    `Text: ${response.text}\n` +
+                    `Model: ${response.model_id || 'Unknown'}\n` +
+                    (response.error ? `Error: ${response.error}` : '');
+
+                console.log('✅ Inference successful:', response);
+            } catch (error) {
+                document.getElementById('inferenceOutput').textContent = 
+                    'Inference Failed:\n' + JSON.stringify(wasm.formatError(error), null, 2);
+                console.error('❌ Inference failed:', error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Run Inference';
+            }
+        }
+
+        // Stream inference
+        async function runStreamInference() {
+            if (!client) {
+                document.getElementById('streamOutput').textContent = 'Please initialize client first';
+                return;
+            }
+
+            const btn = document.getElementById('streamBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Streaming...';
+
+            const streamOutput = document.getElementById('streamOutput');
+            streamOutput.style.display = 'block';
+            streamOutput.textContent = 'Starting stream...\n';
+
+            try {
+                const prompt = document.getElementById('prompt').value;
+                const maxTokens = parseInt(document.getElementById('maxTokens').value);
+                const temperature = parseFloat(document.getElementById('temperature').value);
+
+                const options = new wasm.InferenceOptions();
+                options.max_tokens = maxTokens;
+                options.temperature = temperature;
+                options.stream = true;
+
+                const request = new wasm.InferenceRequest(prompt);
+                request.options = options;
+
+                const streamReader = await client.streamInference(request);
+                streamOutput.textContent = 'Stream started. Reading chunks...\n\n';
+
+                let fullText = '';
+                while (true) {
+                    const chunk = await streamReader.readChunk();
+                    if (!chunk) {
+                        streamOutput.textContent += '\n\n✅ Stream completed!';
+                        break;
+                    }
+
+                    if (chunk.error) {
+                        streamOutput.textContent += '\n\n❌ Stream error: ' + chunk.error;
+                        break;
+                    }
+
+                    fullText += chunk.token;
+                    streamOutput.textContent = 'Stream Output:\n\n' + fullText;
+
+                    if (chunk.is_complete) {
+                        streamOutput.textContent += '\n\n✅ Stream completed!';
+                        break;
+                    }
+
+                    // Small delay to make streaming visible
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+
+                await streamReader.close();
+            } catch (error) {
+                streamOutput.textContent += '\n\n❌ Stream failed: ' + JSON.stringify(wasm.formatError(error), null, 2);
+                console.error('❌ Stream failed:', error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Stream Inference';
+            }
+        }
+
+        // Test network error
+        async function testNetworkError() {
+            try {
+                const config = new wasm.RouterConfig('http://invalid-host:3000');
+                config.timeout_ms = 5000;
+                const invalidClient = new wasm.LLMRouterClient(config);
+                
+                await invalidClient.healthCheck();
+            } catch (error) {
+                document.getElementById('errorOutput').textContent = 
+                    'Network Error Test:\n' + JSON.stringify(wasm.formatError(error), null, 2);
+                console.log('✅ Network error test successful:', error);
+            }
+        }
+
+        // Test validation error
+        async function testValidationError() {
+            try {
+                const config = new wasm.RouterConfig('not-a-valid-url');
+                wasm.validateConfig(config);
+            } catch (error) {
+                document.getElementById('errorOutput').textContent = 
+                    'Validation Error Test:\n' + JSON.stringify(wasm.formatError(error), null, 2);
+                console.log('✅ Validation error test successful:', error);
+            }
+        }
+
+        // Test retry logic
+        async function testRetryLogic() {
+            let attempts = 0;
+            const testFunction = function() {
+                attempts++;
+                if (attempts < 3) {
+                    throw new Error('Simulated failure');
+                }
+                return { success: true, attempts: attempts };
+            };
+
+            try {
+                const result = await wasm.retryWithBackoff(testFunction, 5, 100);
+                document.getElementById('errorOutput').textContent = 
+                    'Retry Logic Test - Success:\n' + JSON.stringify(result, null, 2);
+            } catch (error) {
+                document.getElementById('errorOutput').textContent = 
+                    'Retry Logic Test - Failed:\n' + JSON.stringify(wasm.formatError(error), null, 2);
+            }
+        }
+
+        // Run batch test
+        async function runBatchTest() {
+            if (!client) {
+                document.getElementById('performanceOutput').textContent = 'Please initialize client first';
+                return;
+            }
+
+            const btn = document.getElementById('batchBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Running batch...';
+
+            try {
+                const batchSize = parseInt(document.getElementById('batchSize').value);
+                const promises = [];
+                
+                const measure = wasm.measurePerformance('batch_test');
+                
+                for (let i = 0; i < batchSize; i++) {
+                    promises.push(client.quickInference(`Test prompt ${i + 1}: What is ${i + 1} + ${i + 1}?`));
+                }
+
+                const results = await Promise.allSettled(promises);
+                const duration = measure.end();
+                
+                const successful = results.filter(r => r.status === 'fulfilled').length;
+                const failed = results.filter(r => r.status === 'rejected').length;
+
+                document.getElementById('performanceOutput').textContent = 
+                    `Batch Test Results (${duration.toFixed(2)}ms):\n` +
+                    `Total requests: ${batchSize}\n` +
+                    `Successful: ${successful}\n` +
+                    `Failed: ${failed}\n` +
+                    `Average time per request: ${(duration / batchSize).toFixed(2)}ms\n\n` +
+                    `Sample results:\n` +
+                    results.slice(0, 3).map((result, index) => {
+                        if (result.status === 'fulfilled') {
+                            return `${index + 1}. Success: ${result.value.text.substring(0, 50)}...`;
+                        } else {
+                            return `${index + 1}. Failed: ${result.reason.message}`;
+                        }
+                    }).join('\n');
+
+            } catch (error) {
+                document.getElementById('performanceOutput').textContent = 
+                    'Batch Test Failed:\n' + JSON.stringify(wasm.formatError(error), null, 2);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Run Batch Test';
+            }
+        }
+
+        // Run performance test
+        async function runPerformanceTest() {
+            const iterations = 10;
+            let totalTime = 0;
+            let successCount = 0;
+
+            document.getElementById('performanceOutput').textContent = 'Running performance test...';
+
+            for (let i = 0; i < iterations; i++) {
+                try {
+                    const measure = wasm.measurePerformance(`perf_test_${i}`);
+                    
+                    // Test various WASM operations
+                    const uuid = wasm.generateUuid();
+                    const timestamp = wasm.getCurrentTimestamp();
+                    const envInfo = wasm.getEnvironmentInfo();
+                    
+                    const duration = measure.end();
+                    totalTime += duration;
+                    successCount++;
+                } catch (error) {
+                    console.error(`Performance test ${i} failed:`, error);
+                }
+            }
+
+            const avgTime = totalTime / successCount;
+            document.getElementById('performanceOutput').textContent = 
+                `Performance Test Results:\n` +
+                `Iterations: ${iterations}\n` +
+                `Successful: ${successCount}\n` +
+                `Average time: ${avgTime.toFixed(2)}ms\n` +
+                `Total time: ${totalTime.toFixed(2)}ms\n` +
+                `Operations per second: ${(1000 / avgTime).toFixed(0)}`;
+        }
+
+        // Show WASM info
+        function showWasmInfo() {
+            const envInfo = wasm.getEnvironmentInfo();
+            const wasmSupported = typeof WebAssembly !== 'undefined';
+            const wasmThreadsSupported = typeof SharedArrayBuffer !== 'undefined';
+            
+            document.getElementById('wasmInfo').textContent = 
+                `WebAssembly Information:\n` +
+                `Version: ${wasm.version()}\n` +
+                `WASM Supported: ${wasmSupported}\n` +
+                `WASM Threads Supported: ${wasmThreadsSupported}\n` +
+                `Environment: ${JSON.stringify(envInfo, null, 2)}\n` +
+                `Memory Usage: ${(performance.memory ? performance.memory.usedJSHeapSize : 'Unknown')} bytes\n` +
+                `Is Browser: ${wasm.isBrowser()}\n` +
+                `Is Web Worker: ${wasm.isWebWorker()}`;
+        }
+
+        // Initialize everything
+        initWasm();
+    </script>
+</body>
+</html>

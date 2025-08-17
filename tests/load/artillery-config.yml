@@ -1,0 +1,151 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 1
+      name: "Warm-up"
+    # Ramp-up phase
+    - duration: 120
+      arrivalRate: 1
+      rampTo: 10
+      name: "Ramp-up"
+    # Sustained load phase
+    - duration: 300
+      arrivalRate: 10
+      name: "Sustained load"
+    # Peak load phase
+    - duration: 120
+      arrivalRate: 10
+      rampTo: 25
+      name: "Peak load"
+    # Cool-down phase
+    - duration: 60
+      arrivalRate: 25
+      rampTo: 1
+      name: "Cool-down"
+  defaults:
+    headers:
+      X-API-Key: 'llmr_load_test_key'
+      Content-Type: 'application/json'
+  processor: './artillery-processor.js'
+  environments:
+    development:
+      target: 'http://localhost:3000'
+    staging:
+      target: 'https://staging.llm-router.com'
+    production:
+      target: 'https://api.llm-router.com'
+
+scenarios:
+  - name: "Chat Completions - Basic"
+    weight: 40
+    flow:
+      - post:
+          url: "/api/v1/chat/completions"
+          beforeRequest: "setRandomPrompt"
+          json:
+            messages:
+              - role: "user"
+                content: "{{ prompt }}"
+            model: "gpt-3.5-turbo"
+            max_tokens: 100
+            temperature: 0.7
+          capture:
+            - json: "$.id"
+              as: "completion_id"
+            - json: "$.usage.total_tokens"
+              as: "total_tokens"
+          expect:
+            - statusCode: 200
+            - hasProperty: "choices"
+            - hasProperty: "usage"
+      - think: 1
+
+  - name: "Chat Completions - Streaming"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/v1/chat/completions"
+          beforeRequest: "setRandomPrompt"
+          json:
+            messages:
+              - role: "user"
+                content: "{{ prompt }}"
+            model: "gpt-3.5-turbo"
+            max_tokens: 150
+            temperature: 0.8
+            stream: true
+          expect:
+            - statusCode: 200
+      - think: 2
+
+  - name: "Text Completions"
+    weight: 15
+    flow:
+      - post:
+          url: "/api/v1/completions"
+          beforeRequest: "setRandomPrompt"
+          json:
+            prompt: "{{ prompt }}"
+            model: "gpt-3.5-turbo"
+            max_tokens: 75
+            temperature: 0.6
+          expect:
+            - statusCode: 200
+            - hasProperty: "choices"
+      - think: 1
+
+  - name: "Model Management"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/v1/models"
+          expect:
+            - statusCode: 200
+            - hasProperty: "data"
+      - get:
+          url: "/api/v1/models/gpt-3.5-turbo"
+          expect:
+            - statusCode: 200
+            - hasProperty: "id"
+      - think: 1
+
+  - name: "Health and Metrics"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/v1/health"
+          expect:
+            - statusCode: 200
+            - hasProperty: "status"
+      - get:
+          url: "/api/v1/stats"
+          expect:
+            - statusCode: 200
+      - think: 0.5
+
+  - name: "Enterprise Features"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/v1/tenants"
+          headers:
+            X-API-Key: 'llmr_admin_key'
+          expect:
+            - statusCode: [200, 403] # Might not have admin access
+      - get:
+          url: "/api/v1/experiments"
+          expect:
+            - statusCode: [200, 403]
+      - think: 1
+
+# Custom payload definitions
+payload:
+  - path: "./test-prompts.csv"
+    fields:
+      - "prompt"
+      - "expected_tokens"
+      - "category"
+    order: random
+    skipHeader: true

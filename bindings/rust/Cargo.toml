@@ -1,0 +1,121 @@
+[package]
+name = "llm-runner-router"
+version = "1.2.1"
+edition = "2021"
+authors = ["Echo AI Systems <contact@echoai.systems>"]
+description = "Rust client for LLM Runner Router - Universal model orchestration system"
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/MCERQUA/LLM-Runner-Router"
+repository = "https://github.com/MCERQUA/LLM-Runner-Router"
+documentation = "https://docs.rs/llm-runner-router"
+keywords = ["llm", "ai", "machine-learning", "inference", "router"]
+categories = ["api-bindings", "asynchronous", "web-programming::http-client"]
+exclude = ["tests/fixtures/*", "benches/*"]
+
+[lib]
+name = "llm_runner_router"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+tokio-util = { version = "0.7", features = ["compat"] }
+
+# HTTP client
+reqwest = { version = "0.11", features = ["json", "stream", "rustls-tls"], default-features = false }
+hyper = { version = "0.14", features = ["client", "http1", "http2"] }
+
+# WebSocket
+tokio-tungstenite = { version = "0.20", features = ["rustls-tls-webpki-roots"] }
+tungstenite = "0.20"
+
+# gRPC
+tonic = "0.10"
+prost = "0.12"
+tonic-build = "0.10"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Futures and streams
+futures = "0.3"
+futures-util = "0.3"
+pin-project-lite = "0.2"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# URL parsing
+url = "2.4"
+
+# Configuration
+config = "0.13"
+
+# UUID generation
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+# Retry logic
+backoff = { version = "0.4", features = ["tokio"] }
+
+# Rate limiting
+governor = "0.6"
+
+# FFI bindings for Node.js integration
+napi = { version = "2.14", features = ["napi4", "async"] }
+napi-derive = "2.14"
+
+[dev-dependencies]
+# Testing
+tokio-test = "0.4"
+mockito = "1.2"
+wiremock = "0.5"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[build-dependencies]
+tonic-build = "0.10"
+prost-build = "0.12"
+
+[features]
+default = ["http", "websocket", "grpc"]
+http = []
+websocket = []
+grpc = []
+napi-binding = ["napi", "napi-derive"]
+
+[[example]]
+name = "basic_usage"
+required-features = ["http"]
+
+[[example]]
+name = "streaming"
+required-features = ["websocket"]
+
+[[example]]
+name = "grpc_client"
+required-features = ["grpc"]
+
+[[bench]]
+name = "performance"
+harness = false
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[profile.dev]
+debug = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

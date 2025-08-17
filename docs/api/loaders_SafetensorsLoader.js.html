@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: loaders/SafetensorsLoader.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: loaders/SafetensorsLoader.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Safetensors Model Loader
+ * Supports loading models in the Safetensors format
+ * Secure, fast, and efficient tensor storage format
+ */
+
+import { BaseLoader } from './BaseLoader.js';
+import { Logger } from '../utils/Logger.js';
+import fs from 'fs/promises';
+import { createReadStream } from 'fs';
+
+class SafetensorsLoader extends BaseLoader {
+  constructor() {
+    super();
+    this.logger = new Logger('SafetensorsLoader');
+    this.models = new Map();
+  }
+
+  /**
+   * Check if this loader supports the given source
+   */
+  supports(source) {
+    if (typeof source !== 'string') return false;
+    
+    // Check file extensions
+    if (source.endsWith('.safetensors')) return true;
+    if (source.endsWith('.st')) return true;
+    
+    // Check for safetensors in path
+    if (source.includes('safetensor')) return true;
+    
+    return false;
+  }
+
+  /**
+   * Load a Safetensors model
+   */
+  async load(config) {
+    const modelId = config.id || `safetensors-${Date.now()}`;
+    
+    try {
+      this.logger.info(`Loading Safetensors model: ${config.source}`);
+      
+      let modelData;
+      
+      if (config.source.startsWith('http')) {
+        // Load from URL
+        modelData = await this.fetchModel(config.source);
+      } else if (typeof config.source === 'string') {
+        // Load from file path
+        modelData = await this.loadFromFile(config.source);
+      } else if (config.source instanceof ArrayBuffer) {
+        // Load from ArrayBuffer
+        modelData = await this.parseArrayBuffer(config.source);
+      } else {
+        throw new Error('Invalid source type for Safetensors model');
+      }
+
+      // Parse the safetensors format
+      const parsedModel = await this.parseSafetensors(modelData);
+      
+      // Store model
+      this.models.set(modelId, {
+        ...parsedModel,
+        config
+      });
+
+      this.logger.info(`Safetensors model loaded successfully: ${modelId}`);
+      
+      return {
+        id: modelId,
+        name: config.name || parsedModel.metadata?.name || 'Safetensors Model',
+        format: 'safetensors',
+        loaded: true,
+        metadata: parsedModel.metadata,
+        tensors: parsedModel.tensors,
+        predict: (input) => this.predict(modelId, input),
+        stream: (input) => this.stream(modelId, input),
+        unload: () => this.unload(modelId),
+        getTensor: (name) => this.getTensor(modelId, name)
+      };
+    } catch (error) {
+      this.logger.error(`Failed to load Safetensors model: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch model from URL
+   */
+  async fetchModel(url) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch model: ${response.statusText}`);
+      }
+      const buffer = await response.arrayBuffer();
+      return buffer;
+    } catch (error) {
+      this.logger.error(`Failed to fetch model from ${url}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Load model from file
+   */
+  async loadFromFile(filePath) {
+    try {
+      const buffer = await fs.readFile(filePath);
+      return buffer.buffer;
+    } catch (error) {
+      this.logger.error(`Failed to load model from ${filePath}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Parse Safetensors format
+   * Format: [header_size:8 bytes][header:JSON][tensor_data:binary]
+   */
+  async parseSafetensors(arrayBuffer) {
+    const buffer = new DataView(arrayBuffer);
+    
+    // Read header size (first 8 bytes, little-endian)
+    const headerSize = Number(buffer.getBigUint64(0, true));
+    
+    // Read header JSON
+    const headerBytes = new Uint8Array(arrayBuffer, 8, headerSize);
+    const headerText = new TextDecoder().decode(headerBytes);
+    const header = JSON.parse(headerText);
+    
+    // Extract metadata and tensor info
+    const metadata = header.__metadata__ || {};
+    const tensors = {};
+    
+    // Parse tensor information
+    for (const [name, info] of Object.entries(header)) {
+      if (name === '__metadata__') continue;
+      
+      tensors[name] = {
+        dtype: info.dtype,
+        shape: info.shape,
+        data_offsets: info.data_offsets,
+        data: null // Will be loaded on demand
+      };
+    }
+    
+    // Store reference to data buffer for lazy loading
+    const dataStart = 8 + headerSize;
+    const dataBuffer = new Uint8Array(arrayBuffer, dataStart);
+    
+    return {
+      metadata,
+      tensors,
+      dataBuffer,
+      header
+    };
+  }
+
+  /**
+   * Get a specific tensor by name
+   */
+  getTensor(modelId, tensorName) {
+    const model = this.models.get(modelId);
+    if (!model) {
+      throw new Error(`Model ${modelId} not loaded`);
+    }
+    
+    const tensorInfo = model.tensors[tensorName];
+    if (!tensorInfo) {
+      throw new Error(`Tensor ${tensorName} not found in model`);
+    }
+    
+    // Lazy load tensor data if not already loaded
+    if (!tensorInfo.data) {
+      tensorInfo.data = this.loadTensorData(
+        model.dataBuffer,
+        tensorInfo.data_offsets,
+        tensorInfo.dtype,
+        tensorInfo.shape
+      );
+    }
+    
+    return {
+      name: tensorName,
+      shape: tensorInfo.shape,
+      dtype: tensorInfo.dtype,
+      data: tensorInfo.data
+    };
+  }
+
+  /**
+   * Load tensor data from buffer
+   */
+  loadTensorData(dataBuffer, offsets, dtype, shape) {
+    const [start, end] = offsets;
+    const tensorBytes = dataBuffer.slice(start, end);
+    
+    // Convert based on dtype
+    let typedArray;
+    switch (dtype) {
+      case 'F32':
+      case 'float32':
+        typedArray = new Float32Array(tensorBytes.buffer, tensorBytes.byteOffset, tensorBytes.byteLength / 4);
+        break;
+      case 'F16':
+      case 'float16':
+        // Float16 needs special handling - simplified here
+        typedArray = this.float16ToFloat32(new Uint16Array(tensorBytes.buffer, tensorBytes.byteOffset, tensorBytes.byteLength / 2));
+        break;
+      case 'I32':
+      case 'int32':
+        typedArray = new Int32Array(tensorBytes.buffer, tensorBytes.byteOffset, tensorBytes.byteLength / 4);
+        break;
+      case 'I16':
+      case 'int16':
+        typedArray = new Int16Array(tensorBytes.buffer, tensorBytes.byteOffset, tensorBytes.byteLength / 2);
+        break;
+      case 'I8':
+      case 'int8':
+        typedArray = new Int8Array(tensorBytes.buffer, tensorBytes.byteOffset, tensorBytes.byteLength);
+        break;
+      case 'U8':
+      case 'uint8':
+        typedArray = new Uint8Array(tensorBytes.buffer, tensorBytes.byteOffset, tensorBytes.byteLength);
+        break;
+      default:
+        throw new Error(`Unsupported dtype: ${dtype}`);
+    }
+    
+    return typedArray;
+  }
+
+  /**
+   * Convert Float16 to Float32
+   */
+  float16ToFloat32(float16Array) {
+    const float32Array = new Float32Array(float16Array.length);
+    
+    for (let i = 0; i &lt; float16Array.length; i++) {
+      const h = float16Array[i];
+      const sign = (h &amp; 0x8000) >> 15;
+      const exponent = (h &amp; 0x7C00) >> 10;
+      const fraction = h &amp; 0x03FF;
+      
+      if (exponent === 0) {
+        // Subnormal or zero
+        float32Array[i] = (sign ? -1 : 1) * Math.pow(2, -14) * (fraction / 1024);
+      } else if (exponent === 31) {
+        // Infinity or NaN
+        float32Array[i] = fraction ? NaN : (sign ? -Infinity : Infinity);
+      } else {
+        // Normal number
+        float32Array[i] = (sign ? -1 : 1) * Math.pow(2, exponent - 15) * (1 + fraction / 1024);
+      }
+    }
+    
+    return float32Array;
+  }
+
+  /**
+   * Run prediction with the model
+   */
+  async predict(modelId, input) {
+    const model = this.models.get(modelId);
+    if (!model) {
+      throw new Error(`Model ${modelId} not loaded`);
+    }
+
+    try {
+      // This is a simplified prediction - actual implementation would depend on model type
+      // Safetensors is primarily a storage format, so we'd need to know the model architecture
+      
+      // For demonstration, we'll implement a simple linear transformation
+      const weights = this.getTensor(modelId, 'weight') || this.getTensor(modelId, 'model.weight');
+      const bias = this.getTensor(modelId, 'bias') || this.getTensor(modelId, 'model.bias');
+      
+      if (!weights) {
+        throw new Error('No weight tensor found in model');
+      }
+      
+      // Simple matrix multiplication (simplified)
+      let output;
+      if (Array.isArray(input)) {
+        output = new Float32Array(weights.shape[0]);
+        for (let i = 0; i &lt; weights.shape[0]; i++) {
+          let sum = 0;
+          for (let j = 0; j &lt; input.length; j++) {
+            sum += input[j] * weights.data[i * input.length + j];
+          }
+          if (bias) {
+            sum += bias.data[i];
+          }
+          output[i] = sum;
+        }
+      } else {
+        // Handle other input types
+        output = input;
+      }
+      
+      return Array.from(output);
+    } catch (error) {
+      this.logger.error(`Prediction failed: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Stream predictions (simulated for Safetensors)
+   */
+  async *stream(modelId, input) {
+    const model = this.models.get(modelId);
+    if (!model) {
+      throw new Error(`Model ${modelId} not loaded`);
+    }
+
+    try {
+      // Safetensors doesn't inherently support streaming
+      // We'll simulate it by yielding partial results
+      
+      const result = await this.predict(modelId, input);
+      
+      // Yield results in chunks
+      const chunkSize = Math.max(1, Math.floor(result.length / 10));
+      for (let i = 0; i &lt; result.length; i += chunkSize) {
+        const chunk = result.slice(i, Math.min(i + chunkSize, result.length));
+        yield chunk;
+        
+        // Small delay to simulate streaming
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+    } catch (error) {
+      this.logger.error(`Streaming failed: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Unload a model
+   */
+  async unload(modelId) {
+    if (this.models.has(modelId)) {
+      this.models.delete(modelId);
+      this.logger.info(`Model ${modelId} unloaded`);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Get model info
+   */
+  getModelInfo(modelId) {
+    const model = this.models.get(modelId);
+    if (!model) {
+      return null;
+    }
+
+    return {
+      id: modelId,
+      format: 'safetensors',
+      loaded: true,
+      metadata: model.metadata,
+      tensors: Object.keys(model.tensors),
+      tensorCount: Object.keys(model.tensors).length
+    };
+  }
+
+  /**
+   * Validate model file
+   */
+  async validate(config) {
+    try {
+      // Try to load just the header to validate format
+      let buffer;
+      
+      if (config.source.startsWith('http')) {
+        // For URLs, fetch just the header
+        const response = await fetch(config.source, {
+          headers: { 'Range': 'bytes=0-10000' } // Get first 10KB
+        });
+        buffer = await response.arrayBuffer();
+      } else {
+        // For files, read the beginning
+        const fileBuffer = await fs.readFile(config.source);
+        buffer = fileBuffer.buffer.slice(0, 10000);
+      }
+      
+      // Try to parse header
+      const dataView = new DataView(buffer);
+      const headerSize = Number(dataView.getBigUint64(0, true));
+      
+      if (headerSize > 0 &amp;&amp; headerSize &lt; 1000000) { // Reasonable header size
+        return {
+          valid: true,
+          headerSize
+        };
+      }
+      
+      return {
+        valid: false,
+        error: 'Invalid header size'
+      };
+    } catch (error) {
+      return {
+        valid: false,
+        error: error.message
+      };
+    }
+  }
+}
+export default SafetensorsLoader;
+export { SafetensorsLoader };
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ABTestingManager.html">ABTestingManager</a></li><li><a href="AuditLogger.html">AuditLogger</a></li><li><a href="AuthMiddleware.html">AuthMiddleware</a></li><li><a href="BPETokenizer.html">BPETokenizer</a></li><li><a href="BaseEngine.html">BaseEngine</a></li><li><a href="BaseLoader.html">BaseLoader</a></li><li><a href="BinaryLoader.html">BinaryLoader</a></li><li><a href="BinaryModel.html">BinaryModel</a></li><li><a href="BitNetLoader.html">BitNetLoader</a></li><li><a href="ConversionConfig.html">ConversionConfig</a></li><li><a href="ConversionResult.html">ConversionResult</a></li><li><a href="EnterpriseAuthManager.html">EnterpriseAuthManager</a></li><li><a href="EnterpriseManager.html">EnterpriseManager</a></li><li><a href="EnterpriseRouter.html">EnterpriseRouter</a></li><li><a href="FormatConverter.html">FormatConverter</a></li><li><a href="GGUFLoader.html">GGUFLoader</a></li><li><a href="GGUFModel.html">GGUFModel</a></li><li><a href="GRPCClient.html">GRPCClient</a></li><li><a href="LLMRouter.html">LLMRouter</a></li><li><a href="MockLoader.html">MockLoader</a></li><li><a href="MockModel.html">MockModel</a></li><li><a href="ModelInterface.html">ModelInterface</a></li><li><a href="ModelQuantizer.html">ModelQuantizer</a></li><li><a href="ModelTemplates.html">ModelTemplates</a></li><li><a href="MultiTenancyManager.html">MultiTenancyManager</a></li><li><a href="PyTorchLoader.html">PyTorchLoader</a></li><li><a href="PyTorchModel.html">PyTorchModel</a></li><li><a href="QuantizationConfig.html">QuantizationConfig</a></li><li><a href="QuantizationResult.html">QuantizationResult</a></li><li><a href="Router.html">Router</a></li><li><a href="SLAMonitor.html">SLAMonitor</a></li><li><a href="SentencePieceTokenizer.html">SentencePieceTokenizer</a></li><li><a href="SimpleLoader.html">SimpleLoader</a></li><li><a href="SimpleModel.html">SimpleModel</a></li><li><a href="TokenizationResult.html">TokenizationResult</a></li><li><a href="TokenizerConfig.html">TokenizerConfig</a></li><li><a href="UniversalTokenizer.html">UniversalTokenizer</a></li><li><a href="ValidationConfig.html">ValidationConfig</a></li><li><a href="ValidationSuite.html">ValidationSuite</a></li><li><a href="ValidationSuiteResult.html">ValidationSuiteResult</a></li><li><a href="ValidationTestResult.html">ValidationTestResult</a></li><li><a href="WordPieceTokenizer.html">WordPieceTokenizer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Architectures">Architectures</a></li><li><a href="global.html#AuditEventTypes">AuditEventTypes</a></li><li><a href="global.html#AuthMethods">AuthMethods</a></li><li><a href="global.html#BreachSeverity">BreachSeverity</a></li><li><a href="global.html#Capabilities">Capabilities</a></li><li><a href="global.html#ComplianceFrameworks">ComplianceFrameworks</a></li><li><a href="global.html#EnterpriseFeatures">EnterpriseFeatures</a></li><li><a href="global.html#ExperimentStatus">ExperimentStatus</a></li><li><a href="global.html#IsolationLevels">IsolationLevels</a></li><li><a href="global.html#ModelFormat">ModelFormat</a></li><li><a href="global.html#ModelFormats">ModelFormats</a></li><li><a href="global.html#Permissions">Permissions</a></li><li><a href="global.html#QuantizationMethod">QuantizationMethod</a></li><li><a href="global.html#QuantizationPrecision">QuantizationPrecision</a></li><li><a href="global.html#QuotaTypes">QuotaTypes</a></li><li><a href="global.html#RiskLevels">RiskLevels</a></li><li><a href="global.html#RoutingStrategies">RoutingStrategies</a></li><li><a href="global.html#SLAMetricTypes">SLAMetricTypes</a></li><li><a href="global.html#SLAStatus">SLAStatus</a></li><li><a href="global.html#SessionTypes">SessionTypes</a></li><li><a href="global.html#SplittingAlgorithms">SplittingAlgorithms</a></li><li><a href="global.html#StatisticalTests">StatisticalTests</a></li><li><a href="global.html#TimeWindows">TimeWindows</a></li><li><a href="global.html#TokenizerType">TokenizerType</a></li><li><a href="global.html#UserRoles">UserRoles</a></li><li><a href="global.html#ValidationSeverity">ValidationSeverity</a></li><li><a href="global.html#ValidationTestType">ValidationTestType</a></li><li><a href="global.html#colors">colors</a></li><li><a href="global.html#createEnterpriseExpressRoutes">createEnterpriseExpressRoutes</a></li><li><a href="global.html#createEnterpriseRouter">createEnterpriseRouter</a></li><li><a href="global.html#createEnterpriseWebSocketHandlers">createEnterpriseWebSocketHandlers</a></li><li><a href="global.html#defaultEnterpriseConfig">defaultEnterpriseConfig</a></li><li><a href="global.html#enterpriseVersion">enterpriseVersion</a></li><li><a href="global.html#errorMonitoringMiddleware">errorMonitoringMiddleware</a></li><li><a href="global.html#getEnabledFeatures">getEnabledFeatures</a></li><li><a href="global.html#getMonitoringStatus">getMonitoringStatus</a></li><li><a href="global.html#httpMonitoringMiddleware">httpMonitoringMiddleware</a></li><li><a href="global.html#isFeatureEnabled">isFeatureEnabled</a></li><li><a href="global.html#recordCustomMetric">recordCustomMetric</a></li><li><a href="global.html#registerAlertRule">registerAlertRule</a></li><li><a href="global.html#registerDependency">registerDependency</a></li><li><a href="global.html#registerHealthCheck">registerHealthCheck</a></li><li><a href="global.html#setupMonitoring">setupMonitoring</a></li><li><a href="global.html#startPerformanceProfile">startPerformanceProfile</a></li><li><a href="global.html#validateEnterpriseConfig">validateEnterpriseConfig</a></li><li><a href="global.html#withCacheMonitoring">withCacheMonitoring</a></li><li><a href="global.html#withDatabaseMonitoring">withDatabaseMonitoring</a></li><li><a href="global.html#withModelMonitoring">withModelMonitoring</a></li><li><a href="global.html#withQueueMonitoring">withQueueMonitoring</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Aug 17 2025 22:28:58 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

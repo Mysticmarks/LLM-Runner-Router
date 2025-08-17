@@ -1,0 +1,78 @@
+{
+  "alerts": {
+    "test_alert_1755467778294": {
+      "id": "test_alert_1755467778294",
+      "ruleId": "test_alert",
+      "timestamp": "2025-08-17T21:56:18.294Z",
+      "severity": "warning",
+      "message": "Test alert triggered",
+      "data": {
+        "message": "Test alert triggered",
+        "severity": "warning"
+      },
+      "rule": {
+        "id": "test_alert",
+        "enabled": true,
+        "name": "Test Alert",
+        "description": "Test alert for unit testing",
+        "severity": "warning",
+        "channels": [
+          "console"
+        ]
+      },
+      "status": "active",
+      "notificationsSent": [],
+      "escalated": false
+    },
+    "test_alert_1755469706730": {
+      "id": "test_alert_1755469706730",
+      "ruleId": "test_alert",
+      "timestamp": "2025-08-17T22:28:26.730Z",
+      "severity": "warning",
+      "message": "Test alert triggered",
+      "data": {
+        "message": "Test alert triggered",
+        "severity": "warning"
+      },
+      "rule": {
+        "id": "test_alert",
+        "enabled": true,
+        "name": "Test Alert",
+        "description": "Test alert for unit testing",
+        "severity": "warning",
+        "channels": [
+          "console"
+        ]
+      },
+      "status": "active",
+      "notificationsSent": [],
+      "escalated": false
+    },
+    "test_alert_1755469826323": {
+      "id": "test_alert_1755469826323",
+      "ruleId": "test_alert",
+      "timestamp": "2025-08-17T22:30:26.323Z",
+      "severity": "warning",
+      "message": "Test alert triggered",
+      "data": {
+        "message": "Test alert triggered",
+        "severity": "warning"
+      },
+      "rule": {
+        "id": "test_alert",
+        "enabled": true,
+        "name": "Test Alert",
+        "description": "Test alert for unit testing",
+        "severity": "warning",
+        "channels": [
+          "console"
+        ]
+      },
+      "status": "active",
+      "notificationsSent": [],
+      "escalated": false
+    }
+  },
+  "history": [],
+  "timestamp": "2025-08-17T22:30:26.362Z"
+}

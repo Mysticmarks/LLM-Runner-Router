@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: core/Router.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: core/Router.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * 🧭 Intelligent Model Router
+ * The quantum pathfinder that selects optimal models and strategies
+ * Echo AI Systems - Routing intelligence through the neural highways
+ */
+
+import { EventEmitter } from 'events';
+import { Logger } from '../utils/Logger.js';
+import { CostOptimizer } from './CostOptimizer.js';
+import { QualityScorer } from './QualityScorer.js';
+import { LoadBalancer } from './LoadBalancer.js';
+
+const logger = new Logger('Router');
+
+/**
+ * Routing strategies for model selection
+ */
+export const RoutingStrategies = {
+  QUALITY_FIRST: 'quality-first',
+  COST_OPTIMIZED: 'cost-optimized',
+  SPEED_PRIORITY: 'speed-priority',
+  BALANCED: 'balanced',
+  RANDOM: 'random',
+  ROUND_ROBIN: 'round-robin',
+  LEAST_LOADED: 'least-loaded',
+  CAPABILITY_MATCH: 'capability-match'
+};
+
+/**
+ * Intelligent Router - The brain of model orchestration
+ */
+class Router extends EventEmitter {
+  constructor(registry, config = {}) {
+    super();
+    
+    this.registry = registry;
+    this.config = {
+      strategy: RoutingStrategies.BALANCED,
+      maxRetries: 3,
+      timeout: 30000,
+      cacheTTL: 3600000, // 1 hour
+      ...config
+    };
+    
+    // Routing components
+    this.costOptimizer = new CostOptimizer();
+    this.qualityScorer = new QualityScorer();
+    this.loadBalancer = new LoadBalancer();
+    
+    // Routing cache
+    this.routeCache = new Map();
+    this.modelScores = new Map();
+    
+    // Statistics
+    this.stats = {
+      totalRoutes: 0,
+      cacheHits: 0,
+      failures: 0,
+      avgLatency: 0
+    };
+    
+    logger.info('🧭 Router initialized with strategy:', this.config.strategy);
+  }
+
+  /**
+   * Initialize router with engine
+   */
+  async initialize(engine) {
+    this.engine = engine;
+    
+    // Precompute model scores
+    await this.computeModelScores();
+    
+    // Setup monitoring
+    this.startMonitoring();
+    
+    logger.info('✅ Router ready with engine:', engine.name);
+  }
+
+  /**
+   * Select optimal model for task
+   * @param {string} prompt - Input prompt
+   * @param {object} requirements - Task requirements
+   */
+  async selectModel(prompt, requirements = {}) {
+    const startTime = Date.now();
+    this.stats.totalRoutes++;
+    
+    logger.debug('🎯 Selecting model for prompt:', {
+      promptLength: prompt.length,
+      requirements,
+      strategy: this.config.strategy
+    });
+    
+    // Check cache
+    const cacheKey = this.getCacheKey(prompt, requirements);
+    if (this.routeCache.has(cacheKey)) {
+      this.stats.cacheHits++;
+      const cached = this.routeCache.get(cacheKey);
+      if (Date.now() - cached.timestamp &lt; this.config.cacheTTL) {
+        logger.debug('✨ Cache hit for route');
+        return cached.model;
+      }
+    }
+    
+    // Get available models
+    const models = await this.registry.getAvailable();
+    if (models.length === 0) {
+      throw new Error('No models available');
+    }
+    
+    // Filter by requirements
+    const candidates = this.filterByRequirements(models, requirements);
+    if (candidates.length === 0) {
+      throw new Error('No models match requirements');
+    }
+    
+    // Apply routing strategy
+    const selected = await this.applyStrategy(candidates, prompt, requirements);
+    
+    // Cache the route
+    this.routeCache.set(cacheKey, {
+      model: selected,
+      timestamp: Date.now()
+    });
+    
+    // Update metrics
+    const latency = Date.now() - startTime;
+    this.updateLatency(latency);
+    
+    this.emit('model-selected', {
+      model: selected.id,
+      strategy: this.config.strategy,
+      latency
+    });
+    
+    logger.info(`✅ Selected model: ${selected.name} (${latency}ms)`);
+    return selected;
+  }
+
+  /**
+   * Select optimal loader for model format
+   */
+  async selectLoader(spec) {
+    const format = await this.detectFormat(spec);
+    const loader = await this.registry.getLoader(format);
+    
+    if (!loader) {
+      throw new Error(`No loader available for format: ${format}`);
+    }
+    
+    logger.debug(`📦 Selected loader for format: ${format}`);
+    return loader;
+  }
+
+  /**
+   * Apply routing strategy
+   * @private
+   */
+  async applyStrategy(models, prompt, requirements) {
+    switch (this.config.strategy) {
+      case RoutingStrategies.QUALITY_FIRST:
+        return this.selectByQuality(models, prompt);
+        
+      case RoutingStrategies.COST_OPTIMIZED:
+        return this.selectByCost(models, requirements);
+        
+      case RoutingStrategies.SPEED_PRIORITY:
+        return this.selectBySpeed(models);
+        
+      case RoutingStrategies.BALANCED:
+        return this.selectBalanced(models, prompt, requirements);
+        
+      case RoutingStrategies.ROUND_ROBIN:
+        return this.loadBalancer.roundRobin(models);
+        
+      case RoutingStrategies.LEAST_LOADED:
+        return this.loadBalancer.leastLoaded(models);
+        
+      case RoutingStrategies.CAPABILITY_MATCH:
+        return this.selectByCapability(models, requirements);
+        
+      case RoutingStrategies.RANDOM:
+      default:
+        return models[Math.floor(Math.random() * models.length)];
+    }
+  }
+
+  /**
+   * Select model by quality score
+   * @private
+   */
+  async selectByQuality(models, prompt) {
+    const scores = await Promise.all(
+      models.map(async model => ({
+        model,
+        score: await this.qualityScorer.score(model, prompt)
+      }))
+    );
+    
+    scores.sort((a, b) => b.score - a.score);
+    return scores[0].model;
+  }
+
+  /**
+   * Select model by cost optimization
+   * @private
+   */
+  async selectByCost(models, requirements) {
+    const costs = await Promise.all(
+      models.map(async model => ({
+        model,
+        cost: await this.costOptimizer.calculate(model, requirements)
+      }))
+    );
+    
+    costs.sort((a, b) => a.cost - b.cost);
+    return costs[0].model;
+  }
+
+  /**
+   * Select fastest model
+   * @private
+   */
+  selectBySpeed(models) {
+    const speeds = models.map(model => ({
+      model,
+      latency: model.metrics?.avgLatency || Infinity
+    }));
+    
+    speeds.sort((a, b) => a.latency - b.latency);
+    return speeds[0].model;
+  }
+
+  /**
+   * Balanced selection considering multiple factors
+   * @private
+   */
+  async selectBalanced(models, prompt, requirements) {
+    const scores = await Promise.all(
+      models.map(async model => {
+        const quality = await this.qualityScorer.score(model, prompt);
+        const cost = await this.costOptimizer.calculate(model, requirements);
+        const speed = 1 / (model.metrics?.avgLatency || 1000);
+        
+        // Weighted combination
+        const score = (
+          quality * 0.4 +
+          (1 / cost) * 0.3 +
+          speed * 0.3
+        );
+        
+        return { model, score };
+      })
+    );
+    
+    scores.sort((a, b) => b.score - a.score);
+    return scores[0].model;
+  }
+
+  /**
+   * Select by capability matching
+   * @private
+   */
+  selectByCapability(models, requirements) {
+    const matches = models.map(model => {
+      const matchCount = Object.keys(requirements.capabilities || {})
+        .filter(cap => model.supports(cap))
+        .length;
+      
+      return { model, matchCount };
+    });
+    
+    matches.sort((a, b) => b.matchCount - a.matchCount);
+    return matches[0].model;
+  }
+
+  /**
+   * Filter models by requirements
+   * @private
+   */
+  filterByRequirements(models, requirements) {
+    return models.filter(model => {
+      // Check capabilities
+      if (requirements.capabilities) {
+        for (const [cap, required] of Object.entries(requirements.capabilities)) {
+          if (required &amp;&amp; !model.supports(cap)) {
+            return false;
+          }
+        }
+      }
+      
+      // Check size constraints
+      if (requirements.maxSize &amp;&amp; model.parameters.size > requirements.maxSize) {
+        return false;
+      }
+      
+      // Check format
+      if (requirements.format &amp;&amp; model.format !== requirements.format) {
+        return false;
+      }
+      
+      return true;
+    });
+  }
+
+  /**
+   * Detect model format from specification
+   * @private
+   */
+  async detectFormat(spec) {
+    // Check explicit format
+    if (spec.format) {
+      return spec.format;
+    }
+    
+    // Check by file extension
+    if (spec.source) {
+      const ext = spec.source.split('.').pop().toLowerCase();
+      const formatMap = {
+        'gguf': 'gguf',
+        'ggml': 'ggml',
+        'onnx': 'onnx',
+        'safetensors': 'safetensors',
+        'pt': 'pytorch',
+        'pb': 'tensorflow',
+        'json': 'tensorflowjs'
+      };
+      
+      if (formatMap[ext]) {
+        return formatMap[ext];
+      }
+    }
+    
+    // Check for HuggingFace pattern
+    if (spec.source?.includes('huggingface') || spec.source?.includes(':')) {
+      return 'huggingface';
+    }
+    
+    // Default
+    return 'unknown';
+  }
+
+  /**
+   * Compute model scores for caching
+   * @private
+   */
+  async computeModelScores() {
+    const models = await this.registry.getAll();
+    
+    for (const model of models) {
+      const score = {
+        quality: await this.qualityScorer.computeBaseScore(model),
+        cost: await this.costOptimizer.computeBaseCost(model),
+        speed: model.metrics?.avgLatency || 1000
+      };
+      
+      this.modelScores.set(model.id, score);
+    }
+    
+    logger.debug(`📊 Computed scores for ${models.length} models`);
+  }
+
+  /**
+   * Get cache key for route
+   * @private
+   */
+  getCacheKey(prompt, requirements) {
+    // Simple hash - in production, use proper hashing
+    const promptHash = prompt.substring(0, 50);
+    const reqHash = JSON.stringify(requirements);
+    return `${promptHash}_${reqHash}`;
+  }
+
+  /**
+   * Update latency metrics
+   * @private
+   */
+  updateLatency(latency) {
+    const count = this.stats.totalRoutes;
+    this.stats.avgLatency = (
+      (this.stats.avgLatency * (count - 1) + latency) / count
+    );
+  }
+
+  /**
+   * Start monitoring
+   * @private
+   */
+  startMonitoring() {
+    // Periodic cache cleanup
+    setInterval(() => {
+      const now = Date.now();
+      for (const [key, value] of this.routeCache.entries()) {
+        if (now - value.timestamp > this.config.cacheTTL) {
+          this.routeCache.delete(key);
+        }
+      }
+    }, 60000); // Every minute
+    
+    // Periodic score recomputation
+    setInterval(() => {
+      this.computeModelScores().catch(console.error);
+    }, 300000); // Every 5 minutes
+  }
+
+  /**
+   * Get available routing strategies
+   */
+  getStrategies() {
+    return Object.values(RoutingStrategies);
+  }
+
+  /**
+   * Set routing strategy
+   */
+  setStrategy(strategy) {
+    if (!Object.values(RoutingStrategies).includes(strategy)) {
+      throw new Error(`Invalid strategy: ${strategy}`);
+    }
+    
+    this.config.strategy = strategy;
+    logger.info(`🔄 Strategy changed to: ${strategy}`);
+    this.emit('strategy-changed', strategy);
+  }
+
+  /**
+   * Get routing statistics
+   */
+  getStats() {
+    return {
+      ...this.stats,
+      cacheHitRate: this.stats.cacheHits / this.stats.totalRoutes,
+      failureRate: this.stats.failures / this.stats.totalRoutes
+    };
+  }
+
+  /**
+   * Cleanup resources
+   */
+  async cleanup() {
+    this.routeCache.clear();
+    this.modelScores.clear();
+    this.removeAllListeners();
+    logger.info('🧹 Router cleaned up');
+  }
+}
+
+
+
+export default Router;
+export { Router };
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ABTestingManager.html">ABTestingManager</a></li><li><a href="AuditLogger.html">AuditLogger</a></li><li><a href="AuthMiddleware.html">AuthMiddleware</a></li><li><a href="BPETokenizer.html">BPETokenizer</a></li><li><a href="BaseEngine.html">BaseEngine</a></li><li><a href="BaseLoader.html">BaseLoader</a></li><li><a href="BinaryLoader.html">BinaryLoader</a></li><li><a href="BinaryModel.html">BinaryModel</a></li><li><a href="BitNetLoader.html">BitNetLoader</a></li><li><a href="ConversionConfig.html">ConversionConfig</a></li><li><a href="ConversionResult.html">ConversionResult</a></li><li><a href="EnterpriseAuthManager.html">EnterpriseAuthManager</a></li><li><a href="EnterpriseManager.html">EnterpriseManager</a></li><li><a href="EnterpriseRouter.html">EnterpriseRouter</a></li><li><a href="FormatConverter.html">FormatConverter</a></li><li><a href="GGUFLoader.html">GGUFLoader</a></li><li><a href="GGUFModel.html">GGUFModel</a></li><li><a href="GRPCClient.html">GRPCClient</a></li><li><a href="LLMRouter.html">LLMRouter</a></li><li><a href="MockLoader.html">MockLoader</a></li><li><a href="MockModel.html">MockModel</a></li><li><a href="ModelInterface.html">ModelInterface</a></li><li><a href="ModelQuantizer.html">ModelQuantizer</a></li><li><a href="ModelTemplates.html">ModelTemplates</a></li><li><a href="MultiTenancyManager.html">MultiTenancyManager</a></li><li><a href="PyTorchLoader.html">PyTorchLoader</a></li><li><a href="PyTorchModel.html">PyTorchModel</a></li><li><a href="QuantizationConfig.html">QuantizationConfig</a></li><li><a href="QuantizationResult.html">QuantizationResult</a></li><li><a href="Router.html">Router</a></li><li><a href="SLAMonitor.html">SLAMonitor</a></li><li><a href="SentencePieceTokenizer.html">SentencePieceTokenizer</a></li><li><a href="SimpleLoader.html">SimpleLoader</a></li><li><a href="SimpleModel.html">SimpleModel</a></li><li><a href="TokenizationResult.html">TokenizationResult</a></li><li><a href="TokenizerConfig.html">TokenizerConfig</a></li><li><a href="UniversalTokenizer.html">UniversalTokenizer</a></li><li><a href="ValidationConfig.html">ValidationConfig</a></li><li><a href="ValidationSuite.html">ValidationSuite</a></li><li><a href="ValidationSuiteResult.html">ValidationSuiteResult</a></li><li><a href="ValidationTestResult.html">ValidationTestResult</a></li><li><a href="WordPieceTokenizer.html">WordPieceTokenizer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Architectures">Architectures</a></li><li><a href="global.html#AuditEventTypes">AuditEventTypes</a></li><li><a href="global.html#AuthMethods">AuthMethods</a></li><li><a href="global.html#BreachSeverity">BreachSeverity</a></li><li><a href="global.html#Capabilities">Capabilities</a></li><li><a href="global.html#ComplianceFrameworks">ComplianceFrameworks</a></li><li><a href="global.html#EnterpriseFeatures">EnterpriseFeatures</a></li><li><a href="global.html#ExperimentStatus">ExperimentStatus</a></li><li><a href="global.html#IsolationLevels">IsolationLevels</a></li><li><a href="global.html#ModelFormat">ModelFormat</a></li><li><a href="global.html#ModelFormats">ModelFormats</a></li><li><a href="global.html#Permissions">Permissions</a></li><li><a href="global.html#QuantizationMethod">QuantizationMethod</a></li><li><a href="global.html#QuantizationPrecision">QuantizationPrecision</a></li><li><a href="global.html#QuotaTypes">QuotaTypes</a></li><li><a href="global.html#RiskLevels">RiskLevels</a></li><li><a href="global.html#RoutingStrategies">RoutingStrategies</a></li><li><a href="global.html#SLAMetricTypes">SLAMetricTypes</a></li><li><a href="global.html#SLAStatus">SLAStatus</a></li><li><a href="global.html#SessionTypes">SessionTypes</a></li><li><a href="global.html#SplittingAlgorithms">SplittingAlgorithms</a></li><li><a href="global.html#StatisticalTests">StatisticalTests</a></li><li><a href="global.html#TimeWindows">TimeWindows</a></li><li><a href="global.html#TokenizerType">TokenizerType</a></li><li><a href="global.html#UserRoles">UserRoles</a></li><li><a href="global.html#ValidationSeverity">ValidationSeverity</a></li><li><a href="global.html#ValidationTestType">ValidationTestType</a></li><li><a href="global.html#colors">colors</a></li><li><a href="global.html#createEnterpriseExpressRoutes">createEnterpriseExpressRoutes</a></li><li><a href="global.html#createEnterpriseRouter">createEnterpriseRouter</a></li><li><a href="global.html#createEnterpriseWebSocketHandlers">createEnterpriseWebSocketHandlers</a></li><li><a href="global.html#defaultEnterpriseConfig">defaultEnterpriseConfig</a></li><li><a href="global.html#enterpriseVersion">enterpriseVersion</a></li><li><a href="global.html#errorMonitoringMiddleware">errorMonitoringMiddleware</a></li><li><a href="global.html#getEnabledFeatures">getEnabledFeatures</a></li><li><a href="global.html#getMonitoringStatus">getMonitoringStatus</a></li><li><a href="global.html#httpMonitoringMiddleware">httpMonitoringMiddleware</a></li><li><a href="global.html#isFeatureEnabled">isFeatureEnabled</a></li><li><a href="global.html#recordCustomMetric">recordCustomMetric</a></li><li><a href="global.html#registerAlertRule">registerAlertRule</a></li><li><a href="global.html#registerDependency">registerDependency</a></li><li><a href="global.html#registerHealthCheck">registerHealthCheck</a></li><li><a href="global.html#setupMonitoring">setupMonitoring</a></li><li><a href="global.html#startPerformanceProfile">startPerformanceProfile</a></li><li><a href="global.html#validateEnterpriseConfig">validateEnterpriseConfig</a></li><li><a href="global.html#withCacheMonitoring">withCacheMonitoring</a></li><li><a href="global.html#withDatabaseMonitoring">withDatabaseMonitoring</a></li><li><a href="global.html#withModelMonitoring">withModelMonitoring</a></li><li><a href="global.html#withQueueMonitoring">withQueueMonitoring</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Aug 17 2025 22:28:58 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
