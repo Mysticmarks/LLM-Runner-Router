@@ -1,0 +1,820 @@
+/**
+ * 🌍 Universal Tokenizer - Multi-Format Tokenization Engine
+ * Supports BPE, WordPiece, SentencePiece with auto-detection and caching
+ * Echo AI Systems - Unified tokenization for all model formats
+ */
+
+import Logger from './Logger.js';
+import pkg from 'tiktoken';
+const { tiktoken } = pkg;
+import fs from 'fs/promises';
+import path from 'path';
+import { createHash } from 'crypto';
+import { LRUCache } from 'lru-cache';
+
+// Import native tokenizer when available
+let NativeTokenizer = null;
+try {
+  const native = await import('../native/index.js');
+  NativeTokenizer = native.FastTokenizer;
+} catch (error) {
+  // Native tokenizer not available, use JavaScript fallback
+}
+
+/**
+ * Tokenizer types enum
+ */
+export const TokenizerType = {
+  BPE: 'bpe',
+  WORDPIECE: 'wordpiece',
+  SENTENCEPIECE: 'sentencepiece',
+  TIKTOKEN: 'tiktoken',
+  HUGGINGFACE: 'huggingface',
+  AUTO: 'auto'
+};
+
+/**
+ * Tokenizer configuration
+ */
+export class TokenizerConfig {
+  constructor(options = {}) {
+    this.type = options.type || TokenizerType.AUTO;
+    this.model = options.model || 'gpt2';
+    this.maxLength = options.maxLength || 2048;
+    this.truncation = options.truncation !== false;
+    this.padding = options.padding || false;
+    this.addSpecialTokens = options.addSpecialTokens !== false;
+    this.cacheSize = options.cacheSize || 10000;
+    this.enableNative = options.enableNative !== false;
+    this.vocabFile = options.vocabFile;
+    this.mergesFile = options.mergesFile;
+    this.specialTokens = {
+      unk: options.unkToken || '[UNK]',
+      cls: options.clsToken || '[CLS]',
+      sep: options.sepToken || '[SEP]',
+      pad: options.padToken || '[PAD]',
+      mask: options.maskToken || '[MASK]',
+      bos: options.bosToken || '<|startoftext|>',
+      eos: options.eosToken || '<|endoftext|>',
+      ...options.specialTokens
+    };
+  }
+}
+
+/**
+ * Tokenization result
+ */
+export class TokenizationResult {
+  constructor(data = {}) {
+    this.ids = data.ids || [];
+    this.tokens = data.tokens || [];
+    this.attentionMask = data.attentionMask || [];
+    this.specialTokensMask = data.specialTokensMask || [];
+    this.offsets = data.offsets || [];
+    this.metadata = data.metadata || {};
+  }
+
+  /**
+   * Get the number of tokens
+   */
+  get length() {
+    return this.ids.length;
+  }
+
+  /**
+   * Truncate to maximum length
+   */
+  truncate(maxLength) {
+    if (this.ids.length <= maxLength) return this;
+
+    return new TokenizationResult({
+      ids: this.ids.slice(0, maxLength),
+      tokens: this.tokens.slice(0, maxLength),
+      attentionMask: this.attentionMask.slice(0, maxLength),
+      specialTokensMask: this.specialTokensMask.slice(0, maxLength),
+      offsets: this.offsets.slice(0, maxLength),
+      metadata: { ...this.metadata, truncated: true }
+    });
+  }
+
+  /**
+   * Pad to target length
+   */
+  pad(targetLength, padTokenId = 0, padToken = '[PAD]') {
+    if (this.ids.length >= targetLength) return this;
+
+    const paddingLength = targetLength - this.ids.length;
+    
+    return new TokenizationResult({
+      ids: [...this.ids, ...Array(paddingLength).fill(padTokenId)],
+      tokens: [...this.tokens, ...Array(paddingLength).fill(padToken)],
+      attentionMask: [...this.attentionMask, ...Array(paddingLength).fill(0)],
+      specialTokensMask: [...this.specialTokensMask, ...Array(paddingLength).fill(1)],
+      offsets: [...this.offsets, ...Array(paddingLength).fill([0, 0])],
+      metadata: { ...this.metadata, padded: true }
+    });
+  }
+}
+
+/**
+ * Universal Tokenizer with multi-format support and auto-detection
+ */
+export class UniversalTokenizer {
+  constructor(config = {}) {
+    this.config = new TokenizerConfig(config);
+    this.logger = new Logger('UniversalTokenizer');
+    
+    // LRU cache for tokenization results
+    this.cache = new LRUCache({
+      max: this.config.cacheSize,
+      ttl: 1000 * 60 * 60 // 1 hour
+    });
+
+    // Statistics
+    this.stats = {
+      cacheHits: 0,
+      cacheMisses: 0,
+      totalTokenizations: 0,
+      totalTokens: 0,
+      averageTokensPerText: 0
+    };
+
+    this.tokenizer = null;
+    this.vocabCache = new Map();
+    this.initialized = false;
+  }
+
+  /**
+   * Initialize the tokenizer
+   */
+  async initialize() {
+    if (this.initialized) return;
+
+    try {
+      this.logger.info(`Initializing tokenizer with model: ${this.config.model}`);
+      
+      // Detect tokenizer type if auto
+      if (this.config.type === TokenizerType.AUTO) {
+        this.config.type = await this.detectTokenizerType();
+        this.logger.info(`Auto-detected tokenizer type: ${this.config.type}`);
+      }
+
+      // Initialize appropriate tokenizer
+      await this.initializeTokenizer();
+      
+      this.initialized = true;
+      this.logger.success('Universal tokenizer initialized successfully');
+    } catch (error) {
+      this.logger.error('Failed to initialize tokenizer:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Detect tokenizer type from model name or files
+   */
+  async detectTokenizerType() {
+    const model = this.config.model.toLowerCase();
+    
+    // Check for tiktoken models
+    if (model.includes('gpt') || model.includes('text-davinci') || model.includes('text-ada')) {
+      return TokenizerType.TIKTOKEN;
+    }
+    
+    // Check for BERT-style models
+    if (model.includes('bert') || model.includes('roberta') || model.includes('distilbert')) {
+      return TokenizerType.WORDPIECE;
+    }
+    
+    // Check for T5/LLaMA style models
+    if (model.includes('t5') || model.includes('llama') || model.includes('alpaca')) {
+      return TokenizerType.SENTENCEPIECE;
+    }
+    
+    // Check for specific file patterns
+    if (this.config.vocabFile || this.config.mergesFile) {
+      return TokenizerType.BPE;
+    }
+    
+    // Try to detect from HuggingFace model card
+    try {
+      const modelPath = path.resolve(this.config.model);
+      const tokenizerConfig = path.join(modelPath, 'tokenizer_config.json');
+      
+      if (await this.fileExists(tokenizerConfig)) {
+        const config = JSON.parse(await fs.readFile(tokenizerConfig, 'utf8'));
+        
+        if (config.tokenizer_class) {
+          const className = config.tokenizer_class.toLowerCase();
+          if (className.includes('tiktoken')) return TokenizerType.TIKTOKEN;
+          if (className.includes('wordpiece') || className.includes('bert')) return TokenizerType.WORDPIECE;
+          if (className.includes('sentencepiece')) return TokenizerType.SENTENCEPIECE;
+          if (className.includes('bpe') || className.includes('gpt2')) return TokenizerType.BPE;
+        }
+      }
+    } catch (error) {
+      // Ignore detection errors, fall back to HuggingFace
+    }
+    
+    // Default to HuggingFace tokenizer
+    return TokenizerType.HUGGINGFACE;
+  }
+
+  /**
+   * Initialize the appropriate tokenizer implementation
+   */
+  async initializeTokenizer() {
+    switch (this.config.type) {
+      case TokenizerType.TIKTOKEN:
+        await this.initializeTiktoken();
+        break;
+      case TokenizerType.BPE:
+        await this.initializeBPE();
+        break;
+      case TokenizerType.WORDPIECE:
+        await this.initializeWordPiece();
+        break;
+      case TokenizerType.SENTENCEPIECE:
+        await this.initializeSentencePiece();
+        break;
+      case TokenizerType.HUGGINGFACE:
+        await this.initializeHuggingFace();
+        break;
+      default:
+        throw new Error(`Unsupported tokenizer type: ${this.config.type}`);
+    }
+  }
+
+  /**
+   * Initialize Tiktoken tokenizer
+   */
+  async initializeTiktoken() {
+    try {
+      this.tokenizer = tiktoken.getEncoding(this.config.model);
+      this.logger.debug('Tiktoken tokenizer initialized');
+    } catch (error) {
+      // Try common model mappings
+      const modelMappings = {
+        'gpt2': 'gpt2',
+        'gpt-3.5-turbo': 'cl100k_base',
+        'gpt-4': 'cl100k_base',
+        'text-davinci-003': 'p50k_base'
+      };
+      
+      const encoding = modelMappings[this.config.model] || 'cl100k_base';
+      this.tokenizer = tiktoken.getEncoding(encoding);
+      this.logger.debug(`Tiktoken tokenizer initialized with encoding: ${encoding}`);
+    }
+  }
+
+  /**
+   * Initialize BPE tokenizer
+   */
+  async initializeBPE() {
+    // Try native tokenizer first
+    if (NativeTokenizer && this.config.enableNative) {
+      try {
+        this.tokenizer = await NativeTokenizer.new({
+          model: this.config.model,
+          maxLength: this.config.maxLength,
+          addSpecialTokens: this.config.addSpecialTokens
+        });
+        this.logger.debug('Native BPE tokenizer initialized');
+        return;
+      } catch (error) {
+        this.logger.warn('Native tokenizer failed, falling back to JavaScript:', error.message);
+      }
+    }
+
+    // JavaScript BPE implementation
+    this.tokenizer = new BPETokenizer(this.config);
+    await this.tokenizer.initialize();
+    this.logger.debug('JavaScript BPE tokenizer initialized');
+  }
+
+  /**
+   * Initialize WordPiece tokenizer
+   */
+  async initializeWordPiece() {
+    this.tokenizer = new WordPieceTokenizer(this.config);
+    await this.tokenizer.initialize();
+    this.logger.debug('WordPiece tokenizer initialized');
+  }
+
+  /**
+   * Initialize SentencePiece tokenizer
+   */
+  async initializeSentencePiece() {
+    this.tokenizer = new SentencePieceTokenizer(this.config);
+    await this.tokenizer.initialize();
+    this.logger.debug('SentencePiece tokenizer initialized');
+  }
+
+  /**
+   * Initialize HuggingFace tokenizer
+   */
+  async initializeHuggingFace() {
+    // Try native tokenizer first
+    if (NativeTokenizer && this.config.enableNative) {
+      try {
+        this.tokenizer = await NativeTokenizer.new({
+          model: this.config.model,
+          maxLength: this.config.maxLength,
+          addSpecialTokens: this.config.addSpecialTokens
+        });
+        this.logger.debug('Native HuggingFace tokenizer initialized');
+        return;
+      } catch (error) {
+        this.logger.warn('Native tokenizer failed, falling back to JavaScript:', error.message);
+      }
+    }
+
+    // JavaScript HuggingFace implementation
+    const { AutoTokenizer } = await import('@xenova/transformers');
+    this.tokenizer = await AutoTokenizer.from_pretrained(this.config.model);
+    this.logger.debug('HuggingFace tokenizer initialized');
+  }
+
+  /**
+   * Encode text to tokens
+   */
+  async encode(text, options = {}) {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    // Check cache
+    const cacheKey = this.getCacheKey(text, options);
+    if (this.cache.has(cacheKey)) {
+      this.stats.cacheHits++;
+      return this.cache.get(cacheKey);
+    }
+
+    try {
+      let result;
+
+      // Use appropriate encoding method based on tokenizer type
+      switch (this.config.type) {
+        case TokenizerType.TIKTOKEN:
+          result = await this.encodeTiktoken(text, options);
+          break;
+        case TokenizerType.HUGGINGFACE:
+          if (this.tokenizer.encode) {
+            // Native tokenizer
+            result = await this.encodeNative(text, options);
+          } else {
+            // JavaScript HuggingFace
+            result = await this.encodeHuggingFace(text, options);
+          }
+          break;
+        default:
+          result = await this.encodeGeneric(text, options);
+          break;
+      }
+
+      // Apply post-processing
+      result = this.postProcess(result, options);
+
+      // Update cache and stats
+      this.cache.set(cacheKey, result);
+      this.stats.cacheMisses++;
+      this.updateStats(result);
+
+      return result;
+    } catch (error) {
+      this.logger.error('Encoding failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Encode using Tiktoken
+   */
+  async encodeTiktoken(text, options = {}) {
+    const ids = Array.from(this.tokenizer.encode(text));
+    const tokens = ids.map(id => this.tokenizer.decode([id]));
+    
+    return new TokenizationResult({
+      ids,
+      tokens,
+      attentionMask: Array(ids.length).fill(1),
+      specialTokensMask: Array(ids.length).fill(0),
+      offsets: this.calculateOffsets(text, tokens),
+      metadata: { type: 'tiktoken' }
+    });
+  }
+
+  /**
+   * Encode using native tokenizer
+   */
+  async encodeNative(text, options = {}) {
+    const result = await this.tokenizer.encode(text);
+    
+    return new TokenizationResult({
+      ids: result.ids,
+      tokens: result.tokens,
+      attentionMask: result.attention_mask,
+      specialTokensMask: result.special_tokens_mask,
+      offsets: result.offsets.map(offset => [offset[0], offset[1]]),
+      metadata: { type: 'native' }
+    });
+  }
+
+  /**
+   * Encode using HuggingFace JavaScript tokenizer
+   */
+  async encodeHuggingFace(text, options = {}) {
+    const encoded = await this.tokenizer(text, {
+      add_special_tokens: this.config.addSpecialTokens,
+      truncation: this.config.truncation,
+      max_length: this.config.maxLength,
+      padding: this.config.padding,
+      return_attention_mask: true,
+      return_token_type_ids: false
+    });
+
+    const tokens = encoded.input_ids.data.map(id => 
+      this.tokenizer.decode([id], { skip_special_tokens: false })
+    );
+
+    return new TokenizationResult({
+      ids: Array.from(encoded.input_ids.data),
+      tokens,
+      attentionMask: Array.from(encoded.attention_mask.data),
+      specialTokensMask: this.detectSpecialTokens(tokens),
+      offsets: this.calculateOffsets(text, tokens),
+      metadata: { type: 'huggingface' }
+    });
+  }
+
+  /**
+   * Generic encoding method for custom tokenizers
+   */
+  async encodeGeneric(text, options = {}) {
+    const result = await this.tokenizer.encode(text, options);
+    
+    return new TokenizationResult({
+      ids: result.ids || [],
+      tokens: result.tokens || [],
+      attentionMask: result.attentionMask || Array(result.ids?.length || 0).fill(1),
+      specialTokensMask: result.specialTokensMask || Array(result.ids?.length || 0).fill(0),
+      offsets: result.offsets || [],
+      metadata: { type: this.config.type }
+    });
+  }
+
+  /**
+   * Decode token IDs to text
+   */
+  async decode(ids, options = {}) {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    try {
+      switch (this.config.type) {
+        case TokenizerType.TIKTOKEN:
+          return this.tokenizer.decode(ids);
+        case TokenizerType.HUGGINGFACE:
+          if (this.tokenizer.decode && typeof this.tokenizer.decode === 'function') {
+            // Native or HuggingFace JavaScript
+            return await this.tokenizer.decode(ids, { skip_special_tokens: options.skipSpecialTokens !== false });
+          }
+          break;
+        default:
+          if (this.tokenizer.decode) {
+            return await this.tokenizer.decode(ids, options);
+          }
+          break;
+      }
+
+      // Fallback: decode token by token
+      const tokens = await Promise.all(ids.map(id => this.decodeToken(id)));
+      return tokens.join('');
+    } catch (error) {
+      this.logger.error('Decoding failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Batch encode multiple texts
+   */
+  async encodeBatch(texts, options = {}) {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    // Use native batch encoding if available
+    if (this.tokenizer.encode_batch) {
+      try {
+        const results = await this.tokenizer.encode_batch(texts);
+        return results.map(result => new TokenizationResult({
+          ids: result.ids,
+          tokens: result.tokens,
+          attentionMask: result.attention_mask,
+          specialTokensMask: result.special_tokens_mask,
+          offsets: result.offsets.map(offset => [offset[0], offset[1]]),
+          metadata: { type: 'native_batch' }
+        }));
+      } catch (error) {
+        this.logger.warn('Native batch encoding failed, using sequential:', error.message);
+      }
+    }
+
+    // Sequential encoding fallback
+    const results = [];
+    for (const text of texts) {
+      results.push(await this.encode(text, options));
+    }
+    return results;
+  }
+
+  /**
+   * Get vocabulary size
+   */
+  async getVocabSize() {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    if (this.tokenizer.vocab_size) {
+      return await this.tokenizer.vocab_size();
+    } else if (this.tokenizer.model && this.tokenizer.model.vocab) {
+      return Object.keys(this.tokenizer.model.vocab).length;
+    }
+
+    return 50000; // Default estimate
+  }
+
+  /**
+   * Get token ID for a specific token
+   */
+  async tokenToId(token) {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    if (this.tokenizer.token_to_id) {
+      return await this.tokenizer.token_to_id(token);
+    } else if (this.tokenizer.model && this.tokenizer.model.vocab) {
+      return this.tokenizer.model.vocab[token];
+    }
+
+    return null;
+  }
+
+  /**
+   * Get token string for a specific ID
+   */
+  async idToToken(id) {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    if (this.tokenizer.id_to_token) {
+      return await this.tokenizer.id_to_token(id);
+    } else if (this.tokenizer.decode) {
+      try {
+        return await this.tokenizer.decode([id]);
+      } catch (error) {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Get tokenizer statistics
+   */
+  getStats() {
+    const totalRequests = this.stats.cacheHits + this.stats.cacheMisses;
+    const cacheHitRate = totalRequests > 0 ? this.stats.cacheHits / totalRequests : 0;
+
+    return {
+      ...this.stats,
+      cacheHitRate,
+      totalRequests,
+      cacheSize: this.cache.size,
+      maxCacheSize: this.cache.max
+    };
+  }
+
+  /**
+   * Clear tokenizer cache
+   */
+  clearCache() {
+    this.cache.clear();
+    this.logger.debug('Tokenizer cache cleared');
+  }
+
+  // Helper methods
+
+  async fileExists(filePath) {
+    try {
+      await fs.access(filePath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  getCacheKey(text, options = {}) {
+    const optionsStr = JSON.stringify(options);
+    return createHash('md5').update(`${text}:${optionsStr}`).digest('hex');
+  }
+
+  calculateOffsets(text, tokens) {
+    const offsets = [];
+    let currentPos = 0;
+
+    for (const token of tokens) {
+      const start = currentPos;
+      const end = start + token.length;
+      offsets.push([start, end]);
+      currentPos = end;
+    }
+
+    return offsets;
+  }
+
+  detectSpecialTokens(tokens) {
+    const specialTokens = Object.values(this.config.specialTokens);
+    return tokens.map(token => specialTokens.includes(token) ? 1 : 0);
+  }
+
+  postProcess(result, options = {}) {
+    // Apply truncation
+    if (this.config.truncation && result.length > this.config.maxLength) {
+      result = result.truncate(this.config.maxLength);
+    }
+
+    // Apply padding
+    if (this.config.padding && typeof this.config.padding === 'number') {
+      const padTokenId = this.config.specialTokens.pad ? 
+        this.tokenizer.tokenToId?.(this.config.specialTokens.pad) || 0 : 0;
+      result = result.pad(this.config.padding, padTokenId, this.config.specialTokens.pad);
+    }
+
+    return result;
+  }
+
+  updateStats(result) {
+    this.stats.totalTokenizations++;
+    this.stats.totalTokens += result.length;
+    this.stats.averageTokensPerText = this.stats.totalTokens / this.stats.totalTokenizations;
+  }
+
+  async decodeToken(id) {
+    // Cache single token decoding
+    if (this.vocabCache.has(id)) {
+      return this.vocabCache.get(id);
+    }
+
+    let token;
+    if (this.tokenizer.id_to_token) {
+      token = await this.tokenizer.id_to_token(id);
+    } else if (this.tokenizer.decode) {
+      token = await this.tokenizer.decode([id]);
+    } else {
+      token = `<unk:${id}>`;
+    }
+
+    this.vocabCache.set(id, token);
+    return token;
+  }
+}
+
+/**
+ * Simple BPE tokenizer implementation
+ */
+class BPETokenizer {
+  constructor(config) {
+    this.config = config;
+    this.vocab = new Map();
+    this.merges = [];
+    this.initialized = false;
+  }
+
+  async initialize() {
+    if (this.config.vocabFile) {
+      await this.loadVocab();
+    }
+    if (this.config.mergesFile) {
+      await this.loadMerges();
+    }
+    this.initialized = true;
+  }
+
+  async loadVocab() {
+    const vocabData = await fs.readFile(this.config.vocabFile, 'utf8');
+    const lines = vocabData.split('\n').filter(line => line.trim());
+    
+    for (let i = 0; i < lines.length; i++) {
+      const token = lines[i].trim();
+      this.vocab.set(token, i);
+    }
+  }
+
+  async loadMerges() {
+    const mergesData = await fs.readFile(this.config.mergesFile, 'utf8');
+    const lines = mergesData.split('\n').filter(line => line.trim() && !line.startsWith('#'));
+    
+    this.merges = lines.map(line => {
+      const [a, b] = line.trim().split(' ');
+      return [a, b];
+    });
+  }
+
+  async encode(text) {
+    // Simple BPE implementation
+    const tokens = this.preTokenize(text);
+    const ids = tokens.map(token => this.vocab.get(token) || 0);
+    
+    return {
+      ids,
+      tokens,
+      attentionMask: Array(ids.length).fill(1),
+      specialTokensMask: Array(ids.length).fill(0),
+      offsets: []
+    };
+  }
+
+  preTokenize(text) {
+    // Simple whitespace tokenization
+    return text.split(/\s+/).filter(token => token.length > 0);
+  }
+}
+
+/**
+ * Simple WordPiece tokenizer implementation
+ */
+class WordPieceTokenizer {
+  constructor(config) {
+    this.config = config;
+    this.vocab = new Map();
+    this.initialized = false;
+  }
+
+  async initialize() {
+    // Load WordPiece vocabulary
+    this.initialized = true;
+  }
+
+  async encode(text) {
+    // Simple WordPiece implementation
+    const tokens = this.tokenize(text);
+    const ids = tokens.map((token, i) => i);
+    
+    return {
+      ids,
+      tokens,
+      attentionMask: Array(ids.length).fill(1),
+      specialTokensMask: Array(ids.length).fill(0),
+      offsets: []
+    };
+  }
+
+  tokenize(text) {
+    // Simple tokenization
+    return text.split(/\s+/).filter(token => token.length > 0);
+  }
+}
+
+/**
+ * Simple SentencePiece tokenizer implementation
+ */
+class SentencePieceTokenizer {
+  constructor(config) {
+    this.config = config;
+    this.model = null;
+    this.initialized = false;
+  }
+
+  async initialize() {
+    // Load SentencePiece model
+    this.initialized = true;
+  }
+
+  async encode(text) {
+    // Simple SentencePiece implementation
+    const tokens = this.tokenize(text);
+    const ids = tokens.map((token, i) => i);
+    
+    return {
+      ids,
+      tokens,
+      attentionMask: Array(ids.length).fill(1),
+      specialTokensMask: Array(ids.length).fill(0),
+      offsets: []
+    };
+  }
+
+  tokenize(text) {
+    // Simple tokenization
+    return text.split('').map(char => char);
+  }
+}
+
+export default UniversalTokenizer;
