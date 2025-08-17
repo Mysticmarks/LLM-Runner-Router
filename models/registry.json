@@ -2,44 +2,56 @@
   "version": "1.0.0",
   "models": [
     {
-      "id": "tinyllama-1.1b-chat",
-      "name": "tinyllama-1.1b-chat-v1.0.Q4_K_M",
-      "version": "1.0.0",
+      "id": "qwen2.5-1.5b-instruct",
+      "name": "Qwen 2.5 1.5B Instruct Q4",
+      "version": "2.5",
       "format": "gguf",
       "architecture": {
-        "type": "llama"
+        "type": "qwen2"
       },
-      "parameters": {},
-      "metadata": {},
+      "parameters": {
+        "size": "1.5B",
+        "quantization": "Q4_K_M"
+      },
+      "metadata": {
+        "description": "Alibaba's latest small model - excellent performance for size"
+      },
       "capabilities": {
-        "streaming": false,
+        "streaming": true,
         "batching": false,
-        "quantization": false,
+        "quantization": true,
         "embedding": false,
         "completion": true
       },
       "metrics": {
-        "loadTime": 1755211708696,
-        "inferenceCount": 2,
-        "totalTokens": 2,
-        "avgLatency": 1498.5,
-        "lastUsed": "2025-08-14T22:48:31.124Z"
+        "loadTime": null,
+        "inferenceCount": 0,
+        "totalTokens": 0,
+        "avgLatency": 0,
+        "lastUsed": null
       },
-      "source": "./models/tinyllama/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
-      "path": "./models/tinyllama/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
+      "source": "./models/qwen2.5/qwen2.5-1.5b-instruct-q4_k_m.gguf",
+      "path": "./models/qwen2.5/qwen2.5-1.5b-instruct-q4_k_m.gguf"
     },
     {
       "id": "phi-2",
       "name": "phi-2.Q4_K_M",
       "version": "1.0.0",
       "format": "gguf",
-      "architecture": {},
-      "parameters": {},
-      "metadata": {},
+      "architecture": {
+        "type": "phi"
+      },
+      "parameters": {
+        "size": "2.7B",
+        "quantization": "Q4_K_M"
+      },
+      "metadata": {
+        "description": "Microsoft Phi-2 - Good balance of size and performance"
+      },
       "capabilities": {
         "streaming": false,
         "batching": false,
-        "quantization": false,
+        "quantization": true,
         "embedding": false,
         "completion": true
       },
@@ -52,33 +64,6 @@
       },
       "source": "models/phi-2/phi-2.Q4_K_M.gguf",
       "path": "models/phi-2/phi-2.Q4_K_M.gguf"
-    },
-    {
-      "id": "llama-2-7b-chat",
-      "name": "llama-2-7b-chat.Q4_K_M",
-      "version": "1.0.0",
-      "format": "gguf",
-      "architecture": {
-        "type": "llama"
-      },
-      "parameters": {},
-      "metadata": {},
-      "capabilities": {
-        "streaming": false,
-        "batching": false,
-        "quantization": false,
-        "embedding": false,
-        "completion": true
-      },
-      "metrics": {
-        "loadTime": 1755211785508,
-        "inferenceCount": 0,
-        "totalTokens": 0,
-        "avgLatency": 0,
-        "lastUsed": null
-      },
-      "source": "models/llama-2-7b-chat/llama-2-7b-chat.Q4_K_M.gguf",
-      "path": "models/llama-2-7b-chat/llama-2-7b-chat.Q4_K_M.gguf"
     }
   ]
 }

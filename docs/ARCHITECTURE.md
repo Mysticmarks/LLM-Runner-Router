@@ -274,6 +274,9 @@ const response = await LLMRouter.advanced({
 #### Loaders Implemented
 - ✅ **Base Loader** (`src/loaders/BaseLoader.js`) - Abstract loader class
 - ✅ **GGUF Loader** (`src/loaders/GGUFLoader.js`) - GGML/GGUF format support
+- ✅ **ONNX Loader** (`src/loaders/ONNXLoader.js`) - ONNX runtime integration
+- ✅ **Safetensors Loader** (`src/loaders/SafetensorsLoader.js`) - Secure tensor storage format
+- ✅ **HuggingFace Loader** (`src/loaders/HFLoader.js`) - Direct HF Hub integration
 - ✅ **Simple Loader** (`src/loaders/SimpleLoader.js`) - VPS-compatible fallback loader
 - ✅ **Mock Loader** (`src/loaders/MockLoader.js`) - Testing and development
 - ✅ **Binary Loader** (`src/loaders/BinaryLoader.js`) - Binary model format support
@@ -316,9 +319,6 @@ const response = await LLMRouter.advanced({
 ### ⬜ Pending Features
 
 #### Loaders Not Yet Implemented
-- ⬜ **ONNX Loader** - ONNX runtime integration
-- ⬜ **Safetensors Loader** - Secure tensor storage format
-- ⬜ **HuggingFace Loader** - Direct HF Hub integration
 - ⬜ **TensorFlow.js Loader** - TF.js model support
 - ⬜ **Custom Format Loader** - Plugin architecture for custom formats
 
@@ -327,11 +327,13 @@ const response = await LLMRouter.advanced({
 - ⬜ **Worker Engine** - Web/Service Worker execution
 - ⬜ **Edge Engine** - Cloudflare Workers/Deno optimization
 
-#### Runtime Features
-- ⬜ **Memory Manager** - Advanced memory optimization
-- ⬜ **Cache Manager** - Multi-tier caching system
+#### Runtime Features Implemented
+- ✅ **Memory Manager** (`src/runtime/MemoryManager.js`) - Advanced memory optimization with pooling, compression, and swapping
+- ✅ **Cache Manager** (`src/runtime/CacheManager.js`) - Multi-tier caching system (L1 memory, L2 disk, L3 distributed)
+- ✅ **Stream Processor** (`src/runtime/StreamProcessor.js`) - Real-time streaming responses with batching and backpressure
+
+#### Runtime Features Not Yet Implemented
 - ⬜ **Thread Pool** - Worker thread management
-- ⬜ **Stream Processor** - Real-time streaming responses
 
 #### Advanced Routing
 - ⬜ **Model Ensemble** - Weighted combination of multiple models
@@ -340,8 +342,8 @@ const response = await LLMRouter.advanced({
 - ⬜ **Route Caching** - Performance optimization
 
 #### API Enhancements
+- ✅ **WebSocket Support** (`src/api/WebSocket.js`) - Real-time streaming with bidirectional communication
 - ⬜ **GraphQL Endpoint** - GraphQL API support
-- ⬜ **WebSocket Support** - Real-time streaming
 - ⬜ **gRPC Interface** - High-performance RPC
 - ⬜ **Authentication & Authorization** - API security
 - ⬜ **Rate Limiting** - Request throttling
@@ -367,7 +369,7 @@ const response = await LLMRouter.advanced({
 - ⬜ **Comprehensive Documentation** - User guides, tutorials
 
 #### Testing & Quality
-- ⬜ **Integration Tests** - Cross-component testing
+- ✅ **Integration Tests** (`tests/integration/`) - Cross-component testing for loaders and runtime
 - ⬜ **E2E Tests** - End-to-end scenarios
 - ⬜ **Load Testing** - Performance under stress
 - ⬜ **Coverage Reports** - Code coverage analysis
@@ -375,13 +377,14 @@ const response = await LLMRouter.advanced({
 
 ### 📊 Implementation Progress
 
-- **Core Systems**: ~85% complete
-- **Loaders**: ~60% complete (7 of 12 planned)
+- **Core Systems**: ~90% complete
+- **Loaders**: ~85% complete (10 of 12 planned)
 - **Engines**: ~50% complete (3 of 6 planned)
-- **API Layer**: ~40% complete (REST done, others pending)
-- **Production Readiness**: ~30% complete
-- **Documentation**: ~40% complete
-- **Testing**: ~20% complete
+- **Runtime Features**: ~75% complete (Memory, Cache, Streaming done)
+- **API Layer**: ~60% complete (REST and WebSocket done)
+- **Production Readiness**: ~35% complete
+- **Documentation**: ~45% complete
+- **Testing**: ~35% complete (unit and integration tests added)
 
 ## 🤝 Contributing
 

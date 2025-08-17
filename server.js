@@ -4,8 +4,13 @@
  */
 
 import express from 'express';
+import { createServer } from 'http';
 import { LLMRouter } from './src/index.js';
 import { GGUFLoader } from './src/loaders/GGUFLoader.js';
+import { ONNXLoader } from './src/loaders/ONNXLoader.js';
+import { SafetensorsLoader } from './src/loaders/SafetensorsLoader.js';
+import { HFLoader } from './src/loaders/HFLoader.js';
+import { WebSocketAPI } from './src/api/WebSocket.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -17,8 +22,9 @@ const PORT = process.env.PORT || 3000;
 
 console.log('🚀 LLM Router Server Starting...\n');
 
-// Initialize Express
+// Initialize Express and HTTP server
 const app = express();
+const server = createServer(app);
 app.use(express.json());
 
 // Enable CORS for all origins
@@ -42,6 +48,9 @@ const router = new LLMRouter({
 let isReady = false;
 let loadError = null;
 
+// WebSocket API instance
+let wsAPI = null;
+
 /**
  * Initialize the router and load models
  */
@@ -49,9 +58,18 @@ async function initializeRouter() {
   try {
     console.log('📚 Initializing router...');
     
-    // Register loaders
+    // Register all loaders
     router.registry.registerLoader('gguf', new GGUFLoader());
     console.log('  ✅ GGUF loader registered');
+    
+    router.registry.registerLoader('onnx', new ONNXLoader());
+    console.log('  ✅ ONNX loader registered');
+    
+    router.registry.registerLoader('safetensors', new SafetensorsLoader());
+    console.log('  ✅ Safetensors loader registered');
+    
+    router.registry.registerLoader('huggingface', new HFLoader());
+    console.log('  ✅ HuggingFace loader registered');
     
     // Initialize the router
     await router.initialize();
@@ -344,22 +362,34 @@ app.get('/', (req, res) => {
 });
 
 // Start server - bind to all interfaces
-app.listen(PORT, '0.0.0.0', async () => {
+server.listen(PORT, '0.0.0.0', async () => {
   console.log(`\n🌐 Server listening on http://0.0.0.0:${PORT}\n`);
   
   // Initialize router after server starts
   await initializeRouter();
   
+  // Initialize WebSocket API
+  wsAPI = new WebSocketAPI({
+    path: '/ws',
+    authEnabled: false
+  });
+  await wsAPI.initialize(server, router);
+  console.log('  ✅ WebSocket API initialized');
+  
   console.log('\n📡 API Endpoints:');
   console.log(`  http://localhost:${PORT}/api/health - Health check`);
   console.log(`  http://localhost:${PORT}/api/models - List models`);
   console.log(`  http://localhost:${PORT}/api/quick - Quick inference`);
+  console.log(`  ws://localhost:${PORT}/ws - WebSocket streaming`);
   console.log('\n💡 Ready for requests!\n');
 });
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
   console.log('\n🛑 Shutting down gracefully...');
+  if (wsAPI) {
+    await wsAPI.cleanup();
+  }
   await router.cleanup();
   process.exit(0);
 });
