@@ -18,6 +18,7 @@ class Pipeline extends EventEmitter {
       ...config
     };
     
+    this.stages = [];
     this.queue = [];
     this.processing = new Map();
     this.cache = new Map();

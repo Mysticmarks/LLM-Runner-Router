@@ -219,6 +219,7 @@ class SimpleModel extends ModelInterface {
  */
 class SimpleLoader {
   constructor(config = {}) {
+    this.name = 'SimpleLoader';
     this.config = config;
     this.models = new Map();
   }

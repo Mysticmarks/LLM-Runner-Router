@@ -33,6 +33,27 @@ class ModelValidator {
     });
   }
 
+  validatePrompt(prompt) {
+    // Validate prompt input
+    if (!prompt) {
+      return { valid: false, error: 'Prompt is required' };
+    }
+    
+    if (typeof prompt !== 'string') {
+      return { valid: false, error: 'Prompt must be a string' };
+    }
+    
+    if (prompt.length === 0) {
+      return { valid: false, error: 'Prompt cannot be empty' };
+    }
+    
+    if (prompt.length > 100000) {
+      return { valid: false, error: 'Prompt is too long' };
+    }
+    
+    return { valid: true, prompt };
+  }
+
   async validate(model) {
     logger.debug(`🔍 Validating model: ${model.name}`);
     

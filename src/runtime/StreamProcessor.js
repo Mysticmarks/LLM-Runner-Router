@@ -20,8 +20,9 @@ class StreamProcessor extends EventEmitter {
       flushInterval: config.flushInterval || 50, // ms between flushes
       
       // Batching settings
+      batchSize: config.batchSize || 10, // Alias for maxBatchSize
       batchingEnabled: config.batchingEnabled !== false,
-      maxBatchSize: config.maxBatchSize || 10,
+      maxBatchSize: config.maxBatchSize || config.batchSize || 10,
       batchTimeout: config.batchTimeout || 100, // ms
       
       // Backpressure settings
