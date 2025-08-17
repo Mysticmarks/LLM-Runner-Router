@@ -1,0 +1,148 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: llm-runner-router-hpa
+  namespace: llm-systems
+  labels:
+    app: llm-runner-router
+    component: autoscaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: llm-runner-router
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  # Custom metrics based on request rate (requires metrics-server and custom metrics API)
+  - type: Pods
+    pods:
+      metric:
+        name: http_requests_per_second
+      target:
+        type: AverageValue
+        averageValue: "100"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+      selectPolicy: Min
+
+---
+# Vertical Pod Autoscaler (VPA) for resource optimization
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: llm-runner-router-vpa
+  namespace: llm-systems
+  labels:
+    app: llm-runner-router
+    component: vpa
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: llm-runner-router
+  updatePolicy:
+    updateMode: "Auto"
+    minReplicas: 2
+  resourcePolicy:
+    containerPolicies:
+    - containerName: llm-runner-router
+      maxAllowed:
+        memory: "16Gi"
+        cpu: "4000m"
+      minAllowed:
+        memory: "1Gi"
+        cpu: "200m"
+      controlledResources:
+      - memory
+      - cpu
+      controlledValues: RequestsAndLimits
+
+---
+# Pod Disruption Budget to ensure availability during updates
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: llm-runner-router-pdb
+  namespace: llm-systems
+  labels:
+    app: llm-runner-router
+    component: disruption-budget
+spec:
+  selector:
+    matchLabels:
+      app: llm-runner-router
+      component: api
+  minAvailable: 1
+  # Alternatively, you can use maxUnavailable instead of minAvailable
+  # maxUnavailable: 50%
+
+---
+# Custom Resource for KEDA (Kubernetes Event-driven Autoscaling) - optional
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: llm-runner-router-keda
+  namespace: llm-systems
+  labels:
+    app: llm-runner-router
+    component: keda-scaler
+spec:
+  scaleTargetRef:
+    name: llm-runner-router
+  pollingInterval: 30
+  cooldownPeriod: 300
+  minReplicaCount: 2
+  maxReplicaCount: 20
+  triggers:
+  # Scale based on HTTP requests
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus:9090
+      metricName: http_requests_per_second
+      threshold: '100'
+      query: sum(rate(http_requests_total{service="llm-runner-router"}[1m]))
+  # Scale based on WebSocket connections
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus:9090
+      metricName: websocket_connections
+      threshold: '500'
+      query: sum(websocket_connections{service="llm-runner-router"})
+  # Scale based on queue length (if using message queues)
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus:9090
+      metricName: queue_length
+      threshold: '50'
+      query: sum(queue_length{service="llm-runner-router"})

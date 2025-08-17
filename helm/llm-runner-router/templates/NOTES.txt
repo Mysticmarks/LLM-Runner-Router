@@ -1,0 +1,83 @@
+1. Get the application URL by running these commands:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "llm-runner-router.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+           You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "llm-runner-router.fullname" . }}'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "llm-runner-router.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.service.ports.http.port }}
+{{- else if contains "ClusterIP" .Values.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "llm-runner-router.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+{{- end }}
+
+2. WebSocket connection:
+{{- if .Values.websocketIngress.enabled }}
+{{- range $host := .Values.websocketIngress.hosts }}
+  {{- range .paths }}
+  ws{{ if $.Values.websocketIngress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else }}
+  WebSocket is available on port {{ .Values.config.wsPort }}
+{{- end }}
+
+3. Health check endpoints:
+  - Health: /api/health
+  - Ready: /api/ready
+  - Metrics: /metrics (if monitoring is enabled)
+
+4. Configuration:
+  - Environment: {{ .Values.config.nodeEnv }}
+  - Routing Strategy: {{ .Values.config.routingStrategy }}
+  - Log Level: {{ .Values.config.logLevel }}
+  - Cache Enabled: {{ .Values.config.cacheEnabled }}
+
+5. Scaling:
+{{- if .Values.autoscaling.enabled }}
+  - HPA is enabled with {{ .Values.autoscaling.minReplicas }}-{{ .Values.autoscaling.maxReplicas }} replicas
+  - CPU target: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}%
+  - Memory target: {{ .Values.autoscaling.targetMemoryUtilizationPercentage }}%
+{{- else }}
+  - Fixed replicas: {{ include "llm-runner-router.replicaCount" . }}
+{{- end }}
+
+6. Storage:
+{{- if .Values.persistence.enabled }}
+  - Model cache: {{ include "llm-runner-router.modelCacheSize" . }}
+  - Logs: {{ .Values.persistence.logs.size }}
+  - Shared cache: {{ .Values.persistence.sharedCache.size }}
+{{- else }}
+  - Using ephemeral storage only
+{{- end }}
+
+7. Monitoring and observability:
+{{- if .Values.monitoring.enabled }}
+  - Prometheus metrics are enabled
+  - Service monitor: {{ .Values.monitoring.serviceMonitor.enabled }}
+{{- end }}
+  - Logging level: {{ .Values.logging.level }}
+  - Log format: {{ .Values.logging.format }}
+
+8. Security:
+{{- if .Values.networkPolicy.enabled }}
+  - Network policies are enabled
+{{- end }}
+{{- if .Values.podDisruptionBudget.enabled }}
+  - Pod disruption budget is configured
+{{- end }}
+  - Security context enforced (non-root user)
+  - Resource limits configured
+
+For more information about LLM Runner Router, visit:
+https://github.com/MCERQUA/LLM-Runner-Router

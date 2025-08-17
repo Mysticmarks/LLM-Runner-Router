@@ -1,0 +1,247 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: llm-runner-router-netpol
+  namespace: llm-systems
+  labels:
+    app: llm-runner-router
+    component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: llm-runner-router
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow traffic from ingress controllers
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: TCP
+      port: 3000
+    - protocol: TCP
+      port: 8080
+  # Allow traffic from monitoring systems
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 3000
+    - protocol: TCP
+      port: 9090  # metrics port
+  # Allow traffic from other pods in the same namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: llm-systems
+    ports:
+    - protocol: TCP
+      port: 3000
+    - protocol: TCP
+      port: 8080
+  # Allow traffic from load balancer health checks
+  - from: []  # Allow from anywhere for health checks
+    ports:
+    - protocol: TCP
+      port: 3000
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Allow HTTPS to external APIs (HuggingFace, etc.)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  # Allow HTTP to external APIs
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 80
+  # Allow access to Kubernetes API server
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: TCP
+      port: 443
+  # Allow access to internal services
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: llm-systems
+  # Allow access to monitoring and logging
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9090  # Prometheus
+    - protocol: TCP
+      port: 3100  # Loki
+    - protocol: TCP
+      port: 9200  # Elasticsearch
+
+---
+# Network policy for ingress controllers
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: llm-runner-ingress-allow
+  namespace: llm-systems
+  labels:
+    app: llm-runner-router
+    component: ingress-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: llm-runner-router
+  policyTypes:
+  - Ingress
+  ingress:
+  # Allow all ingress traffic (more permissive for load balancers)
+  - {}
+
+---
+# Network policy to deny all by default (apply to namespace)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: llm-systems
+  labels:
+    app: llm-runner-router
+    component: default-deny
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+
+---
+# Network policy for monitoring access
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: llm-runner-monitoring-access
+  namespace: llm-systems
+  labels:
+    app: llm-runner-router
+    component: monitoring-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: llm-runner-router
+  policyTypes:
+  - Ingress
+  ingress:
+  # Allow Prometheus to scrape metrics
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    - podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 9090
+  # Allow Grafana to access API
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    - podSelector:
+        matchLabels:
+          app: grafana
+    ports:
+    - protocol: TCP
+      port: 3000
+
+---
+# Network policy for database access (if using external database)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: llm-runner-database-access
+  namespace: llm-systems
+  labels:
+    app: llm-runner-router
+    component: database-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: llm-runner-router
+  policyTypes:
+  - Egress
+  egress:
+  # Allow access to PostgreSQL
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: database
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow access to Redis
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: cache
+    ports:
+    - protocol: TCP
+      port: 6379
+
+---
+# Network policy for inter-pod communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: llm-runner-inter-pod
+  namespace: llm-systems
+  labels:
+    app: llm-runner-router
+    component: inter-pod-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: llm-runner-router
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow communication between LLM router pods
+  - from:
+    - podSelector:
+        matchLabels:
+          app: llm-runner-router
+    ports:
+    - protocol: TCP
+      port: 3000
+    - protocol: TCP
+      port: 8080
+  egress:
+  # Allow communication to other LLM router pods
+  - to:
+    - podSelector:
+        matchLabels:
+          app: llm-runner-router
+    ports:
+    - protocol: TCP
+      port: 3000
+    - protocol: TCP
+      port: 8080

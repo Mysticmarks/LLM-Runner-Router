@@ -9,11 +9,11 @@ import { Pipeline } from './core/Pipeline.js';
 import { EngineSelector } from './engines/EngineSelector.js';
 import { Logger } from './utils/Logger.js';
 import { Config } from './config/Config.js';
-import { GGUFLoader } from './loaders/GGUFLoader.js';
-import { MockLoader } from './loaders/MockLoader.js';
-import { PyTorchLoader } from './loaders/PyTorchLoader.js';
-import { BinaryLoader } from './loaders/BinaryLoader.js';
-import { SimpleLoader } from './loaders/SimpleLoader.js';
+import GGUFLoader from './loaders/GGUFLoader.js';
+import MockLoader from './loaders/MockLoader.js';
+import PyTorchLoader from './loaders/PyTorchLoader.js';
+import BinaryLoader from './loaders/BinaryLoader.js';
+import SimpleLoader from './loaders/SimpleLoader.js';
 // import BitNetLoader from './loaders/BitNetLoader.js'; // Commented out - missing dependencies
 
 const logger = new Logger('LLMRouter');

@@ -1,0 +1,86 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: llm-runner-router-base
+  labels:
+    app: llm-runner-router
+    component: base
+
+# Base resources
+resources:
+- ../deployment.yaml
+- ../service.yaml
+- ../ingress.yaml
+- ../configmap.yaml
+- ../secret.yaml
+- ../hpa.yaml
+- ../pvc.yaml
+- ../networkpolicy.yaml
+- namespace.yaml
+- serviceaccount.yaml
+- rbac.yaml
+
+# Common labels applied to all resources
+commonLabels:
+  app: llm-runner-router
+  managed-by: kustomize
+
+# Common annotations applied to all resources
+commonAnnotations:
+  kustomize.config.k8s.io/application: llm-runner-router
+  kustomize.config.k8s.io/version: v1.2.1
+
+# Images to be used
+images:
+- name: llm-runner-router
+  newTag: "1.2.1"
+
+# ConfigMap generator for environment-specific configs
+configMapGenerator:
+- name: llm-runner-base-config
+  literals:
+  - NODE_ENV=production
+  - LOG_LEVEL=info
+  - CACHE_ENABLED=true
+  - ROUTING_STRATEGY=balanced
+
+# Secret generator (placeholder - use external secret management in production)
+secretGenerator:
+- name: llm-runner-base-secrets
+  literals:
+  - placeholder-key=placeholder-value
+  type: Opaque
+
+# Namespace for all resources
+namespace: llm-systems
+
+# Resource name prefix
+namePrefix: ""
+
+# Resource name suffix
+nameSuffix: ""
+
+# Replicas for scalable resources
+replicas:
+- name: llm-runner-router
+  count: 3
+
+# Patches for base configuration
+patches:
+- target:
+    kind: Deployment
+    name: llm-runner-router
+  patch: |-
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/memory
+      value: "2Gi"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/limits/memory
+      value: "8Gi"
+
+# Component transformations
+transformers: []
+
+# Build metadata
+buildMetadata: [originAnnotations, transformerAnnotations]

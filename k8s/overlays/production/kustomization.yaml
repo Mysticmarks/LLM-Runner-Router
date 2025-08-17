@@ -1,0 +1,209 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: llm-runner-router-production
+  labels:
+    app: llm-runner-router
+    environment: production
+
+# Base configuration
+bases:
+- ../../base
+
+# Production namespace
+namespace: llm-systems
+
+# No name prefix for production (clean names)
+namePrefix: ""
+
+# Additional labels for production
+commonLabels:
+  environment: production
+  tier: production
+
+# Additional annotations for production
+commonAnnotations:
+  environment: production
+  deployment.type: production
+
+# Production-specific images (stable tags)
+images:
+- name: llm-runner-router
+  newTag: "v1.2.1"
+
+# Production replicas (high availability)
+replicas:
+- name: llm-runner-router
+  count: 5
+
+# Production-specific ConfigMap
+configMapGenerator:
+- name: llm-runner-production-config
+  literals:
+  - NODE_ENV=production
+  - LOG_LEVEL=warn
+  - CACHE_ENABLED=true
+  - ROUTING_STRATEGY=quality-first
+  - MAX_MEMORY=8192
+  - ENABLE_DEBUG=false
+  - AUTO_RELOAD=false
+  - ENABLE_METRICS=true
+  - ENABLE_TRACING=true
+  - ENABLE_SECURITY_HEADERS=true
+
+# Production patches
+patches:
+# High resource requirements for production
+- target:
+    kind: Deployment
+    name: llm-runner-router
+  patch: |-
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/memory
+      value: "4Gi"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/limits/memory
+      value: "16Gi"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/cpu
+      value: "1000m"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/limits/cpu
+      value: "4000m"
+
+# Production HPA configuration (aggressive scaling)
+- target:
+    kind: HorizontalPodAutoscaler
+    name: llm-runner-router-hpa
+  patch: |-
+    - op: replace
+      path: /spec/minReplicas
+      value: 5
+    - op: replace
+      path: /spec/maxReplicas
+      value: 20
+    - op: replace
+      path: /spec/metrics/0/resource/target/averageUtilization
+      value: 60
+    - op: replace
+      path: /spec/metrics/1/resource/target/averageUtilization
+      value: 70
+
+# Large PVC size for production
+- target:
+    kind: PersistentVolumeClaim
+    name: llm-model-cache
+  patch: |-
+    - op: replace
+      path: /spec/resources/requests/storage
+      value: "100Gi"
+    - op: replace
+      path: /spec/storageClassName
+      value: "fast-ssd"
+
+# Production ingress with production hosts and TLS
+- target:
+    kind: Ingress
+    name: llm-runner-router
+  patch: |-
+    - op: replace
+      path: /spec/rules/0/host
+      value: "api.yourdomain.com"
+    - op: replace
+      path: /spec/rules/1/host
+      value: "llm.yourdomain.com"
+    - op: replace
+      path: /spec/tls/0/hosts/0
+      value: "api.yourdomain.com"
+    - op: replace
+      path: /spec/tls/0/hosts/1
+      value: "llm.yourdomain.com"
+
+# Production service with additional annotations
+- target:
+    kind: Service
+    name: llm-runner-router
+  patch: |-
+    - op: add
+      path: /metadata/annotations/service.beta.kubernetes.io~1aws-load-balancer-ssl-ports
+      value: "https"
+    - op: add
+      path: /metadata/annotations/service.beta.kubernetes.io~1aws-load-balancer-ssl-cert
+      value: "arn:aws:acm:region:account:certificate/cert-id"
+
+# Production security enhancements
+- target:
+    kind: Deployment
+    name: llm-runner-router
+  patch: |-
+    - op: add
+      path: /spec/template/spec/securityContext/seccompProfile
+      value:
+        type: RuntimeDefault
+    - op: add
+      path: /spec/template/spec/containers/0/securityContext/allowPrivilegeEscalation
+      value: false
+    - op: add
+      path: /spec/template/spec/containers/0/securityContext/capabilities
+      value:
+        drop:
+        - ALL
+    - op: add
+      path: /spec/template/spec/containers/0/securityContext/readOnlyRootFilesystem
+      value: true
+
+# Production monitoring and alerting
+- target:
+    kind: Service
+    name: llm-runner-router
+  patch: |-
+    - op: add
+      path: /metadata/annotations/prometheus.io~1scrape
+      value: "true"
+    - op: add
+      path: /metadata/annotations/prometheus.io~1port
+      value: "9090"
+    - op: add
+      path: /metadata/annotations/prometheus.io~1path
+      value: "/metrics"
+
+# Production affinity rules (spread across zones)
+- target:
+    kind: Deployment
+    name: llm-runner-router
+  patch: |-
+    - op: add
+      path: /spec/template/spec/affinity/podAntiAffinity/requiredDuringSchedulingIgnoredDuringExecution
+      value:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - llm-runner-router
+        topologyKey: topology.kubernetes.io/zone
+
+# Production tolerations for dedicated nodes
+- target:
+    kind: Deployment
+    name: llm-runner-router
+  patch: |-
+    - op: add
+      path: /spec/template/spec/tolerations/-
+      value:
+        key: llm-workload
+        operator: Equal
+        value: "true"
+        effect: NoSchedule
+
+# Production node selector for GPU nodes (if available)
+- target:
+    kind: Deployment
+    name: llm-runner-router
+  patch: |-
+    - op: add
+      path: /spec/template/spec/nodeSelector
+      value:
+        instance-type: gpu-optimized
+        node-type: llm-inference

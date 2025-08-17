@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "llm-runner-router.configMapName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "llm-runner-router.labels" . | nindent 4 }}
+data:
+  # Application Configuration
+  routing-strategy: {{ .Values.config.routingStrategy | quote }}
+  max-memory: {{ .Values.config.maxMemory | quote }}
+  cache-enabled: {{ .Values.config.cacheEnabled | quote }}
+  log-level: {{ .Values.config.logLevel | quote }}
+  
+  # Performance Configuration
+  max-concurrent-requests: {{ .Values.config.maxConcurrentRequests | quote }}
+  request-timeout: {{ .Values.config.requestTimeout | quote }}
+  model-load-timeout: {{ .Values.config.modelLoadTimeout | quote }}
+  cache-ttl: {{ .Values.config.cacheTtl | quote }}
+  
+  # Security Configuration
+  enable-cors: {{ .Values.config.enableCors | quote }}
+  rate-limit-requests: {{ .Values.config.rateLimitRequests | quote }}
+  rate-limit-window: {{ .Values.config.rateLimitWindow | quote }}
+  
+  # WebSocket Configuration
+  ws-heartbeat-interval: {{ .Values.config.wsHeartbeatInterval | quote }}
+  ws-max-connections: {{ .Values.config.wsMaxConnections | quote }}
+  ws-compression: {{ .Values.config.wsCompression | quote }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "llm-runner-router.fullname" . }}-env-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "llm-runner-router.labels" . | nindent 4 }}
+    component: env-config
+data:
+  .env: |
+    # LLM Runner Router Environment Configuration
+    NODE_ENV={{ .Values.config.nodeEnv }}
+    PORT={{ .Values.config.port }}
+    WS_PORT={{ .Values.config.wsPort }}
+    
+    # Routing Configuration
+    ROUTING_STRATEGY={{ .Values.config.routingStrategy }}
+    MAX_MEMORY={{ .Values.config.maxMemory }}
+    CACHE_ENABLED={{ .Values.config.cacheEnabled }}
+    
+    # Performance Configuration
+    MAX_CONCURRENT_REQUESTS={{ .Values.config.maxConcurrentRequests }}
+    REQUEST_TIMEOUT={{ .Values.config.requestTimeout }}
+    MODEL_LOAD_TIMEOUT={{ .Values.config.modelLoadTimeout }}
+    
+    # Logging Configuration
+    LOG_LEVEL={{ .Values.config.logLevel }}
+    {{- if .Values.logging.enabled }}
+    LOG_FORMAT={{ .Values.logging.format }}
+    {{- end }}
+    
+    # Security Configuration
+    ENABLE_CORS={{ .Values.config.enableCors }}
+    RATE_LIMIT_REQUESTS={{ .Values.config.rateLimitRequests }}
+    RATE_LIMIT_WINDOW={{ .Values.config.rateLimitWindow }}
+    
+    # WebSocket Configuration
+    WS_HEARTBEAT_INTERVAL={{ .Values.config.wsHeartbeatInterval }}
+    WS_MAX_CONNECTIONS={{ .Values.config.wsMaxConnections }}
+    WS_COMPRESSION={{ .Values.config.wsCompression }}

@@ -1,0 +1,123 @@
+# Development values for llm-runner-router
+# Override default values for development deployment
+
+# Development image with latest tag
+image:
+  repository: llm-runner-router
+  tag: "dev-latest"
+  pullPolicy: Always
+
+# Single replica for development
+deployment:
+  replicaCount: 1
+  
+  pod:
+    container:
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "100m"
+        limits:
+          memory: "2Gi"
+          cpu: "500m"
+
+# NodePort service for easy local access
+service:
+  type: NodePort
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+      protocol: TCP
+      nodePort: 30000
+    - name: websocket
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+      nodePort: 30001
+
+# Development ingress with local domains
+ingress:
+  enabled: true
+  hosts:
+    - host: dev-llm-api.local
+      paths:
+        - path: /
+          pathType: Prefix
+    - host: dev-llm-router.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []  # No TLS for development
+
+websocketIngress:
+  enabled: true
+  hosts:
+    - host: dev-ws.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []  # No TLS for development
+
+# Development configuration
+config:
+  nodeEnv: development
+  logLevel: debug
+  routingStrategy: speed-priority
+  maxMemory: 2048
+  cacheEnabled: false
+  maxConcurrentRequests: 50
+  requestTimeout: 15000
+  modelLoadTimeout: 180000
+
+# Minimal storage for development
+persistence:
+  enabled: true
+  modelCache:
+    size: 10Gi
+    storageClass: "standard"
+  logs:
+    size: 5Gi
+    storageClass: "standard"
+  sharedCache:
+    size: 5Gi
+    storageClass: "standard"
+
+# Disable autoscaling for development
+autoscaling:
+  enabled: false
+
+# Relaxed security for development
+podSecurityContext:
+  runAsNonRoot: false
+  runAsUser: 0
+  runAsGroup: 0
+  fsGroup: 0
+
+securityContext:
+  allowPrivilegeEscalation: true
+  capabilities:
+    drop: []
+  readOnlyRootFilesystem: false
+
+# No affinity constraints for development
+affinity: {}
+
+# No tolerations for development
+tolerations: []
+
+# Basic monitoring for development
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+
+# Relaxed network policies for development
+networkPolicy:
+  enabled: false
+
+# Debug logging
+logging:
+  enabled: true
+  level: debug
+  format: text

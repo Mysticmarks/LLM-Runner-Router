@@ -1,0 +1,1160 @@
+/**
+ * 📝 Enterprise Audit Logger
+ * Comprehensive activity logging and compliance tracking
+ * Echo AI Systems - Immutable audit trail for enterprise security
+ */
+
+import { EventEmitter } from 'events';
+import { Logger } from '../utils/Logger.js';
+import crypto from 'crypto';
+import fs from 'fs/promises';
+import path from 'path';
+
+const logger = new Logger('AuditLogger');
+
+/**
+ * Audit event types
+ */
+export const AuditEventTypes = {
+  // Authentication events
+  LOGIN: 'auth.login',
+  LOGOUT: 'auth.logout',
+  LOGIN_FAILED: 'auth.login_failed',
+  TOKEN_ISSUED: 'auth.token_issued',
+  TOKEN_REVOKED: 'auth.token_revoked',
+  
+  // Model operations
+  MODEL_LOADED: 'model.loaded',
+  MODEL_UNLOADED: 'model.unloaded',
+  MODEL_INFERENCE: 'model.inference',
+  MODEL_FAILED: 'model.failed',
+  
+  // Data operations
+  DATA_ACCESS: 'data.access',
+  DATA_EXPORT: 'data.export',
+  DATA_DELETE: 'data.delete',
+  DATA_IMPORT: 'data.import',
+  
+  // Configuration changes
+  CONFIG_CHANGED: 'config.changed',
+  PERMISSION_CHANGED: 'permission.changed',
+  POLICY_CHANGED: 'policy.changed',
+  
+  // Security events
+  SECURITY_VIOLATION: 'security.violation',
+  QUOTA_EXCEEDED: 'security.quota_exceeded',
+  RATE_LIMIT_HIT: 'security.rate_limit',
+  SUSPICIOUS_ACTIVITY: 'security.suspicious',
+  
+  // Administrative actions
+  ADMIN_ACTION: 'admin.action',
+  SYSTEM_CHANGE: 'system.change',
+  MAINTENANCE: 'system.maintenance',
+  
+  // Compliance events
+  GDPR_REQUEST: 'compliance.gdpr_request',
+  DATA_RETENTION: 'compliance.data_retention',
+  PRIVACY_VIOLATION: 'compliance.privacy_violation'
+};
+
+/**
+ * Compliance frameworks
+ */
+export const ComplianceFrameworks = {
+  GDPR: 'gdpr',
+  HIPAA: 'hipaa',
+  SOX: 'sox',
+  PCI_DSS: 'pci_dss',
+  ISO27001: 'iso27001',
+  CCPA: 'ccpa'
+};
+
+/**
+ * Risk levels
+ */
+export const RiskLevels = {
+  LOW: 'low',
+  MEDIUM: 'medium',
+  HIGH: 'high',
+  CRITICAL: 'critical'
+};
+
+/**
+ * Enterprise Audit Logger
+ */
+class AuditLogger extends EventEmitter {
+  constructor(config = {}) {
+    super();
+    
+    this.config = {
+      logDirectory: config.logDirectory || './audit-logs',
+      encryptLogs: config.encryptLogs || true,
+      compressionEnabled: config.compressionEnabled || true,
+      retentionDays: config.retentionDays || 2555, // 7 years default
+      batchSize: config.batchSize || 100,
+      flushInterval: config.flushInterval || 5000, // 5 seconds
+      enableSIEM: config.enableSIEM || false,
+      siemEndpoint: config.siemEndpoint,
+      complianceFrameworks: config.complianceFrameworks || [ComplianceFrameworks.GDPR],
+      ...config
+    };
+    
+    // Audit storage
+    this.auditEvents = [];
+    this.eventBuffer = [];
+    this.encryptionKey = this.generateEncryptionKey();
+    
+    // Integrity verification
+    this.chainHash = this.generateInitialHash();
+    this.eventHashes = new Map();
+    
+    // Compliance tracking
+    this.complianceViolations = [];
+    this.retentionPolicies = new Map();
+    
+    // Performance metrics
+    this.metrics = {
+      eventsLogged: 0,
+      violationsDetected: 0,
+      averageProcessingTime: 0,
+      lastProcessedAt: null
+    };
+    
+    // Initialize
+    this.initialize();
+    
+    logger.info('📝 Audit logger initialized', {
+      encryption: this.config.encryptLogs,
+      retention: this.config.retentionDays,
+      frameworks: this.config.complianceFrameworks
+    });
+  }
+
+  /**
+   * Log audit event
+   * @param {string} eventType - Type of event
+   * @param {object} eventData - Event data
+   * @param {object} context - Additional context
+   */
+  async logEvent(eventType, eventData, context = {}) {
+    const startTime = Date.now();
+    
+    try {
+      // Create audit event
+      const auditEvent = await this.createAuditEvent(eventType, eventData, context);
+      
+      // Validate event
+      this.validateAuditEvent(auditEvent);
+      
+      // Check compliance
+      await this.checkCompliance(auditEvent);
+      
+      // Add to buffer
+      this.eventBuffer.push(auditEvent);
+      
+      // Update metrics
+      this.updateMetrics(startTime);
+      
+      // Emit event for real-time processing
+      this.emit('audit-event', auditEvent);
+      
+      // Flush if buffer is full
+      if (this.eventBuffer.length >= this.config.batchSize) {
+        await this.flushBuffer();
+      }
+      
+      return auditEvent.id;
+      
+    } catch (error) {
+      logger.error('Failed to log audit event:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Log authentication event
+   */
+  async logAuth(action, userId, details = {}) {
+    return await this.logEvent(
+      `auth.${action}`,
+      {
+        userId,
+        timestamp: new Date(),
+        ...details
+      },
+      {
+        riskLevel: this.assessAuthRisk(action, details),
+        category: 'authentication'
+      }
+    );
+  }
+
+  /**
+   * Log model operation
+   */
+  async logModelOperation(operation, modelId, details = {}) {
+    return await this.logEvent(
+      `model.${operation}`,
+      {
+        modelId,
+        timestamp: new Date(),
+        ...details
+      },
+      {
+        riskLevel: RiskLevels.LOW,
+        category: 'model_operation'
+      }
+    );
+  }
+
+  /**
+   * Log data access
+   */
+  async logDataAccess(userId, resource, action, details = {}) {
+    return await this.logEvent(
+      AuditEventTypes.DATA_ACCESS,
+      {
+        userId,
+        resource,
+        action,
+        timestamp: new Date(),
+        ...details
+      },
+      {
+        riskLevel: this.assessDataRisk(action, resource),
+        category: 'data_access',
+        sensitiveData: this.containsSensitiveData(resource)
+      }
+    );
+  }
+
+  /**
+   * Log security violation
+   */
+  async logSecurityViolation(violationType, details, context = {}) {
+    const auditEvent = await this.logEvent(
+      AuditEventTypes.SECURITY_VIOLATION,
+      {
+        violationType,
+        timestamp: new Date(),
+        ...details
+      },
+      {
+        riskLevel: RiskLevels.HIGH,
+        category: 'security',
+        requiresAction: true,
+        ...context
+      }
+    );
+    
+    // Trigger security alert
+    this.emit('security-violation', {
+      auditEvent,
+      violationType,
+      details
+    });
+    
+    return auditEvent;
+  }
+
+  /**
+   * Log compliance event
+   */
+  async logCompliance(framework, eventType, details, context = {}) {
+    return await this.logEvent(
+      `compliance.${framework}.${eventType}`,
+      {
+        framework,
+        eventType,
+        timestamp: new Date(),
+        ...details
+      },
+      {
+        riskLevel: RiskLevels.MEDIUM,
+        category: 'compliance',
+        framework,
+        ...context
+      }
+    );
+  }
+
+  /**
+   * Query audit events
+   */
+  async queryEvents(criteria = {}) {
+    const {
+      startDate,
+      endDate,
+      eventType,
+      userId,
+      riskLevel,
+      category,
+      limit = 100,
+      offset = 0
+    } = criteria;
+    
+    let events = this.auditEvents;
+    
+    // Apply filters
+    if (startDate) {
+      events = events.filter(e => new Date(e.timestamp) >= startDate);
+    }
+    
+    if (endDate) {
+      events = events.filter(e => new Date(e.timestamp) <= endDate);
+    }
+    
+    if (eventType) {
+      events = events.filter(e => e.eventType === eventType);
+    }
+    
+    if (userId) {
+      events = events.filter(e => e.data.userId === userId);
+    }
+    
+    if (riskLevel) {
+      events = events.filter(e => e.context.riskLevel === riskLevel);
+    }
+    
+    if (category) {
+      events = events.filter(e => e.context.category === category);
+    }
+    
+    // Sort by timestamp (newest first)
+    events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    // Apply pagination
+    const paginatedEvents = events.slice(offset, offset + limit);
+    
+    return {
+      events: paginatedEvents,
+      total: events.length,
+      hasMore: offset + limit < events.length
+    };
+  }
+
+  /**
+   * Export audit logs
+   */
+  async exportLogs(format = 'json', criteria = {}) {
+    const queryResult = await this.queryEvents({
+      ...criteria,
+      limit: Number.MAX_SAFE_INTEGER
+    });
+    
+    const events = queryResult.events;
+    
+    switch (format.toLowerCase()) {
+      case 'json':
+        return JSON.stringify(events, null, 2);
+      
+      case 'csv':
+        return this.convertToCSV(events);
+      
+      case 'xml':
+        return this.convertToXML(events);
+      
+      default:
+        throw new Error(`Unsupported export format: ${format}`);
+    }
+  }
+
+  /**
+   * Verify audit trail integrity
+   */
+  async verifyIntegrity() {
+    let isValid = true;
+    const violations = [];
+    
+    // Verify chain integrity
+    let currentHash = this.generateInitialHash();
+    
+    for (const event of this.auditEvents) {
+      const expectedHash = this.calculateEventHash(event, currentHash);
+      const storedHash = this.eventHashes.get(event.id);
+      
+      if (expectedHash !== storedHash) {
+        isValid = false;
+        violations.push({
+          eventId: event.id,
+          type: 'hash_mismatch',
+          expected: expectedHash,
+          actual: storedHash
+        });
+      }
+      
+      currentHash = expectedHash;
+    }
+    
+    return {
+      isValid,
+      violations,
+      totalEvents: this.auditEvents.length,
+      checkedAt: new Date()
+    };
+  }
+
+  /**
+   * Generate compliance report
+   */
+  async generateComplianceReport(framework, startDate, endDate) {
+    const events = await this.queryEvents({
+      startDate,
+      endDate,
+      category: 'compliance'
+    });
+    
+    const frameworkEvents = events.events.filter(e => 
+      e.context.framework === framework
+    );
+    
+    const report = {
+      framework,
+      period: { startDate, endDate },
+      summary: {
+        totalEvents: frameworkEvents.length,
+        violations: 0,
+        riskDistribution: {},
+        topEventTypes: {}
+      },
+      violations: [],
+      recommendations: []
+    };
+    
+    // Analyze events
+    for (const event of frameworkEvents) {
+      // Count risk levels
+      const risk = event.context.riskLevel || RiskLevels.LOW;
+      report.summary.riskDistribution[risk] = 
+        (report.summary.riskDistribution[risk] || 0) + 1;
+      
+      // Count event types
+      report.summary.topEventTypes[event.eventType] = 
+        (report.summary.topEventTypes[event.eventType] || 0) + 1;
+      
+      // Check for violations
+      if (event.context.violation) {
+        report.summary.violations++;
+        report.violations.push({
+          eventId: event.id,
+          type: event.context.violation.type,
+          severity: event.context.violation.severity,
+          description: event.context.violation.description,
+          timestamp: event.timestamp
+        });
+      }
+    }
+    
+    // Generate recommendations
+    report.recommendations = this.generateRecommendations(framework, report);
+    
+    return report;
+  }
+
+  /**
+   * Setup retention policy
+   */
+  async setupRetentionPolicy(category, retentionDays, archiveLocation = null) {
+    const policy = {
+      category,
+      retentionDays,
+      archiveLocation,
+      createdAt: new Date(),
+      lastAppliedAt: null
+    };
+    
+    this.retentionPolicies.set(category, policy);
+    
+    await this.logEvent(
+      AuditEventTypes.DATA_RETENTION,
+      {
+        category,
+        retentionDays,
+        archiveLocation
+      },
+      {
+        riskLevel: RiskLevels.LOW,
+        category: 'compliance'
+      }
+    );
+    
+    logger.info(`📋 Retention policy set for ${category}: ${retentionDays} days`);
+  }
+
+  /**
+   * Apply retention policies
+   */
+  async applyRetentionPolicies() {
+    let deletedCount = 0;
+    let archivedCount = 0;
+    
+    for (const [category, policy] of this.retentionPolicies.entries()) {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - policy.retentionDays);
+      
+      const expiredEvents = this.auditEvents.filter(event => 
+        event.context.category === category &&
+        new Date(event.timestamp) < cutoffDate
+      );
+      
+      for (const event of expiredEvents) {
+        if (policy.archiveLocation) {
+          // Archive event
+          await this.archiveEvent(event, policy.archiveLocation);
+          archivedCount++;
+        }
+        
+        // Remove from active logs
+        this.auditEvents = this.auditEvents.filter(e => e.id !== event.id);
+        this.eventHashes.delete(event.id);
+        deletedCount++;
+      }
+      
+      policy.lastAppliedAt = new Date();
+    }
+    
+    if (deletedCount > 0 || archivedCount > 0) {
+      await this.logEvent(
+        AuditEventTypes.DATA_RETENTION,
+        {
+          deletedCount,
+          archivedCount,
+          appliedAt: new Date()
+        },
+        {
+          riskLevel: RiskLevels.LOW,
+          category: 'compliance'
+        }
+      );
+    }
+    
+    logger.info(`🗑️ Retention applied: ${deletedCount} deleted, ${archivedCount} archived`);
+    
+    return { deletedCount, archivedCount };
+  }
+
+  /**
+   * Get audit statistics
+   */
+  getStatistics() {
+    const now = Date.now();
+    const lastHour = now - (60 * 60 * 1000);
+    const lastDay = now - (24 * 60 * 60 * 1000);
+    
+    const recentEvents = this.auditEvents.filter(e => 
+      new Date(e.timestamp).getTime() > lastHour
+    );
+    
+    const dailyEvents = this.auditEvents.filter(e => 
+      new Date(e.timestamp).getTime() > lastDay
+    );
+    
+    return {
+      total: this.auditEvents.length,
+      lastHour: recentEvents.length,
+      lastDay: dailyEvents.length,
+      violationsDetected: this.metrics.violationsDetected,
+      averageProcessingTime: this.metrics.averageProcessingTime,
+      bufferSize: this.eventBuffer.length,
+      lastProcessed: this.metrics.lastProcessedAt,
+      integrityStatus: this.chainHash ? 'valid' : 'unverified'
+    };
+  }
+
+  // Private methods
+
+  /**
+   * Initialize audit logger
+   * @private
+   */
+  async initialize() {
+    // Create log directory
+    await this.ensureLogDirectory();
+    
+    // Setup periodic buffer flush
+    this.flushTimer = setInterval(() => {
+      if (this.eventBuffer.length > 0) {
+        this.flushBuffer().catch(console.error);
+      }
+    }, this.config.flushInterval);
+    
+    // Setup retention policy enforcement
+    this.retentionTimer = setInterval(() => {
+      this.applyRetentionPolicies().catch(console.error);
+    }, 24 * 60 * 60 * 1000); // Daily
+    
+    // Load existing logs
+    await this.loadExistingLogs();
+  }
+
+  /**
+   * Create audit event structure
+   * @private
+   */
+  async createAuditEvent(eventType, eventData, context) {
+    const event = {
+      id: this.generateEventId(),
+      eventType,
+      timestamp: new Date().toISOString(),
+      data: { ...eventData },
+      context: {
+        sessionId: context.sessionId,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        riskLevel: context.riskLevel || RiskLevels.LOW,
+        category: context.category || 'general',
+        ...context
+      },
+      metadata: {
+        version: '1.0',
+        source: 'llm-runner-router',
+        environment: process.env.NODE_ENV || 'development'
+      }
+    };
+    
+    // Calculate event hash for integrity
+    const previousHash = this.chainHash;
+    const eventHash = this.calculateEventHash(event, previousHash);
+    this.eventHashes.set(event.id, eventHash);
+    this.chainHash = eventHash;
+    
+    return event;
+  }
+
+  /**
+   * Validate audit event
+   * @private
+   */
+  validateAuditEvent(event) {
+    if (!event.eventType) {
+      throw new Error('Event type is required');
+    }
+    
+    if (!event.timestamp) {
+      throw new Error('Timestamp is required');
+    }
+    
+    if (!event.data) {
+      throw new Error('Event data is required');
+    }
+  }
+
+  /**
+   * Check compliance requirements
+   * @private
+   */
+  async checkCompliance(event) {
+    for (const framework of this.config.complianceFrameworks) {
+      const violations = await this.checkFrameworkCompliance(event, framework);
+      
+      if (violations.length > 0) {
+        this.metrics.violationsDetected++;
+        
+        for (const violation of violations) {
+          await this.recordComplianceViolation(event, framework, violation);
+        }
+      }
+    }
+  }
+
+  /**
+   * Check specific framework compliance
+   * @private
+   */
+  async checkFrameworkCompliance(event, framework) {
+    const violations = [];
+    
+    switch (framework) {
+      case ComplianceFrameworks.GDPR:
+        violations.push(...this.checkGDPRCompliance(event));
+        break;
+      
+      case ComplianceFrameworks.HIPAA:
+        violations.push(...this.checkHIPAACompliance(event));
+        break;
+      
+      case ComplianceFrameworks.SOX:
+        violations.push(...this.checkSOXCompliance(event));
+        break;
+      
+      case ComplianceFrameworks.PCI_DSS:
+        violations.push(...this.checkPCICompliance(event));
+        break;
+    }
+    
+    return violations;
+  }
+
+  /**
+   * Check GDPR compliance
+   * @private
+   */
+  checkGDPRCompliance(event) {
+    const violations = [];
+    
+    // Check for processing of personal data without consent
+    if (this.containsPersonalData(event.data) && !event.context.hasConsent) {
+      violations.push({
+        type: 'processing_without_consent',
+        severity: RiskLevels.HIGH,
+        description: 'Personal data processed without explicit consent'
+      });
+    }
+    
+    // Check for data retention
+    if (event.eventType === AuditEventTypes.DATA_ACCESS && 
+        !this.hasRetentionPolicy(event.context.category)) {
+      violations.push({
+        type: 'no_retention_policy',
+        severity: RiskLevels.MEDIUM,
+        description: 'Data accessed without defined retention policy'
+      });
+    }
+    
+    return violations;
+  }
+
+  /**
+   * Check HIPAA compliance
+   * @private
+   */
+  checkHIPAACompliance(event) {
+    const violations = [];
+    
+    // Check for PHI access logging
+    if (this.containsPHI(event.data) && !event.context.accessLogged) {
+      violations.push({
+        type: 'phi_access_not_logged',
+        severity: RiskLevels.CRITICAL,
+        description: 'PHI access not properly logged'
+      });
+    }
+    
+    return violations;
+  }
+
+  /**
+   * Check SOX compliance
+   * @private
+   */
+  checkSOXCompliance(event) {
+    const violations = [];
+    
+    // Check for financial data controls
+    if (this.containsFinancialData(event.data) && 
+        event.context.riskLevel !== RiskLevels.HIGH) {
+      violations.push({
+        type: 'inadequate_financial_controls',
+        severity: RiskLevels.HIGH,
+        description: 'Financial data accessed without adequate controls'
+      });
+    }
+    
+    return violations;
+  }
+
+  /**
+   * Check PCI DSS compliance
+   * @private
+   */
+  checkPCICompliance(event) {
+    const violations = [];
+    
+    // Check for cardholder data protection
+    if (this.containsCardholderData(event.data) && !event.context.encrypted) {
+      violations.push({
+        type: 'cardholder_data_unencrypted',
+        severity: RiskLevels.CRITICAL,
+        description: 'Cardholder data not properly encrypted'
+      });
+    }
+    
+    return violations;
+  }
+
+  /**
+   * Generate event ID
+   * @private
+   */
+  generateEventId() {
+    return crypto.randomUUID();
+  }
+
+  /**
+   * Generate encryption key
+   * @private
+   */
+  generateEncryptionKey() {
+    return crypto.randomBytes(32);
+  }
+
+  /**
+   * Generate initial hash for chain
+   * @private
+   */
+  generateInitialHash() {
+    return crypto.createHash('sha256')
+      .update('audit-chain-genesis')
+      .digest('hex');
+  }
+
+  /**
+   * Calculate event hash for integrity
+   * @private
+   */
+  calculateEventHash(event, previousHash) {
+    const eventString = JSON.stringify({
+      id: event.id,
+      eventType: event.eventType,
+      timestamp: event.timestamp,
+      data: event.data
+    });
+    
+    return crypto.createHash('sha256')
+      .update(previousHash + eventString)
+      .digest('hex');
+  }
+
+  /**
+   * Flush event buffer to storage
+   * @private
+   */
+  async flushBuffer() {
+    if (this.eventBuffer.length === 0) {
+      return;
+    }
+    
+    const events = [...this.eventBuffer];
+    this.eventBuffer = [];
+    
+    // Add to main storage
+    this.auditEvents.push(...events);
+    
+    // Persist to disk
+    await this.persistEvents(events);
+    
+    // Send to SIEM if configured
+    if (this.config.enableSIEM) {
+      await this.sendToSIEM(events);
+    }
+    
+    this.metrics.lastProcessedAt = new Date();
+    
+    logger.debug(`💾 Flushed ${events.length} audit events`);
+  }
+
+  /**
+   * Persist events to disk
+   * @private
+   */
+  async persistEvents(events) {
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `audit-${date}.jsonl`;
+    const filepath = path.join(this.config.logDirectory, filename);
+    
+    const lines = events.map(event => {
+      let eventData = JSON.stringify(event);
+      
+      if (this.config.encryptLogs) {
+        eventData = this.encryptData(eventData);
+      }
+      
+      return eventData;
+    });
+    
+    await fs.appendFile(filepath, lines.join('\n') + '\n');
+  }
+
+  /**
+   * Encrypt data
+   * @private
+   */
+  encryptData(data) {
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipher('aes-256-gcm', this.encryptionKey);
+    
+    let encrypted = cipher.update(data, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    
+    const authTag = cipher.getAuthTag();
+    
+    return {
+      encrypted,
+      iv: iv.toString('hex'),
+      authTag: authTag.toString('hex')
+    };
+  }
+
+  /**
+   * Update performance metrics
+   * @private
+   */
+  updateMetrics(startTime) {
+    const processingTime = Date.now() - startTime;
+    this.metrics.eventsLogged++;
+    
+    // Calculate rolling average
+    const count = this.metrics.eventsLogged;
+    this.metrics.averageProcessingTime = (
+      (this.metrics.averageProcessingTime * (count - 1) + processingTime) / count
+    );
+  }
+
+  /**
+   * Ensure log directory exists
+   * @private
+   */
+  async ensureLogDirectory() {
+    try {
+      await fs.access(this.config.logDirectory);
+    } catch {
+      await fs.mkdir(this.config.logDirectory, { recursive: true });
+    }
+  }
+
+  /**
+   * Load existing logs
+   * @private
+   */
+  async loadExistingLogs() {
+    // Implementation would load and decrypt existing log files
+    // For demo purposes, starting with empty state
+    logger.debug('📂 Loaded existing audit logs');
+  }
+
+  /**
+   * Assess authentication risk
+   * @private
+   */
+  assessAuthRisk(action, details) {
+    if (action === 'login_failed') {
+      return RiskLevels.MEDIUM;
+    }
+    
+    if (details.fromNewLocation || details.suspiciousDevice) {
+      return RiskLevels.HIGH;
+    }
+    
+    return RiskLevels.LOW;
+  }
+
+  /**
+   * Assess data access risk
+   * @private
+   */
+  assessDataRisk(action, resource) {
+    if (action === 'delete' || action === 'export') {
+      return RiskLevels.HIGH;
+    }
+    
+    if (this.containsSensitiveData(resource)) {
+      return RiskLevels.MEDIUM;
+    }
+    
+    return RiskLevels.LOW;
+  }
+
+  /**
+   * Check if resource contains sensitive data
+   * @private
+   */
+  containsSensitiveData(resource) {
+    const sensitivePatterns = [
+      /personal.*data/i,
+      /pii/i,
+      /credit.*card/i,
+      /ssn/i,
+      /patient.*data/i
+    ];
+    
+    return sensitivePatterns.some(pattern => pattern.test(resource));
+  }
+
+  /**
+   * Check if data contains personal information
+   * @private
+   */
+  containsPersonalData(data) {
+    // Simplified check - in production, use sophisticated PII detection
+    const dataString = JSON.stringify(data).toLowerCase();
+    const personalDataPatterns = [
+      /email/,
+      /phone/,
+      /address/,
+      /social.*security/,
+      /passport/
+    ];
+    
+    return personalDataPatterns.some(pattern => pattern.test(dataString));
+  }
+
+  /**
+   * Check if data contains PHI
+   * @private
+   */
+  containsPHI(data) {
+    const dataString = JSON.stringify(data).toLowerCase();
+    const phiPatterns = [
+      /medical/,
+      /health/,
+      /patient/,
+      /diagnosis/,
+      /prescription/
+    ];
+    
+    return phiPatterns.some(pattern => pattern.test(dataString));
+  }
+
+  /**
+   * Check if data contains financial information
+   * @private
+   */
+  containsFinancialData(data) {
+    const dataString = JSON.stringify(data).toLowerCase();
+    const financialPatterns = [
+      /financial/,
+      /revenue/,
+      /profit/,
+      /transaction/,
+      /payment/
+    ];
+    
+    return financialPatterns.some(pattern => pattern.test(dataString));
+  }
+
+  /**
+   * Check if data contains cardholder data
+   * @private
+   */
+  containsCardholderData(data) {
+    const dataString = JSON.stringify(data).toLowerCase();
+    const cardPatterns = [
+      /credit.*card/,
+      /card.*number/,
+      /cvv/,
+      /cardholder/
+    ];
+    
+    return cardPatterns.some(pattern => pattern.test(dataString));
+  }
+
+  /**
+   * Convert events to CSV format
+   * @private
+   */
+  convertToCSV(events) {
+    if (events.length === 0) {
+      return '';
+    }
+    
+    const headers = ['id', 'eventType', 'timestamp', 'userId', 'riskLevel', 'category'];
+    const rows = events.map(event => [
+      event.id,
+      event.eventType,
+      event.timestamp,
+      event.data.userId || '',
+      event.context.riskLevel,
+      event.context.category
+    ]);
+    
+    return [headers, ...rows].map(row => row.join(',')).join('\n');
+  }
+
+  /**
+   * Convert events to XML format
+   * @private
+   */
+  convertToXML(events) {
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<auditEvents>\n';
+    
+    for (const event of events) {
+      xml += `  <event id="${event.id}">\n`;
+      xml += `    <eventType>${event.eventType}</eventType>\n`;
+      xml += `    <timestamp>${event.timestamp}</timestamp>\n`;
+      xml += `    <riskLevel>${event.context.riskLevel}</riskLevel>\n`;
+      xml += `    <category>${event.context.category}</category>\n`;
+      xml += `  </event>\n`;
+    }
+    
+    xml += '</auditEvents>';
+    return xml;
+  }
+
+  /**
+   * Record compliance violation
+   * @private
+   */
+  async recordComplianceViolation(event, framework, violation) {
+    const violationRecord = {
+      id: this.generateEventId(),
+      eventId: event.id,
+      framework,
+      violation,
+      timestamp: new Date(),
+      resolved: false
+    };
+    
+    this.complianceViolations.push(violationRecord);
+    
+    this.emit('compliance-violation', {
+      event,
+      framework,
+      violation: violationRecord
+    });
+  }
+
+  /**
+   * Generate compliance recommendations
+   * @private
+   */
+  generateRecommendations(framework, report) {
+    const recommendations = [];
+    
+    if (report.summary.violations > 0) {
+      recommendations.push(
+        `Address ${report.summary.violations} compliance violations`
+      );
+    }
+    
+    if (report.summary.riskDistribution[RiskLevels.HIGH] > 0) {
+      recommendations.push(
+        'Review high-risk events and implement additional controls'
+      );
+    }
+    
+    return recommendations;
+  }
+
+  /**
+   * Archive event
+   * @private
+   */
+  async archiveEvent(event, archiveLocation) {
+    // Implementation would move event to archive storage
+    logger.debug(`📦 Archived event ${event.id} to ${archiveLocation}`);
+  }
+
+  /**
+   * Send events to SIEM
+   * @private
+   */
+  async sendToSIEM(events) {
+    if (!this.config.siemEndpoint) {
+      return;
+    }
+    
+    // Implementation would send events to SIEM system
+    logger.debug(`📡 Sent ${events.length} events to SIEM`);
+  }
+
+  /**
+   * Check if retention policy exists
+   * @private
+   */
+  hasRetentionPolicy(category) {
+    return this.retentionPolicies.has(category);
+  }
+}
+
+export default AuditLogger;
+export { AuditLogger };

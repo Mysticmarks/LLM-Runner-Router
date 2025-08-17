@@ -1,0 +1,132 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: llm-runner-router-staging
+  labels:
+    app: llm-runner-router
+    environment: staging
+
+# Base configuration
+bases:
+- ../../base
+
+# Namespace override for staging
+namespace: llm-systems-staging
+
+# Name prefix for staging resources
+namePrefix: "staging-"
+
+# Additional labels for staging
+commonLabels:
+  environment: staging
+  tier: staging
+
+# Additional annotations for staging
+commonAnnotations:
+  environment: staging
+  deployment.type: staging
+
+# Staging-specific images
+images:
+- name: llm-runner-router
+  newTag: "staging-v1.2.1"
+
+# Staging replicas (medium scale)
+replicas:
+- name: llm-runner-router
+  count: 2
+
+# Staging-specific ConfigMap
+configMapGenerator:
+- name: llm-runner-staging-config
+  literals:
+  - NODE_ENV=staging
+  - LOG_LEVEL=info
+  - CACHE_ENABLED=true
+  - ROUTING_STRATEGY=balanced
+  - MAX_MEMORY=4096
+  - ENABLE_DEBUG=false
+  - AUTO_RELOAD=false
+  - ENABLE_METRICS=true
+
+# Staging patches
+patches:
+# Medium resource requirements for staging
+- target:
+    kind: Deployment
+    name: llm-runner-router
+  patch: |-
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/memory
+      value: "1Gi"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/limits/memory
+      value: "4Gi"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/cpu
+      value: "250m"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/limits/cpu
+      value: "1000m"
+
+# HPA configuration for staging
+- target:
+    kind: HorizontalPodAutoscaler
+    name: llm-runner-router-hpa
+  patch: |-
+    - op: replace
+      path: /spec/minReplicas
+      value: 2
+    - op: replace
+      path: /spec/maxReplicas
+      value: 5
+
+# Medium PVC size for staging
+- target:
+    kind: PersistentVolumeClaim
+    name: llm-model-cache
+  patch: |-
+    - op: replace
+      path: /spec/resources/requests/storage
+      value: "30Gi"
+
+# Staging ingress with staging host
+- target:
+    kind: Ingress
+    name: llm-runner-router
+  patch: |-
+    - op: replace
+      path: /spec/rules/0/host
+      value: "staging-llm-api.yourdomain.com"
+    - op: replace
+      path: /spec/rules/1/host
+      value: "staging-llm-router.yourdomain.com"
+
+# Enable basic monitoring for staging
+- target:
+    kind: Service
+    name: llm-runner-router
+  patch: |-
+    - op: add
+      path: /metadata/annotations
+      value:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+
+# Staging-specific network policy (more restrictive than dev)
+- target:
+    kind: NetworkPolicy
+    name: llm-runner-router-netpol
+  patch: |-
+    - op: add
+      path: /spec/ingress/-
+      value:
+        from:
+        - namespaceSelector:
+            matchLabels:
+              name: llm-systems-staging
+        ports:
+        - protocol: TCP
+          port: 3000

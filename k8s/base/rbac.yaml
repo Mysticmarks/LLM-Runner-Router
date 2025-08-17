@@ -1,0 +1,160 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: llm-runner-router-role
+  namespace: llm-systems
+  labels:
+    app: llm-runner-router
+    component: rbac
+rules:
+# Allow reading ConfigMaps for configuration
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch"]
+# Allow reading Secrets for sensitive configuration
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch"]
+# Allow reading Services for service discovery
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+# Allow reading Endpoints for load balancing
+- apiGroups: [""]
+  resources: ["endpoints"]
+  verbs: ["get", "list", "watch"]
+# Allow reading Pods for health checks and metrics
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+# Allow reading PersistentVolumeClaims for storage info
+- apiGroups: [""]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["get", "list", "watch"]
+# Allow reading Events for debugging
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: llm-runner-router-rolebinding
+  namespace: llm-systems
+  labels:
+    app: llm-runner-router
+    component: rbac
+subjects:
+- kind: ServiceAccount
+  name: llm-runner-router
+  namespace: llm-systems
+roleRef:
+  kind: Role
+  name: llm-runner-router-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# ClusterRole for cluster-wide resources (if needed)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: llm-runner-router-cluster-role
+  labels:
+    app: llm-runner-router
+    component: rbac
+rules:
+# Allow reading Nodes for resource monitoring
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "watch"]
+# Allow reading cluster-wide metrics
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["nodes", "pods"]
+  verbs: ["get", "list"]
+# Allow reading CustomResourceDefinitions for dynamic configuration
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: llm-runner-router-cluster-rolebinding
+  labels:
+    app: llm-runner-router
+    component: rbac
+subjects:
+- kind: ServiceAccount
+  name: llm-runner-router
+  namespace: llm-systems
+roleRef:
+  kind: ClusterRole
+  name: llm-runner-router-cluster-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# PodSecurityPolicy (deprecated in K8s 1.25+, use Pod Security Standards instead)
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: llm-runner-router-psp
+  labels:
+    app: llm-runner-router
+    component: security
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+  readOnlyRootFilesystem: false
+
+---
+# Role for PodSecurityPolicy
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: llm-runner-router-psp-role
+  namespace: llm-systems
+  labels:
+    app: llm-runner-router
+    component: security
+rules:
+- apiGroups: ['policy']
+  resources: ['podsecuritypolicies']
+  verbs: ['use']
+  resourceNames:
+  - llm-runner-router-psp
+
+---
+# RoleBinding for PodSecurityPolicy
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: llm-runner-router-psp-rolebinding
+  namespace: llm-systems
+  labels:
+    app: llm-runner-router
+    component: security
+roleRef:
+  kind: Role
+  name: llm-runner-router-psp-role
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: llm-runner-router
+  namespace: llm-systems

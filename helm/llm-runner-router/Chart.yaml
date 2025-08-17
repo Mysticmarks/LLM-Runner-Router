@@ -1,0 +1,41 @@
+apiVersion: v2
+name: llm-runner-router
+description: A Helm chart for LLM Runner Router - Universal LLM model loader and inference router
+type: application
+version: 1.2.1
+appVersion: "1.2.1"
+
+keywords:
+  - llm
+  - ai
+  - machine-learning
+  - inference
+  - model-router
+  - kubernetes
+
+home: https://github.com/MCERQUA/LLM-Runner-Router
+sources:
+  - https://github.com/MCERQUA/LLM-Runner-Router
+
+maintainers:
+  - name: Echo AI Systems
+    email: devops@yourdomain.com
+    url: https://github.com/MCERQUA
+
+annotations:
+  category: AI/ML
+  licenses: MIT
+  images: |
+    - name: llm-runner-router
+      image: llm-runner-router:1.2.1
+  
+dependencies: []
+
+# Chart icon (base64 encoded or URL)
+icon: https://raw.githubusercontent.com/MCERQUA/LLM-Runner-Router/main/docs/icon.png
+
+# Minimum Kubernetes version
+kubeVersion: ">=1.20.0"
+
+# Deprecated flag
+deprecated: false

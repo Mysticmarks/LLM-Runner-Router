@@ -1,0 +1,973 @@
+/**
+ * Unified API Gateway for LLM Runner Router
+ * Provides routing, protocol translation, circuit breaker, and response caching
+ */
+
+import express from 'express';
+import CircuitBreaker from 'circuit-breaker';
+import { LRUCache } from 'lru-cache';
+import compression from 'compression';
+import morgan from 'morgan';
+import helmet from 'helmet';
+import { EventEmitter } from 'events';
+import { promisify } from 'util';
+import { createHash } from 'crypto';
+
+export class APIGateway extends EventEmitter {
+  constructor(options = {}) {
+    super();
+    this.options = {
+      port: options.port || 8080,
+      host: options.host || '0.0.0.0',
+      
+      // Service discovery
+      services: {
+        llm: {
+          url: 'http://localhost:3000',
+          healthPath: '/api/health',
+          timeout: 30000,
+          retries: 3,
+          circuitBreaker: {
+            threshold: 5,
+            timeout: 60000,
+            resetTimeout: 30000
+          }
+        },
+        grpc: {
+          url: 'http://localhost:50051',
+          protocol: 'grpc',
+          healthPath: '/health',
+          timeout: 10000,
+          retries: 2,
+          circuitBreaker: {
+            threshold: 3,
+            timeout: 30000,
+            resetTimeout: 15000
+          }
+        },
+        auth: {
+          url: 'http://localhost:3001',
+          healthPath: '/health',
+          timeout: 5000,
+          retries: 2,
+          circuitBreaker: {
+            threshold: 10,
+            timeout: 120000,
+            resetTimeout: 60000
+          }
+        }
+      },
+
+      // Routing configuration
+      routes: [
+        {
+          path: '/api/v1/health',
+          target: 'llm',
+          methods: ['GET'],
+          auth: false,
+          cache: { ttl: 10 },
+          rateLimit: { requests: 100, window: 60 }
+        },
+        {
+          path: '/api/v1/auth/*',
+          target: 'auth',
+          methods: ['GET', 'POST', 'PUT', 'DELETE'],
+          auth: false,
+          cache: false,
+          rateLimit: { requests: 20, window: 60 }
+        },
+        {
+          path: '/api/v1/models/*',
+          target: 'llm',
+          methods: ['GET', 'POST', 'DELETE'],
+          auth: true,
+          cache: { ttl: 60 },
+          rateLimit: { requests: 50, window: 60 }
+        },
+        {
+          path: '/api/v1/inference',
+          target: 'llm',
+          methods: ['POST'],
+          auth: true,
+          cache: false,
+          rateLimit: { requests: 10, window: 60 },
+          transform: {
+            request: 'standardizeInferenceRequest',
+            response: 'standardizeInferenceResponse'
+          }
+        },
+        {
+          path: '/api/v1/chat',
+          target: 'llm',
+          methods: ['POST'],
+          auth: true,
+          cache: false,
+          rateLimit: { requests: 10, window: 60 }
+        },
+        {
+          path: '/grpc/*',
+          target: 'grpc',
+          protocol: 'grpc',
+          auth: true,
+          cache: false
+        }
+      ],
+
+      // Caching configuration
+      cache: {
+        maxSize: 1000,
+        ttl: 300000, // 5 minutes default
+        updateAgeOnGet: true,
+        allowStale: true
+      },
+
+      // Rate limiting
+      rateLimit: {
+        windowMs: 60000, // 1 minute
+        max: 100, // default limit
+        standardHeaders: true,
+        legacyHeaders: false
+      },
+
+      // Circuit breaker defaults
+      circuitBreaker: {
+        threshold: 5,
+        timeout: 60000,
+        resetTimeout: 30000,
+        monitoringPeriod: 10000
+      },
+
+      // Load balancing
+      loadBalancing: {
+        strategy: 'round-robin', // round-robin, least-connections, weighted
+        healthCheck: {
+          interval: 30000,
+          timeout: 5000,
+          retries: 3
+        }
+      },
+
+      // Security
+      security: {
+        helmet: true,
+        cors: {
+          origin: true,
+          credentials: true,
+          methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+          allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
+        }
+      },
+
+      // Monitoring
+      monitoring: {
+        enabled: true,
+        logLevel: 'info',
+        metrics: {
+          requests: true,
+          latency: true,
+          errors: true,
+          circuitBreaker: true
+        }
+      },
+
+      ...options
+    };
+
+    this.app = express();
+    this.server = null;
+    this.cache = new LRUCache(this.options.cache);
+    this.circuitBreakers = new Map();
+    this.serviceHealth = new Map();
+    this.metrics = {
+      requests: 0,
+      errors: 0,
+      latency: [],
+      circuitBreakerTrips: 0,
+      cacheHits: 0,
+      cacheMisses: 0
+    };
+    this.transformers = new Map();
+
+    this.initialize();
+  }
+
+  /**
+   * Initialize the API Gateway
+   */
+  async initialize() {
+    try {
+      this.setupMiddleware();
+      this.setupTransformers();
+      this.setupCircuitBreakers();
+      this.setupRoutes();
+      this.setupErrorHandling();
+      this.startHealthChecks();
+      this.startMetricsCollection();
+      
+      this.emit('initialized');
+    } catch (error) {
+      this.emit('error', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Setup Express middleware
+   */
+  setupMiddleware() {
+    // Security middleware
+    if (this.options.security.helmet) {
+      this.app.use(helmet({
+        contentSecurityPolicy: false, // Allow Swagger UI
+        crossOriginEmbedderPolicy: false
+      }));
+    }
+
+    // CORS
+    if (this.options.security.cors) {
+      this.app.use((req, res, next) => {
+        const { origin, credentials, methods, allowedHeaders } = this.options.security.cors;
+        
+        if (origin) {
+          res.header('Access-Control-Allow-Origin', typeof origin === 'boolean' ? '*' : origin);
+        }
+        
+        if (credentials) {
+          res.header('Access-Control-Allow-Credentials', 'true');
+        }
+        
+        res.header('Access-Control-Allow-Methods', methods.join(', '));
+        res.header('Access-Control-Allow-Headers', allowedHeaders.join(', '));
+        
+        if (req.method === 'OPTIONS') {
+          return res.sendStatus(200);
+        }
+        
+        next();
+      });
+    }
+
+    // Compression
+    this.app.use(compression());
+
+    // Request parsing
+    this.app.use(express.json({ limit: '10mb' }));
+    this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+    // Logging
+    if (this.options.monitoring.enabled) {
+      this.app.use(morgan('combined', {
+        stream: {
+          write: (message) => this.emit('log', { level: 'info', message: message.trim() })
+        }
+      }));
+    }
+
+    // Request ID and timing
+    this.app.use((req, res, next) => {
+      req.id = this.generateRequestId();
+      req.startTime = Date.now();
+      res.setHeader('X-Request-ID', req.id);
+      next();
+    });
+
+    // Metrics collection
+    this.app.use((req, res, next) => {
+      this.metrics.requests++;
+      
+      res.on('finish', () => {
+        const latency = Date.now() - req.startTime;
+        this.metrics.latency.push(latency);
+        
+        // Keep only last 1000 latency measurements
+        if (this.metrics.latency.length > 1000) {
+          this.metrics.latency = this.metrics.latency.slice(-1000);
+        }
+        
+        if (res.statusCode >= 400) {
+          this.metrics.errors++;
+        }
+        
+        this.emit('requestCompleted', {
+          id: req.id,
+          method: req.method,
+          path: req.path,
+          statusCode: res.statusCode,
+          latency,
+          userAgent: req.get('User-Agent')
+        });
+      });
+      
+      next();
+    });
+  }
+
+  /**
+   * Setup request/response transformers
+   */
+  setupTransformers() {
+    // Standardize inference request format
+    this.transformers.set('standardizeInferenceRequest', (req) => {
+      const body = req.body;
+      
+      // Convert various prompt formats to standard format
+      if (typeof body === 'string') {
+        req.body = { prompt: body };
+      } else if (body.input && !body.prompt) {
+        body.prompt = body.input;
+        delete body.input;
+      } else if (body.text && !body.prompt) {
+        body.prompt = body.text;
+        delete body.text;
+      }
+      
+      // Standardize parameter names
+      if (body.max_tokens && !body.maxTokens) {
+        body.maxTokens = body.max_tokens;
+        delete body.max_tokens;
+      }
+      
+      if (body.top_p && !body.topP) {
+        body.topP = body.top_p;
+        delete body.top_p;
+      }
+      
+      if (body.top_k && !body.topK) {
+        body.topK = body.top_k;
+        delete body.top_k;
+      }
+      
+      return req;
+    });
+
+    // Standardize inference response format
+    this.transformers.set('standardizeInferenceResponse', (data, req) => {
+      if (typeof data === 'string') {
+        return {
+          text: data,
+          model: req.body.model || 'unknown',
+          usage: {
+            promptTokens: 0,
+            completionTokens: 0,
+            totalTokens: 0
+          }
+        };
+      }
+      
+      // Ensure consistent response format
+      return {
+        text: data.text || data.response || data.output || '',
+        model: data.model || req.body.model || 'unknown',
+        usage: data.usage || {
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0
+        },
+        metadata: data.metadata || {}
+      };
+    });
+  }
+
+  /**
+   * Setup circuit breakers for services
+   */
+  setupCircuitBreakers() {
+    for (const [serviceName, serviceConfig] of Object.entries(this.options.services)) {
+      const breakerConfig = {
+        ...this.options.circuitBreaker,
+        ...serviceConfig.circuitBreaker
+      };
+      
+      const breaker = new CircuitBreaker((args) => {
+        return this.callService(serviceName, args);
+      }, breakerConfig);
+      
+      breaker.on('open', () => {
+        this.metrics.circuitBreakerTrips++;
+        this.emit('circuitBreakerOpen', { service: serviceName });
+      });
+      
+      breaker.on('halfOpen', () => {
+        this.emit('circuitBreakerHalfOpen', { service: serviceName });
+      });
+      
+      breaker.on('close', () => {
+        this.emit('circuitBreakerClose', { service: serviceName });
+      });
+      
+      this.circuitBreakers.set(serviceName, breaker);
+    }
+  }
+
+  /**
+   * Setup API routes
+   */
+  setupRoutes() {
+    // Gateway health endpoint
+    this.app.get('/gateway/health', (req, res) => {
+      const healthStatus = {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        services: Object.fromEntries(this.serviceHealth),
+        metrics: this.getMetrics()
+      };
+      
+      const allHealthy = Array.from(this.serviceHealth.values()).every(s => s.status === 'healthy');
+      res.status(allHealthy ? 200 : 503).json(healthStatus);
+    });
+
+    // Gateway metrics endpoint
+    this.app.get('/gateway/metrics', (req, res) => {
+      res.json(this.getMetrics());
+    });
+
+    // Service discovery endpoint
+    this.app.get('/gateway/services', (req, res) => {
+      const services = {};
+      for (const [name, config] of Object.entries(this.options.services)) {
+        services[name] = {
+          url: config.url,
+          protocol: config.protocol || 'http',
+          health: this.serviceHealth.get(name) || { status: 'unknown' },
+          circuitBreaker: this.circuitBreakers.get(name)?.stats || {}
+        };
+      }
+      res.json(services);
+    });
+
+    // Setup route handlers
+    for (const route of this.options.routes) {
+      const methods = route.methods || ['GET', 'POST', 'PUT', 'DELETE'];
+      
+      for (const method of methods) {
+        this.app[method.toLowerCase()](route.path, ...this.createRouteHandlers(route));
+      }
+    }
+
+    // Fallback route
+    this.app.use('*', (req, res) => {
+      res.status(404).json({
+        error: 'Not Found',
+        message: `Route ${req.method} ${req.originalUrl} not found`,
+        timestamp: new Date().toISOString(),
+        requestId: req.id
+      });
+    });
+  }
+
+  /**
+   * Create route handlers for a specific route
+   */
+  createRouteHandlers(route) {
+    const handlers = [];
+
+    // Authentication middleware
+    if (route.auth) {
+      handlers.push(this.createAuthMiddleware());
+    }
+
+    // Rate limiting middleware
+    if (route.rateLimit) {
+      handlers.push(this.createRateLimitMiddleware(route.rateLimit));
+    }
+
+    // Cache middleware (for GET requests)
+    if (route.cache && route.methods?.includes('GET')) {
+      handlers.push(this.createCacheMiddleware(route.cache));
+    }
+
+    // Request transformation
+    if (route.transform?.request) {
+      handlers.push(this.createTransformMiddleware(route.transform.request, 'request'));
+    }
+
+    // Main proxy handler
+    handlers.push(this.createProxyHandler(route));
+
+    return handlers;
+  }
+
+  /**
+   * Create authentication middleware
+   */
+  createAuthMiddleware() {
+    return async (req, res, next) => {
+      try {
+        // Check for authorization header or API key
+        const authHeader = req.headers.authorization;
+        const apiKey = req.headers['x-api-key'];
+        
+        if (!authHeader && !apiKey) {
+          return res.status(401).json({
+            error: 'Unauthorized',
+            message: 'Authentication required'
+          });
+        }
+
+        // For now, just validate format - actual validation would be done by auth service
+        if (authHeader) {
+          if (!authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({
+              error: 'Unauthorized',
+              message: 'Invalid authorization header format'
+            });
+          }
+          req.user = { authenticated: true, type: 'jwt' };
+        }
+
+        if (apiKey) {
+          if (!apiKey.startsWith('llmr_')) {
+            return res.status(401).json({
+              error: 'Unauthorized',
+              message: 'Invalid API key format'
+            });
+          }
+          req.user = { authenticated: true, type: 'apikey' };
+        }
+
+        next();
+      } catch (error) {
+        res.status(500).json({
+          error: 'Authentication Error',
+          message: error.message
+        });
+      }
+    };
+  }
+
+  /**
+   * Create rate limiting middleware
+   */
+  createRateLimitMiddleware(config) {
+    const requests = new Map();
+    
+    return (req, res, next) => {
+      const key = req.ip || 'unknown';
+      const now = Date.now();
+      const windowStart = now - (config.window * 1000);
+      
+      // Get user's request history
+      let userRequests = requests.get(key) || [];
+      
+      // Remove old requests outside the window
+      userRequests = userRequests.filter(time => time > windowStart);
+      
+      // Check if limit exceeded
+      if (userRequests.length >= config.requests) {
+        return res.status(429).json({
+          error: 'Rate Limit Exceeded',
+          message: `Too many requests. Limit: ${config.requests} per ${config.window} seconds`,
+          retryAfter: Math.ceil((userRequests[0] - windowStart) / 1000)
+        });
+      }
+      
+      // Add current request
+      userRequests.push(now);
+      requests.set(key, userRequests);
+      
+      // Set rate limit headers
+      res.setHeader('X-RateLimit-Limit', config.requests);
+      res.setHeader('X-RateLimit-Remaining', Math.max(0, config.requests - userRequests.length));
+      res.setHeader('X-RateLimit-Reset', new Date(windowStart + (config.window * 1000)).toISOString());
+      
+      next();
+    };
+  }
+
+  /**
+   * Create cache middleware
+   */
+  createCacheMiddleware(config) {
+    return (req, res, next) => {
+      if (req.method !== 'GET') {
+        return next();
+      }
+      
+      const cacheKey = this.generateCacheKey(req);
+      const cached = this.cache.get(cacheKey);
+      
+      if (cached) {
+        this.metrics.cacheHits++;
+        res.setHeader('X-Cache', 'HIT');
+        res.setHeader('X-Cache-Key', cacheKey);
+        return res.json(cached);
+      }
+      
+      this.metrics.cacheMisses++;
+      res.setHeader('X-Cache', 'MISS');
+      
+      // Override res.json to cache the response
+      const originalJson = res.json.bind(res);
+      res.json = (data) => {
+        if (res.statusCode === 200) {
+          const ttl = config.ttl ? config.ttl * 1000 : this.options.cache.ttl;
+          this.cache.set(cacheKey, data, { ttl });
+        }
+        return originalJson(data);
+      };
+      
+      next();
+    };
+  }
+
+  /**
+   * Create request/response transformation middleware
+   */
+  createTransformMiddleware(transformerName, type) {
+    return (req, res, next) => {
+      const transformer = this.transformers.get(transformerName);
+      if (!transformer) {
+        return next();
+      }
+      
+      if (type === 'request') {
+        try {
+          transformer(req);
+        } catch (error) {
+          return res.status(400).json({
+            error: 'Request Transformation Error',
+            message: error.message
+          });
+        }
+      }
+      
+      next();
+    };
+  }
+
+  /**
+   * Create proxy handler for routing to services
+   */
+  createProxyHandler(route) {
+    return async (req, res, next) => {
+      try {
+        const service = this.options.services[route.target];
+        if (!service) {
+          return res.status(502).json({
+            error: 'Bad Gateway',
+            message: `Service ${route.target} not configured`
+          });
+        }
+
+        // Check service health
+        const health = this.serviceHealth.get(route.target);
+        if (health && health.status !== 'healthy') {
+          return res.status(503).json({
+            error: 'Service Unavailable',
+            message: `Service ${route.target} is ${health.status}`
+          });
+        }
+
+        // Use circuit breaker
+        const breaker = this.circuitBreakers.get(route.target);
+        if (!breaker) {
+          return res.status(502).json({
+            error: 'Bad Gateway',
+            message: `Circuit breaker not configured for ${route.target}`
+          });
+        }
+
+        const result = await breaker.fire({
+          method: req.method,
+          path: req.path,
+          body: req.body,
+          headers: req.headers,
+          query: req.query
+        });
+
+        // Apply response transformation
+        let responseData = result;
+        if (route.transform?.response) {
+          const transformer = this.transformers.get(route.transform.response);
+          if (transformer) {
+            responseData = transformer(result, req);
+          }
+        }
+
+        res.json(responseData);
+      } catch (error) {
+        this.handleProxyError(error, req, res, route);
+      }
+    };
+  }
+
+  /**
+   * Handle proxy errors
+   */
+  handleProxyError(error, req, res, route) {
+    this.emit('proxyError', { error, route: route.path, service: route.target });
+    
+    let statusCode = 500;
+    let message = 'Internal Server Error';
+    
+    if (error.code === 'ECONNREFUSED') {
+      statusCode = 503;
+      message = 'Service unavailable';
+    } else if (error.code === 'TIMEOUT') {
+      statusCode = 504;
+      message = 'Gateway timeout';
+    } else if (error.isCircuitBreakerError) {
+      statusCode = 503;
+      message = 'Service temporarily unavailable due to circuit breaker';
+    }
+    
+    res.status(statusCode).json({
+      error: 'Gateway Error',
+      message,
+      code: error.code,
+      service: route.target,
+      timestamp: new Date().toISOString(),
+      requestId: req.id
+    });
+  }
+
+  /**
+   * Call a backend service
+   */
+  async callService(serviceName, args) {
+    const service = this.options.services[serviceName];
+    const { method, path, body, headers, query } = args;
+    
+    // Simulate service call (in real implementation, use axios or similar)
+    const response = await fetch(`${service.url}${path}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers
+      },
+      body: method !== 'GET' ? JSON.stringify(body) : undefined,
+      timeout: service.timeout
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Service ${serviceName} returned ${response.status}: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  }
+
+  /**
+   * Setup error handling
+   */
+  setupErrorHandling() {
+    this.app.use((error, req, res, next) => {
+      this.emit('error', error);
+      
+      res.status(500).json({
+        error: 'Internal Server Error',
+        message: error.message,
+        timestamp: new Date().toISOString(),
+        requestId: req.id
+      });
+    });
+  }
+
+  /**
+   * Start health checks for services
+   */
+  startHealthChecks() {
+    const checkHealth = async (serviceName, service) => {
+      try {
+        const response = await fetch(`${service.url}${service.healthPath}`, {
+          timeout: this.options.loadBalancing.healthCheck.timeout
+        });
+        
+        const isHealthy = response.ok;
+        this.serviceHealth.set(serviceName, {
+          status: isHealthy ? 'healthy' : 'unhealthy',
+          lastCheck: new Date().toISOString(),
+          responseTime: Date.now() - Date.now(), // Simplified
+          statusCode: response.status
+        });
+        
+        this.emit('healthCheck', { service: serviceName, healthy: isHealthy });
+      } catch (error) {
+        this.serviceHealth.set(serviceName, {
+          status: 'unhealthy',
+          lastCheck: new Date().toISOString(),
+          error: error.message
+        });
+        
+        this.emit('healthCheck', { service: serviceName, healthy: false, error: error.message });
+      }
+    };
+
+    // Initial health check
+    for (const [serviceName, service] of Object.entries(this.options.services)) {
+      checkHealth(serviceName, service);
+    }
+
+    // Periodic health checks
+    setInterval(() => {
+      for (const [serviceName, service] of Object.entries(this.options.services)) {
+        checkHealth(serviceName, service);
+      }
+    }, this.options.loadBalancing.healthCheck.interval);
+  }
+
+  /**
+   * Start metrics collection
+   */
+  startMetricsCollection() {
+    setInterval(() => {
+      this.emit('metricsCollected', this.getMetrics());
+    }, 60000); // Every minute
+  }
+
+  /**
+   * Generate request ID
+   */
+  generateRequestId() {
+    return `gw_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Generate cache key
+   */
+  generateCacheKey(req) {
+    const keyData = {
+      method: req.method,
+      path: req.path,
+      query: req.query,
+      user: req.user?.id || 'anonymous'
+    };
+    
+    return createHash('md5').update(JSON.stringify(keyData)).digest('hex');
+  }
+
+  /**
+   * Get metrics
+   */
+  getMetrics() {
+    const avgLatency = this.metrics.latency.length > 0 
+      ? this.metrics.latency.reduce((a, b) => a + b, 0) / this.metrics.latency.length 
+      : 0;
+    
+    return {
+      requests: this.metrics.requests,
+      errors: this.metrics.errors,
+      errorRate: this.metrics.requests > 0 ? this.metrics.errors / this.metrics.requests : 0,
+      averageLatency: Math.round(avgLatency),
+      circuitBreakerTrips: this.metrics.circuitBreakerTrips,
+      cache: {
+        hits: this.metrics.cacheHits,
+        misses: this.metrics.cacheMisses,
+        hitRate: this.metrics.cacheHits + this.metrics.cacheMisses > 0 
+          ? this.metrics.cacheHits / (this.metrics.cacheHits + this.metrics.cacheMisses) 
+          : 0,
+        size: this.cache.size
+      },
+      services: Object.fromEntries(this.serviceHealth),
+      uptime: process.uptime()
+    };
+  }
+
+  /**
+   * Start the gateway server
+   */
+  async start() {
+    return new Promise((resolve, reject) => {
+      try {
+        this.server = this.app.listen(this.options.port, this.options.host, () => {
+          this.emit('started', {
+            host: this.options.host,
+            port: this.options.port,
+            services: Object.keys(this.options.services).length,
+            routes: this.options.routes.length
+          });
+          resolve({
+            host: this.options.host,
+            port: this.options.port
+          });
+        });
+
+        this.server.on('error', reject);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Stop the gateway server
+   */
+  async stop() {
+    return new Promise((resolve) => {
+      if (this.server) {
+        this.server.close(() => {
+          this.emit('stopped');
+          resolve();
+        });
+      } else {
+        resolve();
+      }
+    });
+  }
+
+  /**
+   * Add a new route dynamically
+   */
+  addRoute(route) {
+    this.options.routes.push(route);
+    
+    const methods = route.methods || ['GET', 'POST', 'PUT', 'DELETE'];
+    for (const method of methods) {
+      this.app[method.toLowerCase()](route.path, ...this.createRouteHandlers(route));
+    }
+    
+    this.emit('routeAdded', route);
+  }
+
+  /**
+   * Add a new service dynamically
+   */
+  addService(name, config) {
+    this.options.services[name] = config;
+    
+    // Setup circuit breaker
+    const breakerConfig = {
+      ...this.options.circuitBreaker,
+      ...config.circuitBreaker
+    };
+    
+    const breaker = new CircuitBreaker((args) => {
+      return this.callService(name, args);
+    }, breakerConfig);
+    
+    this.circuitBreakers.set(name, breaker);
+    
+    this.emit('serviceAdded', { name, config });
+  }
+
+  /**
+   * Remove a service
+   */
+  removeService(name) {
+    delete this.options.services[name];
+    this.circuitBreakers.delete(name);
+    this.serviceHealth.delete(name);
+    
+    this.emit('serviceRemoved', { name });
+  }
+
+  /**
+   * Clear cache
+   */
+  clearCache(pattern) {
+    if (pattern) {
+      // Clear specific cache entries matching pattern
+      for (const key of this.cache.keys()) {
+        if (key.includes(pattern)) {
+          this.cache.delete(key);
+        }
+      }
+    } else {
+      // Clear all cache
+      this.cache.clear();
+    }
+    
+    this.emit('cacheCleared', { pattern });
+  }
+}
+
+export default APIGateway;

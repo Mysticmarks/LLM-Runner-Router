@@ -1,0 +1,156 @@
+# Production values for llm-runner-router
+# Override default values for production deployment
+
+# Production image with stable tag
+image:
+  repository: llm-runner-router
+  tag: "v1.2.1"
+  pullPolicy: IfNotPresent
+
+# High availability configuration
+deployment:
+  replicaCount: 5
+  
+  pod:
+    container:
+      resources:
+        requests:
+          memory: "4Gi"
+          cpu: "1000m"
+        limits:
+          memory: "16Gi"
+          cpu: "4000m"
+
+# Production service configuration
+service:
+  type: LoadBalancer
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:region:account:certificate/cert-id"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
+
+# Production ingress with real domains
+ingress:
+  enabled: true
+  hosts:
+    - host: api.yourdomain.com
+      paths:
+        - path: /
+          pathType: Prefix
+    - host: llm.yourdomain.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: llm-runner-router-tls
+      hosts:
+        - api.yourdomain.com
+        - llm.yourdomain.com
+
+websocketIngress:
+  enabled: true
+  hosts:
+    - host: ws.yourdomain.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: llm-runner-router-ws-tls
+      hosts:
+        - ws.yourdomain.com
+
+# Production configuration
+config:
+  nodeEnv: production
+  logLevel: warn
+  routingStrategy: quality-first
+  maxMemory: 8192
+  maxConcurrentRequests: 200
+  requestTimeout: 60000
+  modelLoadTimeout: 600000
+
+# Production storage
+persistence:
+  enabled: true
+  modelCache:
+    size: 100Gi
+    storageClass: "fast-ssd"
+  logs:
+    size: 20Gi
+    storageClass: "standard-ssd"
+  sharedCache:
+    size: 50Gi
+    storageClass: "fast-ssd"
+
+# Aggressive autoscaling for production
+autoscaling:
+  enabled: true
+  minReplicas: 5
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 60
+  targetMemoryUtilizationPercentage: 70
+
+# Production security
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false
+
+# Production affinity rules
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values:
+          - llm-runner-router
+      topologyKey: topology.kubernetes.io/zone
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: node-type
+          operator: In
+          values:
+          - llm-inference
+
+# Production tolerations
+tolerations:
+- key: llm-workload
+  operator: Equal
+  value: "true"
+  effect: NoSchedule
+
+# Enable all monitoring features
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    interval: 15s
+
+# Strict network policies
+networkPolicy:
+  enabled: true
+  ingress:
+    enabled: true
+  egress:
+    enabled: true
+
+# Production logging
+logging:
+  enabled: true
+  level: warn
+  format: json

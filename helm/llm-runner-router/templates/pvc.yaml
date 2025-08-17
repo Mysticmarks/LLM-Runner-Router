@@ -1,0 +1,63 @@
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "llm-runner-router.fullname" . }}-model-cache
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "llm-runner-router.labels" . | nindent 4 }}
+    component: storage
+    type: model-cache
+spec:
+  accessModes:
+    - {{ .Values.persistence.modelCache.accessMode }}
+  resources:
+    requests:
+      storage: {{ include "llm-runner-router.modelCacheSize" . }}
+  {{- if .Values.persistence.modelCache.storageClass }}
+  storageClassName: {{ .Values.persistence.modelCache.storageClass }}
+  {{- end }}
+  volumeMode: Filesystem
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "llm-runner-router.fullname" . }}-logs
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "llm-runner-router.labels" . | nindent 4 }}
+    component: storage
+    type: logs
+spec:
+  accessModes:
+    - {{ .Values.persistence.logs.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.logs.size }}
+  {{- if .Values.persistence.logs.storageClass }}
+  storageClassName: {{ .Values.persistence.logs.storageClass }}
+  {{- end }}
+  volumeMode: Filesystem
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "llm-runner-router.fullname" . }}-shared-cache
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "llm-runner-router.labels" . | nindent 4 }}
+    component: storage
+    type: shared-cache
+spec:
+  accessModes:
+    - {{ .Values.persistence.sharedCache.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.sharedCache.size }}
+  {{- if .Values.persistence.sharedCache.storageClass }}
+  storageClassName: {{ .Values.persistence.sharedCache.storageClass }}
+  {{- end }}
+  volumeMode: Filesystem
+{{- end }}

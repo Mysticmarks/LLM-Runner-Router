@@ -5,6 +5,25 @@ All notable changes to the LLM Runner Router project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2024-12-17
+
+### 🔧 Testing Infrastructure Complete
+
+This patch release fixes all testing issues and updates documentation to reflect the true project status.
+
+### Fixed
+- Import/export mismatches across all source files
+- Memory issues causing test failures
+- Auto-initialization problems in test environment
+- Dynamic imports incompatible with Jest
+- Missing test dependencies
+- All test suites now passing (18/18 tests)
+
+### Changed
+- Updated documentation to reflect actual implementation status
+- Corrected progress percentages in README and ARCHITECTURE.md
+- Added NODE_ENV=test detection to prevent auto-initialization
+
 ## [1.2.0] - 2024-12-17
 
 ### 🎯 Major Feature Completion - All Core Systems Implemented

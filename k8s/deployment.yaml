@@ -1,0 +1,165 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-runner-router
+  namespace: llm-systems
+  labels:
+    app: llm-runner-router
+    component: api
+    tier: backend
+    version: v1.2.1
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    kubectl.kubernetes.io/last-applied-configuration: ""
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: llm-runner-router
+      component: api
+  template:
+    metadata:
+      labels:
+        app: llm-runner-router
+        component: api
+        tier: backend
+        version: v1.2.1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: llm-runner-router
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+      - name: llm-runner-router
+        image: llm-runner-router:1.2.1
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        - name: websocket
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: WS_PORT
+          value: "8080"
+        - name: ROUTING_STRATEGY
+          valueFrom:
+            configMapKeyRef:
+              name: llm-runner-config
+              key: routing-strategy
+        - name: MAX_MEMORY
+          valueFrom:
+            configMapKeyRef:
+              name: llm-runner-config
+              key: max-memory
+        - name: CACHE_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: llm-runner-config
+              key: cache-enabled
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: llm-runner-config
+              key: log-level
+        - name: HUGGINGFACE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: llm-runner-secrets
+              key: huggingface-token
+              optional: true
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-runner-secrets
+              key: api-key
+              optional: true
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "500m"
+          limits:
+            memory: "8Gi"
+            cpu: "2000m"
+        volumeMounts:
+        - name: model-cache
+          mountPath: /app/models/cache
+        - name: cache-volume
+          mountPath: /app/cache
+        - name: temp-volume
+          mountPath: /tmp
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            path: /api/ready
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        startupProbe:
+          httpGet:
+            path: /api/health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 12
+          successThreshold: 1
+      volumes:
+      - name: model-cache
+        persistentVolumeClaim:
+          claimName: llm-model-cache
+      - name: cache-volume
+        emptyDir:
+          sizeLimit: 1Gi
+      - name: temp-volume
+        emptyDir:
+          sizeLimit: 500Mi
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - llm-runner-router
+              topologyKey: kubernetes.io/hostname
+      tolerations:
+      - key: node.kubernetes.io/memory-pressure
+        operator: Exists
+        effect: NoSchedule
+      - key: node.kubernetes.io/disk-pressure
+        operator: Exists
+        effect: NoSchedule
+      terminationGracePeriodSeconds: 60
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always

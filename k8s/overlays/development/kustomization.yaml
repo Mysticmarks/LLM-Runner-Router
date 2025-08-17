@@ -1,0 +1,125 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: llm-runner-router-development
+  labels:
+    app: llm-runner-router
+    environment: development
+
+# Base configuration
+bases:
+- ../../base
+
+# Namespace override for development
+namespace: llm-systems-dev
+
+# Name prefix for development resources
+namePrefix: "dev-"
+
+# Additional labels for development
+commonLabels:
+  environment: development
+  tier: dev
+
+# Additional annotations for development
+commonAnnotations:
+  environment: development
+  deployment.type: development
+
+# Development-specific images
+images:
+- name: llm-runner-router
+  newTag: "dev-latest"
+
+# Development replicas (smaller scale)
+replicas:
+- name: llm-runner-router
+  count: 1
+
+# Development-specific ConfigMap
+configMapGenerator:
+- name: llm-runner-dev-config
+  literals:
+  - NODE_ENV=development
+  - LOG_LEVEL=debug
+  - CACHE_ENABLED=false
+  - ROUTING_STRATEGY=speed-priority
+  - MAX_MEMORY=2048
+  - ENABLE_DEBUG=true
+  - AUTO_RELOAD=true
+
+# Development patches
+patches:
+# Reduce resource requirements for development
+- target:
+    kind: Deployment
+    name: llm-runner-router
+  patch: |-
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/memory
+      value: "512Mi"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/limits/memory
+      value: "2Gi"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/cpu
+      value: "100m"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/limits/cpu
+      value: "500m"
+
+# Disable HPA for development
+- target:
+    kind: HorizontalPodAutoscaler
+    name: llm-runner-router-hpa
+  patch: |-
+    - op: replace
+      path: /spec/minReplicas
+      value: 1
+    - op: replace
+      path: /spec/maxReplicas
+      value: 2
+
+# Reduce PVC size for development
+- target:
+    kind: PersistentVolumeClaim
+    name: llm-model-cache
+  patch: |-
+    - op: replace
+      path: /spec/resources/requests/storage
+      value: "10Gi"
+
+# Development service type (NodePort for easy access)
+- target:
+    kind: Service
+    name: llm-runner-router
+  patch: |-
+    - op: replace
+      path: /spec/type
+      value: NodePort
+    - op: add
+      path: /spec/ports/0/nodePort
+      value: 30000
+    - op: add
+      path: /spec/ports/1/nodePort
+      value: 30001
+
+# Disable network policies for development (easier debugging)
+- target:
+    kind: NetworkPolicy
+    name: default-deny-all
+  patch: |-
+    $patch: delete
+
+# Development ingress with different host
+- target:
+    kind: Ingress
+    name: llm-runner-router
+  patch: |-
+    - op: replace
+      path: /spec/rules/0/host
+      value: "dev-llm-api.yourdomain.com"
+    - op: replace
+      path: /spec/rules/1/host
+      value: "dev-llm-router.yourdomain.com"
