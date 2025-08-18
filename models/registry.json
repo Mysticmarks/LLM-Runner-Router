@@ -2,64 +2,7 @@
   "version": "1.0.0",
   "models": [
     {
-      "id": "qwen2.5-1.5b-instruct",
-      "name": "Qwen 2.5 1.5B Instruct Q4",
-      "version": "1.0.0",
-      "format": "gguf",
-      "architecture": {},
-      "parameters": {},
-      "metadata": {},
-      "capabilities": {
-        "streaming": false,
-        "batching": false,
-        "quantization": false,
-        "embedding": false,
-        "completion": true
-      },
-      "metrics": {
-        "loadTime": null,
-        "inferenceCount": 0,
-        "totalTokens": 0,
-        "avgLatency": 0,
-        "lastUsed": null
-      },
-      "source": "./models/qwen2.5/qwen2.5-1.5b-instruct-q4_k_m.gguf",
-      "path": "./models/qwen2.5/qwen2.5-1.5b-instruct-q4_k_m.gguf"
-    },
-    {
-      "id": "phi-2",
-      "name": "phi-2.Q4_K_M",
-      "version": "1.0.0",
-      "format": "gguf",
-      "architecture": {
-        "type": "phi"
-      },
-      "parameters": {
-        "size": "2.7B",
-        "quantization": "Q4_K_M"
-      },
-      "metadata": {
-        "description": "Microsoft Phi-2 - Good balance of size and performance"
-      },
-      "capabilities": {
-        "streaming": false,
-        "batching": false,
-        "quantization": true,
-        "embedding": false,
-        "completion": true
-      },
-      "metrics": {
-        "loadTime": null,
-        "inferenceCount": 0,
-        "totalTokens": 0,
-        "avgLatency": 0,
-        "lastUsed": null
-      },
-      "source": "models/phi-2/phi-2.Q4_K_M.gguf",
-      "path": "models/phi-2/phi-2.Q4_K_M.gguf"
-    },
-    {
-      "id": "model_megecz9w_d8oi9wl4y",
+      "id": "model_megetg36_ch5bwukib",
       "name": "unknown-model",
       "format": "mock",
       "loaded": true,
@@ -71,7 +14,7 @@
         "completion": true
       },
       "metrics": {
-        "loadTime": 1755478141945,
+        "loadTime": 1755478910231,
         "inferenceCount": 0,
         "totalTokens": 0,
         "avgLatency": 0,

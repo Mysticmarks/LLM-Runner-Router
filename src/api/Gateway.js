@@ -4,7 +4,7 @@
  */
 
 import express from 'express';
-import CircuitBreaker from 'circuit-breaker';
+import { CircuitBreaker } from '../utils/CircuitBreaker.js';
 import { LRUCache } from 'lru-cache';
 import compression from 'compression';
 import morgan from 'morgan';

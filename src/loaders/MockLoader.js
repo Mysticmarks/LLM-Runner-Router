@@ -92,6 +92,11 @@ class MockModel extends ModelInterface {
     }
   }
 
+  // Alias for compatibility
+  async generate(input, options = {}) {
+    return this.infer(input, options);
+  }
+
   toJSON() {
     return {
       id: this.id,

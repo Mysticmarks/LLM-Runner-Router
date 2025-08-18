@@ -109,15 +109,17 @@ class ModelRegistry extends EventEmitter {
     }
     this.indexes.format.get(model.format).push(model);
     
-    // Index by capabilities
-    Object.entries(model.capabilities)
-      .filter(([_, enabled]) => enabled)
-      .forEach(([cap]) => {
-        if (!this.indexes.capability.has(cap)) {
-          this.indexes.capability.set(cap, []);
-        }
-        this.indexes.capability.get(cap).push(model);
-      });
+    // Index by capabilities (only if capabilities exist)
+    if (model.capabilities && typeof model.capabilities === 'object') {
+      Object.entries(model.capabilities)
+        .filter(([_, enabled]) => enabled)
+        .forEach(([cap]) => {
+          if (!this.indexes.capability.has(cap)) {
+            this.indexes.capability.set(cap, []);
+          }
+          this.indexes.capability.get(cap).push(model);
+        });
+    }
   }
 
   async evictLRU() {
