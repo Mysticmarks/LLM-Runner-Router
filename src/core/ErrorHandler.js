@@ -10,6 +10,51 @@ import { Logger } from '../utils/Logger.js';
 
 const logger = new Logger('ErrorHandler');
 
+/**
+ * 🛡️ System-Wide Error Handler with Self-Healing
+ * Comprehensive error recovery and automatic healing system
+ * 
+ * @class ErrorHandler
+ * @extends EventEmitter
+ * @example
+ * // Basic usage with default configuration
+ * import ErrorHandler from './ErrorHandler.js';
+ * 
+ * const errorHandler = new ErrorHandler();
+ * 
+ * // Listen for recovery events
+ * errorHandler.on('soft-restart', () => {
+ *   console.log('System performing soft restart');
+ * });
+ * 
+ * @example
+ * // Advanced configuration with custom recovery strategies
+ * const errorHandler = new ErrorHandler({
+ *   maxRetries: 5,
+ *   retryDelay: 2000,
+ *   autoRestart: true,
+ *   recoveryStrategies: {
+ *     CUSTOM_ERROR: 'clearCache',
+ *     API_TIMEOUT: 'retryConnection'
+ *   }
+ * });
+ * 
+ * @example
+ * // Integration with existing application
+ * class MyApp {
+ *   constructor() {
+ *     this.errorHandler = new ErrorHandler({
+ *       memoryThreshold: 0.8,
+ *       healthCheckInterval: 60000
+ *     });
+ *     
+ *     // Handle application-specific recovery
+ *     this.errorHandler.on('clear-cache', () => {
+ *       this.clearApplicationCache();
+ *     });
+ *   }
+ * }
+ */
 class ErrorHandler extends EventEmitter {
   constructor(config = {}) {
     super();
@@ -43,6 +88,29 @@ class ErrorHandler extends EventEmitter {
 
   /**
    * Setup global error handlers
+   * 
+   * @method setupHandlers
+   * @example
+   * // Automatic setup on construction
+   * const errorHandler = new ErrorHandler();
+   * // Handlers are already set up
+   * 
+   * @example
+   * // Manual setup after configuration changes
+   * const errorHandler = new ErrorHandler({ autoRestart: false });
+   * errorHandler.config.autoRestart = true;
+   * errorHandler.setupHandlers(); // Re-setup with new config
+   * 
+   * @example
+   * // Listen for specific error types
+   * process.on('uncaughtException', (error) => {
+   *   console.log('Caught by global handler:', error.message);
+   * });
+   * 
+   * // Trigger test error
+   * setTimeout(() => {
+   *   throw new Error('Test uncaught exception');
+   * }, 1000);
    */
   setupHandlers() {
     // Uncaught exceptions
@@ -62,6 +130,10 @@ class ErrorHandler extends EventEmitter {
       logger.warn('⚠️ Process Warning:', warning);
       if (warning.name === 'MaxListenersExceededWarning') {
         this.handleMemoryLeak();
+      } else if (warning.name === 'TimeoutOverflowWarning') {
+        this.emit('timeout-overflow', warning);
+      } else if (warning.name === 'DeprecationWarning') {
+        this.emit('deprecation-warning', warning);
       }
     });
 
@@ -81,7 +153,115 @@ class ErrorHandler extends EventEmitter {
   }
 
   /**
+   * Handle memory leak detection
+   * 
+   * @method handleMemoryLeak
+   * @example
+   * // Automatic memory leak detection
+   * process.on('warning', (warning) => {
+   *   if (warning.name === 'MaxListenersExceededWarning') {
+   *     console.log('Memory leak detected:', warning.message);
+   *     errorHandler.handleMemoryLeak();
+   *   }
+   * });
+   * 
+   * @example
+   * // Custom memory leak detection
+   * setInterval(() => {
+   *   const memUsage = process.memoryUsage();
+   *   const usage = memUsage.heapUsed / memUsage.heapTotal;
+   *   
+   *   if (usage > 0.95) {
+   *     console.warn('Potential memory leak detected');
+   *     errorHandler.handleMemoryLeak();
+   *   }
+   * }, 30000);
+   * 
+   * @example
+   * // Memory leak handling with diagnostics
+   * class DiagnosticErrorHandler extends ErrorHandler {
+   *   handleMemoryLeak() {
+   *     console.log('Memory leak detected, running diagnostics');
+   *     
+   *     // Log memory usage details
+   *     const usage = process.memoryUsage();
+   *     console.log('Memory usage:', {
+   *       rss: `${Math.round(usage.rss / 1024 / 1024)} MB`,
+   *       heapTotal: `${Math.round(usage.heapTotal / 1024 / 1024)} MB`,
+   *       heapUsed: `${Math.round(usage.heapUsed / 1024 / 1024)} MB`,
+   *       external: `${Math.round(usage.external / 1024 / 1024)} MB`
+   *     });
+   *     
+   *     // Trigger heap dump if available
+   *     if (process.env.NODE_ENV === 'development') {
+   *       this.createHeapDump();
+   *     }
+   *     
+   *     // Attempt cleanup
+   *     this.clearCache();
+   *   }
+   * }
+   */
+  handleMemoryLeak() {
+    logger.warn('⚠️ Memory leak detected, initiating cleanup');
+    
+    // Log current memory usage
+    const usage = process.memoryUsage();
+    logger.warn('Memory usage:', {
+      rss: `${Math.round(usage.rss / 1024 / 1024)} MB`,
+      heapTotal: `${Math.round(usage.heapTotal / 1024 / 1024)} MB`,
+      heapUsed: `${Math.round(usage.heapUsed / 1024 / 1024)} MB`,
+      external: `${Math.round(usage.external / 1024 / 1024)} MB`
+    });
+    
+    // Emit memory leak event
+    this.emit('memory-leak-detected', usage);
+    
+    // Trigger cache clearing
+    this.clearCache();
+    
+    // Schedule a health check
+    setTimeout(() => {
+      this.performHealthCheck();
+    }, 5000);
+  }
+
+  /**
    * Handle critical errors with recovery
+   * 
+   * @method handleCriticalError
+   * @param {Error} error - The error to handle
+   * @param {string} source - Source of the error (e.g., 'uncaughtException')
+   * @example
+   * // Manual error handling
+   * try {
+   *   await riskyOperation();
+   * } catch (error) {
+   *   await errorHandler.handleCriticalError(error, 'riskyOperation');
+   * }
+   * 
+   * @example
+   * // Handling database connection errors
+   * const dbError = new Error('Connection failed');
+   * dbError.code = 'ECONNREFUSED';
+   * await errorHandler.handleCriticalError(dbError, 'database');
+   * 
+   * @example
+   * // Handling memory errors with custom recovery
+   * const memError = new Error('Out of memory');
+   * memError.code = 'ENOMEM';
+   * 
+   * // This will trigger 'clearCache' recovery strategy
+   * await errorHandler.handleCriticalError(memError, 'memoryOperation');
+   * 
+   * @example
+   * // Error frequency tracking and max retries
+   * for (let i = 0; i < 5; i++) {
+   *   const error = new Error('Repeated error');
+   *   error.code = 'TEST_ERROR';
+   *   await errorHandler.handleCriticalError(error, 'testSource');
+   *   // After maxRetries (default 3), will trigger emergency shutdown
+   * }
    */
   async handleCriticalError(error, source) {
     // Log the error
@@ -104,6 +284,43 @@ class ErrorHandler extends EventEmitter {
 
   /**
    * Attempt to recover from error
+   * 
+   * @method attemptRecovery
+   * @param {Error} error - The error to recover from
+   * @param {string} source - Source of the error
+   * @example
+   * // Direct recovery attempt
+   * const connectionError = new Error('Database timeout');
+   * connectionError.code = 'ETIMEDOUT';
+   * 
+   * try {
+   *   await errorHandler.attemptRecovery(connectionError, 'database');
+   *   console.log('Recovery successful');
+   * } catch (recoveryError) {
+   *   console.log('Recovery failed:', recoveryError.message);
+   * }
+   * 
+   * @example
+   * // Recovery with event listening
+   * errorHandler.on('retry-connection', ({ attempt, error }) => {
+   *   console.log(`Retry attempt ${attempt} for:`, error.message);
+   * });
+   * 
+   * const error = new Error('Network unreachable');
+   * await errorHandler.attemptRecovery(error, 'network');
+   * 
+   * @example
+   * // Preventing concurrent recoveries
+   * const error1 = new Error('First error');
+   * const error2 = new Error('Second error');
+   * 
+   * // Start first recovery
+   * const recovery1 = errorHandler.attemptRecovery(error1, 'source1');
+   * 
+   * // Second recovery will be skipped due to isRecovering flag
+   * const recovery2 = errorHandler.attemptRecovery(error2, 'source2');
+   * 
+   * await Promise.all([recovery1, recovery2]);
    */
   async attemptRecovery(error, source) {
     if (this.isRecovering) {
@@ -144,6 +361,42 @@ class ErrorHandler extends EventEmitter {
 
   /**
    * Select appropriate recovery strategy
+   * 
+   * @method selectRecoveryStrategy
+   * @param {Error} error - The error to analyze
+   * @returns {string} Recovery strategy name
+   * @example
+   * // Memory-related error
+   * const memError = new Error('JavaScript heap out of memory');
+   * const strategy = errorHandler.selectRecoveryStrategy(memError);
+   * console.log(strategy); // 'clearCache'
+   * 
+   * @example
+   * // Connection error with specific code
+   * const connError = new Error('Connection refused');
+   * connError.code = 'ECONNREFUSED';
+   * const strategy = errorHandler.selectRecoveryStrategy(connError);
+   * console.log(strategy); // 'retryConnection'
+   * 
+   * @example
+   * // Missing module error
+   * const moduleError = new Error('Cannot find module \'missing-package\'');
+   * const strategy = errorHandler.selectRecoveryStrategy(moduleError);
+   * console.log(strategy); // 'reinstallDependencies'
+   * 
+   * @example
+   * // Custom strategy mapping
+   * const errorHandler = new ErrorHandler({
+   *   recoveryStrategies: {
+   *     CUSTOM_CODE: 'customRecovery',
+   *     API_LIMIT: 'waitAndRetry'
+   *   }
+   * });
+   * 
+   * const customError = new Error('Rate limit exceeded');
+   * customError.code = 'API_LIMIT';
+   * const strategy = errorHandler.selectRecoveryStrategy(customError);
+   * console.log(strategy); // 'waitAndRetry'
    */
   selectRecoveryStrategy(error) {
     // Check predefined strategies
@@ -174,6 +427,45 @@ class ErrorHandler extends EventEmitter {
 
   /**
    * Execute recovery strategy
+   * 
+   * @method executeRecovery
+   * @param {string} strategy - Recovery strategy to execute
+   * @param {Error} error - Original error that triggered recovery
+   * @example
+   * // Execute specific recovery strategy
+   * const error = new Error('Memory leak detected');
+   * await errorHandler.executeRecovery('clearCache', error);
+   * 
+   * @example
+   * // Chain multiple recovery strategies
+   * try {
+   *   await errorHandler.executeRecovery('retryConnection', error);
+   * } catch (firstRecoveryError) {
+   *   await errorHandler.executeRecovery('restartProcess', error);
+   * }
+   * 
+   * @example
+   * // Listen for recovery events
+   * errorHandler.on('clear-cache', () => {
+   *   console.log('Application should clear its caches now');
+   *   myApp.clearUserCache();
+   *   myApp.clearApiCache();
+   * });
+   * 
+   * await errorHandler.executeRecovery('clearCache', error);
+   * 
+   * @example
+   * // Custom recovery implementation
+   * class CustomErrorHandler extends ErrorHandler {
+   *   async executeRecovery(strategy, error) {
+   *     if (strategy === 'customStrategy') {
+   *       console.log('Executing custom recovery');
+   *       await this.customRecoveryMethod(error);
+   *     } else {
+   *       await super.executeRecovery(strategy, error);
+   *     }
+   *   }
+   * }
    */
   async executeRecovery(strategy, error) {
     logger.info(`🔄 Executing recovery strategy: ${strategy}`);
@@ -210,7 +502,43 @@ class ErrorHandler extends EventEmitter {
   }
 
   /**
-   * Recovery strategies
+   * Recovery strategies - Clear cache and free memory
+   * 
+   * @method clearCache
+   * @example
+   * // Manual cache clearing
+   * await errorHandler.clearCache();
+   * console.log('System caches cleared');
+   * 
+   * @example
+   * // Listen for cache clear events in your application
+   * errorHandler.on('clear-cache', () => {
+   *   // Clear application-specific caches
+   *   userCache.clear();
+   *   apiResponseCache.clear();
+   *   imageCache.clear();
+   * });
+   * 
+   * // Trigger cache clear
+   * await errorHandler.clearCache();
+   * 
+   * @example
+   * // Memory pressure response
+   * const memoryUsage = process.memoryUsage();
+   * const usage = memoryUsage.heapUsed / memoryUsage.heapTotal;
+   * 
+   * if (usage > 0.9) {
+   *   console.log('High memory usage detected, clearing caches');
+   *   await errorHandler.clearCache();
+   * }
+   * 
+   * @example
+   * // Force garbage collection with cache clear
+   * // Run Node.js with: node --expose-gc app.js
+   * if (global.gc) {
+   *   await errorHandler.clearCache(); // This will trigger gc()
+   *   console.log('Garbage collection completed');
+   * }
    */
   async clearCache() {
     logger.info('🧹 Clearing caches and freeing memory');
@@ -232,6 +560,57 @@ class ErrorHandler extends EventEmitter {
     await new Promise(resolve => setTimeout(resolve, 2000));
   }
 
+  /**
+   * Retry connection with exponential backoff
+   * 
+   * @method retryConnection
+   * @param {Error} error - Original connection error
+   * @example
+   * // Database connection retry
+   * const dbError = new Error('Connection timeout');
+   * dbError.code = 'ETIMEDOUT';
+   * 
+   * try {
+   *   await errorHandler.retryConnection(dbError);
+   *   console.log('Database connection restored');
+   * } catch (error) {
+   *   console.log('Failed to restore connection after retries');
+   * }
+   * 
+   * @example
+   * // Monitor retry attempts
+   * errorHandler.on('retry-connection', ({ attempt, error }) => {
+   *   console.log(`Retry ${attempt}/3: ${error.message}`);
+   *   
+   *   // Show progress to user
+   *   updateConnectionStatus(`Retrying connection... (${attempt}/3)`);
+   * });
+   * 
+   * await errorHandler.retryConnection(connectionError);
+   * 
+   * @example
+   * // Custom connectivity check integration
+   * class DatabaseErrorHandler extends ErrorHandler {
+   *   async checkConnectivity() {
+   *     try {
+   *       await database.ping();
+   *       return true;
+   *     } catch {
+   *       return false;
+   *     }
+   *   }
+   * }
+   * 
+   * @example
+   * // API service retry with custom logic
+   * errorHandler.on('retry-connection', async ({ attempt }) => {
+   *   if (attempt === 1) {
+   *     console.log('First retry: checking service status');
+   *     const status = await checkAPIServiceStatus();
+   *     console.log('Service status:', status);
+   *   }
+   * });
+   */
   async retryConnection(error) {
     logger.info('🔌 Retrying connection');
     
@@ -252,6 +631,61 @@ class ErrorHandler extends EventEmitter {
     throw new Error('Failed to restore connection');
   }
 
+  /**
+   * Create missing files and directories
+   * 
+   * @method createMissingResources
+   * @param {Error} error - ENOENT error with path information
+   * @example
+   * // Handle missing log directory
+   * const error = new Error("ENOENT: no such file or directory, open '/app/logs/error.log'");
+   * await errorHandler.createMissingResources(error);
+   * // Creates /app/logs/ directory and error.log file
+   * 
+   * @example
+   * // Handle missing configuration file
+   * try {
+   *   const config = await fs.readFile('./config/app.json');
+   * } catch (error) {
+   *   if (error.code === 'ENOENT') {
+   *     await errorHandler.createMissingResources(error);
+   *     // Creates ./config/ directory and empty app.json file
+   *     
+   *     // Now write default configuration
+   *     const defaultConfig = { port: 3000, env: 'development' };
+   *     await fs.writeFile('./config/app.json', JSON.stringify(defaultConfig, null, 2));
+   *   }
+   * }
+   * 
+   * @example
+   * // Automatic recovery from missing uploads directory
+   * app.post('/upload', async (req, res) => {
+   *   try {
+   *     await saveFile('./uploads/user-file.jpg', req.file);
+   *   } catch (error) {
+   *     if (error.code === 'ENOENT') {
+   *       await errorHandler.createMissingResources(error);
+   *       // Retry the save operation
+   *       await saveFile('./uploads/user-file.jpg', req.file);
+   *     } else {
+   *       throw error;
+   *     }
+   *   }
+   * });
+   * 
+   * @example
+   * // Bulk directory structure creation
+   * const missingDirs = [
+   *   './logs/application.log',
+   *   './temp/cache.json',
+   *   './data/users.db'
+   * ];
+   * 
+   * for (const dir of missingDirs) {
+   *   const error = new Error(`ENOENT: no such file or directory, open '${dir}'`);
+   *   await errorHandler.createMissingResources(error);
+   * }
+   */
   async createMissingResources(error) {
     logger.info('📁 Creating missing resources');
     
@@ -273,6 +707,66 @@ class ErrorHandler extends EventEmitter {
     }
   }
 
+  /**
+   * Adjust system timeouts to handle slow operations
+   * 
+   * @method adjustTimeouts
+   * @example
+   * // Automatic timeout adjustment after timeouts
+   * const timeoutError = new Error('Operation timed out');
+   * timeoutError.code = 'TIMEOUT';
+   * 
+   * // This will trigger adjustTimeouts recovery
+   * await errorHandler.handleCriticalError(timeoutError, 'slowOperation');
+   * 
+   * @example
+   * // Listen for timeout adjustments in your application
+   * errorHandler.on('adjust-timeouts', ({ multiplier }) => {
+   *   console.log(`Adjusting timeouts by factor of ${multiplier}`);
+   *   
+   *   // Update application timeouts
+   *   databaseTimeout *= multiplier;
+   *   apiTimeout *= multiplier;
+   *   fileOperationTimeout *= multiplier;
+   *   
+   *   console.log('New timeouts:', {
+   *     database: databaseTimeout,
+   *     api: apiTimeout,
+   *     fileOperations: fileOperationTimeout
+   *   });
+   * });
+   * 
+   * @example
+   * // Custom timeout adjustment logic
+   * class AdaptiveErrorHandler extends ErrorHandler {
+   *   async adjustTimeouts() {
+   *     // Get current system load
+   *     const load = await this.getSystemLoad();
+   *     
+   *     // Adjust multiplier based on load
+   *     const multiplier = load > 0.8 ? 2.0 : 1.5;
+   *     
+   *     this.config.retryDelay *= multiplier;
+   *     this.config.gracefulShutdownTimeout *= multiplier;
+   *     
+   *     this.emit('adjust-timeouts', { multiplier, load });
+   *   }
+   * }
+   * 
+   * @example
+   * // Progressive timeout adjustment
+   * let timeoutAdjustmentCount = 0;
+   * 
+   * errorHandler.on('adjust-timeouts', ({ multiplier }) => {
+   *   timeoutAdjustmentCount++;
+   *   
+   *   if (timeoutAdjustmentCount > 3) {
+   *     console.warn('Multiple timeout adjustments detected, investigating root cause');
+   *     // Trigger deeper investigation
+   *     performSystemDiagnostics();
+   *   }
+   * });
+   */
   async adjustTimeouts() {
     logger.info('⏰ Adjusting timeouts');
     
@@ -284,6 +778,70 @@ class ErrorHandler extends EventEmitter {
     this.emit('adjust-timeouts', { multiplier: 1.5 });
   }
 
+  /**
+   * Trigger dependency reinstallation
+   * 
+   * @method reinstallDependencies
+   * @example
+   * // Automatic dependency reinstall for missing modules
+   * try {
+   *   require('some-missing-module');
+   * } catch (error) {
+   *   if (error.code === 'MODULE_NOT_FOUND') {
+   *     await errorHandler.executeRecovery('reinstallDependencies', error);
+   *   }
+   * }
+   * 
+   * @example
+   * // Listen for reinstall requirements
+   * errorHandler.on('reinstall-required', () => {
+   *   console.log('Dependencies need reinstallation');
+   *   
+   *   // Notify operations team
+   *   sendAlert('Dependencies corrupted, reinstall required');
+   *   
+   *   // Log for audit trail
+   *   logger.warn('Dependency reinstall triggered by error recovery');
+   * });
+   * 
+   * @example
+   * // PM2 integration for dependency reinstall
+   * // In PM2 ecosystem file:
+   * // {
+   * //   "name": "app",
+   * //   "script": "app.js",
+   * //   "listen_timeout": 3000,
+   * //   "kill_timeout": 5000
+   * // }
+   * 
+   * errorHandler.on('reinstall-required', () => {
+   *   if (process.send) {
+   *     // PM2 will receive this and can trigger reinstall script
+   *     process.send({
+   *       type: 'reinstall',
+   *       timestamp: Date.now(),
+   *       reason: 'dependency_corruption'
+   *     });
+   *   }
+   * });
+   * 
+   * @example
+   * // Container/Docker environment handling
+   * errorHandler.on('reinstall-required', async () => {
+   *   if (process.env.CONTAINER_ENV) {
+   *     console.log('Container environment detected');
+   *     
+   *     // Signal container orchestrator
+   *     await fetch('http://orchestrator/api/restart-pod', {
+   *       method: 'POST',
+   *       body: JSON.stringify({
+   *         podId: process.env.POD_ID,
+   *         reason: 'dependency_reinstall_required'
+   *       })
+   *     });
+   *   }
+   * });
+   */
   async reinstallDependencies() {
     logger.info('📦 Reinstalling dependencies');
     
@@ -296,6 +854,68 @@ class ErrorHandler extends EventEmitter {
     }
   }
 
+  /**
+   * Restart the entire process
+   * 
+   * @method restartProcess
+   * @example
+   * // Triggered by critical errors like segmentation faults
+   * const criticalError = new Error('Segmentation fault detected');
+   * criticalError.code = 'SEGFAULT';
+   * 
+   * // This will trigger process restart
+   * await errorHandler.handleCriticalError(criticalError, 'nativeModule');
+   * 
+   * @example
+   * // Manual process restart
+   * if (memoryLeakDetected()) {
+   *   console.log('Memory leak detected, restarting process');
+   *   await errorHandler.restartProcess();
+   * }
+   * 
+   * @example
+   * // Process restart with PM2 integration
+   * // PM2 will automatically restart the process
+   * process.on('message', (msg) => {
+   *   if (msg === 'restart') {
+   *     console.log('PM2 restart signal received');
+   *     // PM2 handles the actual restart
+   *   }
+   * });
+   * 
+   * @example
+   * // Kubernetes pod restart
+   * class KubernetesErrorHandler extends ErrorHandler {
+   *   async restartProcess() {
+   *     if (process.env.KUBERNETES_SERVICE_HOST) {
+   *       console.log('Kubernetes environment detected');
+   *       
+   *       // Signal Kubernetes to restart pod
+   *       await this.gracefulShutdown('kubernetes-restart');
+   *       
+   *       // Exit with code that triggers restart
+   *       process.exit(1);
+   *     } else {
+   *       await super.restartProcess();
+   *     }
+   *   }
+   * }
+   * 
+   * @example
+   * // Process restart with state preservation
+   * errorHandler.on('shutdown', async () => {
+   *   // Save critical state before restart
+   *   await saveApplicationState({
+   *     activeConnections: getActiveConnections(),
+   *     pendingTasks: getPendingTasks(),
+   *     userSessions: getUserSessions(),
+   *     timestamp: Date.now()
+   *   });
+   *   
+   *   console.log('Application state saved for restart recovery');
+   *   errorHandler.emit('shutdown-complete');
+   * });
+   */
   async restartProcess() {
     logger.info('🔄 Restarting process');
     
@@ -311,6 +931,79 @@ class ErrorHandler extends EventEmitter {
     }
   }
 
+  /**
+   * Perform soft restart without process termination
+   * 
+   * @method softRestart
+   * @example
+   * // Trigger soft restart manually
+   * await errorHandler.softRestart();
+   * console.log('Soft restart completed');
+   * 
+   * @example
+   * // Application soft restart handling
+   * errorHandler.on('soft-restart', async () => {
+   *   console.log('Performing application soft restart');
+   *   
+   *   // Clear application state
+   *   applicationState.reset();
+   *   
+   *   // Reinitialize connections
+   *   await database.reconnect();
+   *   await redis.reconnect();
+   *   
+   *   // Reload configuration
+   *   config.reload();
+   *   
+   *   // Restart background services
+   *   scheduler.restart();
+   *   worker.restart();
+   *   
+   *   console.log('Soft restart completed successfully');
+   * });
+   * 
+   * @example
+   * // Web server soft restart
+   * errorHandler.on('soft-restart', async () => {
+   *   // Don't interrupt active connections
+   *   server.pauseNewConnections();
+   *   
+   *   try {
+   *     // Reload routes and middleware
+   *     await server.reloadRoutes();
+   *     await server.reloadMiddleware();
+   *     
+   *     // Update configuration
+   *     await server.updateConfig();
+   *     
+   *     console.log('Web server soft restart completed');
+   *   } finally {
+   *     // Resume accepting new connections
+   *     server.resumeNewConnections();
+   *   }
+   * });
+   * 
+   * @example
+   * // Microservice soft restart with health checks
+   * errorHandler.on('soft-restart', async () => {
+   *   try {
+   *     // Mark as unhealthy during restart
+   *     healthCheck.setStatus('restarting');
+   *     
+   *     // Perform restart operations
+   *     await reinitializeServices();
+   *     await validateConnections();
+   *     
+   *     // Mark as healthy again
+   *     healthCheck.setStatus('healthy');
+   *     
+   *     console.log('Microservice soft restart successful');
+   *   } catch (error) {
+   *     healthCheck.setStatus('unhealthy');
+   *     throw error;
+   *   }
+   * });
+   */
   async softRestart() {
     logger.info('♻️ Performing soft restart');
     
@@ -322,7 +1015,49 @@ class ErrorHandler extends EventEmitter {
   }
 
   /**
-   * Health monitoring
+   * Start health monitoring system
+   * 
+   * @method startHealthMonitoring
+   * @example
+   * // Basic health monitoring
+   * const errorHandler = new ErrorHandler({
+   *   healthCheckInterval: 30000, // Check every 30 seconds
+   *   memoryThreshold: 0.8 // Alert at 80% memory usage
+   * });
+   * 
+   * errorHandler.startHealthMonitoring();
+   * 
+   * @example
+   * // Listen for health events
+   * errorHandler.on('health-check', (health) => {
+   *   console.log('System Health:', {
+   *     memory: `${(health.memory.heapUsed / 1024 / 1024).toFixed(2)} MB`,
+   *     uptime: `${Math.floor(health.uptime / 60)} minutes`,
+   *     errors: health.errors
+   *   });
+   * });
+   * 
+   * @example
+   * // Custom health monitoring with alerts
+   * errorHandler.on('health-check', (health) => {
+   *   const memoryUsage = health.memory.heapUsed / health.memory.heapTotal;
+   *   
+   *   if (memoryUsage > 0.9) {
+   *     sendAlert(`High memory usage: ${(memoryUsage * 100).toFixed(2)}%`);
+   *   }
+   *   
+   *   if (health.errors > 5) {
+   *     sendAlert(`High error rate: ${health.errors} errors detected`);
+   *   }
+   * });
+   * 
+   * @example
+   * // Integration with external monitoring
+   * errorHandler.on('high-error-rate', (errorCount) => {
+   *   // Send to external monitoring service
+   *   metrics.increment('error_rate', errorCount);
+   *   alerts.send('high_error_rate', { count: errorCount });
+   * });
    */
   startHealthMonitoring() {
     this.healthInterval = setInterval(async () => {
@@ -332,6 +1067,69 @@ class ErrorHandler extends EventEmitter {
     logger.info('🏥 Health monitoring started');
   }
 
+  /**
+   * Perform comprehensive health check
+   * 
+   * @method performHealthCheck
+   * @returns {Object} Health status object
+   * @example
+   * // Manual health check
+   * const health = await errorHandler.performHealthCheck();
+   * console.log('Current Health Status:', {
+   *   memoryUsed: `${(health.memory.heapUsed / 1024 / 1024).toFixed(2)} MB`,
+   *   uptime: `${Math.floor(health.uptime / 3600)} hours`,
+   *   errorCount: health.errors
+   * });
+   * 
+   * @example
+   * // Scheduled health checks with custom intervals
+   * setInterval(async () => {
+   *   const health = await errorHandler.performHealthCheck();
+   *   
+   *   // Log to external service
+   *   await logHealthMetrics(health);
+   *   
+   *   // Check thresholds
+   *   if (health.memory.heapUsed > 500 * 1024 * 1024) { // 500MB
+   *     console.warn('Memory usage high, considering restart');
+   *   }
+   * }, 60000);
+   * 
+   * @example
+   * // Health check with custom metrics
+   * class CustomErrorHandler extends ErrorHandler {
+   *   async performHealthCheck() {
+   *     const baseHealth = await super.performHealthCheck();
+   *     
+   *     // Add custom metrics
+   *     return {
+   *       ...baseHealth,
+   *       database: await this.checkDatabaseHealth(),
+   *       cache: await this.checkCacheHealth(),
+   *       api: await this.checkAPIHealth()
+   *     };
+   *   }
+   * }
+   * 
+   * @example
+   * // React to health check results
+   * errorHandler.on('health-check', async (health) => {
+   *   const memUsage = health.memory.heapUsed / health.memory.heapTotal;
+   *   
+   *   if (memUsage > 0.85) {
+   *     console.log('High memory usage, clearing caches');
+   *     await errorHandler.clearCache();
+   *   }
+   *   
+   *   // Store health metrics
+   *   await database.insertHealthMetric({
+   *     timestamp: health.timestamp,
+   *     memory_usage: memUsage,
+   *     error_count: health.errors,
+   *     uptime: health.uptime
+   *   });
+   * });
+   */
   async performHealthCheck() {
     const health = {
       timestamp: Date.now(),
@@ -371,7 +1169,63 @@ class ErrorHandler extends EventEmitter {
   }
 
   /**
-   * Check connectivity
+   * Check network connectivity
+   * 
+   * @method checkConnectivity
+   * @returns {boolean} True if connected, false otherwise
+   * @example
+   * // Basic connectivity check
+   * const isConnected = await errorHandler.checkConnectivity();
+   * if (isConnected) {
+   *   console.log('Network is available');
+   * } else {
+   *   console.log('Network is down, switching to offline mode');
+   * }
+   * 
+   * @example
+   * // Use in retry logic
+   * async function fetchData(url) {
+   *   for (let attempt = 1; attempt <= 3; attempt++) {
+   *     try {
+   *       return await fetch(url);
+   *     } catch (error) {
+   *       const isConnected = await errorHandler.checkConnectivity();
+   *       if (!isConnected) {
+   *         console.log('No internet connection, will retry when connected');
+   *         await waitForConnection();
+   *       }
+   *     }
+   *   }
+   * }
+   * 
+   * @example
+   * // Custom connectivity check
+   * class CustomErrorHandler extends ErrorHandler {
+   *   async checkConnectivity() {
+   *     try {
+   *       // Check your specific service
+   *       const response = await fetch('https://api.myservice.com/health');
+   *       return response.ok;
+   *     } catch {
+   *       // Fallback to default DNS check
+   *       return await super.checkConnectivity();
+   *     }
+   *   }
+   * }
+   * 
+   * @example
+   * // Periodic connectivity monitoring
+   * setInterval(async () => {
+   *   const isConnected = await errorHandler.checkConnectivity();
+   *   
+   *   if (!isConnected) {
+   *     console.log('Connection lost, pausing background tasks');
+   *     pauseBackgroundJobs();
+   *   } else {
+   *     console.log('Connection restored, resuming background tasks');
+   *     resumeBackgroundJobs();
+   *   }
+   * }, 30000);
    */
   async checkConnectivity() {
     try {
@@ -385,7 +1239,73 @@ class ErrorHandler extends EventEmitter {
   }
 
   /**
-   * Graceful shutdown
+   * Perform graceful shutdown
+   * 
+   * @method gracefulShutdown
+   * @param {string} signal - Shutdown signal (SIGTERM, SIGINT, etc.)
+   * @example
+   * // Manual graceful shutdown
+   * process.on('SIGTERM', async () => {
+   *   console.log('Received SIGTERM, shutting down gracefully');
+   *   await errorHandler.gracefulShutdown('SIGTERM');
+   * });
+   * 
+   * @example
+   * // Application cleanup during shutdown
+   * errorHandler.on('shutdown', (signal) => {
+   *   console.log(`Shutdown initiated by ${signal}`);
+   *   
+   *   // Close database connections
+   *   database.close();
+   *   
+   *   // Stop background jobs
+   *   scheduler.stop();
+   *   
+   *   // Save in-progress work
+   *   saveCurrentState();
+   *   
+   *   // Signal cleanup complete
+   *   errorHandler.emit('shutdown-complete');
+   * });
+   * 
+   * @example
+   * // Timeout handling during shutdown
+   * errorHandler.on('shutdown', async (signal) => {
+   *   console.log('Starting cleanup...');
+   *   
+   *   try {
+   *     // Perform cleanup with its own timeout
+   *     await Promise.race([
+   *       performCleanup(),
+   *       new Promise((_, reject) => 
+   *         setTimeout(() => reject(new Error('Cleanup timeout')), 25000)
+   *       )
+   *     ]);
+   *     
+   *     console.log('Cleanup completed successfully');
+   *   } catch (error) {
+   *     console.log('Cleanup timed out or failed:', error.message);
+   *   } finally {
+   *     errorHandler.emit('shutdown-complete');
+   *   }
+   * });
+   * 
+   * @example
+   * // Docker/Kubernetes integration
+   * // Graceful shutdown with health check endpoint
+   * let isShuttingDown = false;
+   * 
+   * errorHandler.on('shutdown', () => {
+   *   isShuttingDown = true;
+   * });
+   * 
+   * app.get('/health', (req, res) => {
+   *   if (isShuttingDown) {
+   *     res.status(503).json({ status: 'shutting down' });
+   *   } else {
+   *     res.json({ status: 'healthy' });
+   *   }
+   * });
    */
   async gracefulShutdown(signal) {
     logger.info(`🛑 Graceful shutdown initiated (${signal})`);
@@ -414,7 +1334,58 @@ class ErrorHandler extends EventEmitter {
   }
 
   /**
-   * Emergency shutdown
+   * Perform emergency shutdown
+   * 
+   * @method emergencyShutdown
+   * @param {Error} error - Critical error that triggered emergency shutdown
+   * @example
+   * // Triggered automatically after max retries
+   * const criticalError = new Error('System corruption detected');
+   * 
+   * // This will trigger emergency shutdown after max retries
+   * for (let i = 0; i <= 3; i++) {
+   *   await errorHandler.handleCriticalError(criticalError, 'corruption');
+   * }
+   * // Emergency shutdown initiated
+   * 
+   * @example
+   * // Manual emergency shutdown
+   * try {
+   *   await performCriticalOperation();
+   * } catch (error) {
+   *   if (error.message.includes('security breach')) {
+   *     console.log('Security breach detected, emergency shutdown');
+   *     await errorHandler.emergencyShutdown(error);
+   *   }
+   * }
+   * 
+   * @example
+   * // Emergency shutdown with custom logging
+   * class SecurityErrorHandler extends ErrorHandler {
+   *   async emergencyShutdown(error) {
+   *     // Custom security logging
+   *     await this.logSecurityIncident(error);
+   *     
+   *     // Notify security team
+   *     await this.notifySecurityTeam(error);
+   *     
+   *     // Call parent emergency shutdown
+   *     await super.emergencyShutdown(error);
+   *   }
+   * }
+   * 
+   * @example
+   * // Monitor for emergency conditions
+   * errorHandler.on('health-check', (health) => {
+   *   const memUsage = health.memory.heapUsed / health.memory.heapTotal;
+   *   
+   *   // Emergency threshold reached
+   *   if (memUsage > 0.98) {
+   *     const error = new Error('Critical memory exhaustion');
+   *     error.code = 'MEM_CRITICAL';
+   *     errorHandler.emergencyShutdown(error);
+   *   }
+   * });
    */
   async emergencyShutdown(error) {
     logger.error('🚨 EMERGENCY SHUTDOWN', error);
@@ -427,7 +1398,69 @@ class ErrorHandler extends EventEmitter {
   }
 
   /**
-   * Reload configuration
+   * Reload configuration and reset state
+   * 
+   * @method reload
+   * @param {string} signal - Signal that triggered reload (SIGHUP, etc.)
+   * @example
+   * // Manual configuration reload
+   * process.on('SIGHUP', () => {
+   *   console.log('Received SIGHUP, reloading configuration');
+   *   errorHandler.reload('SIGHUP');
+   * });
+   * 
+   * @example
+   * // Application configuration reload
+   * errorHandler.on('reload', async () => {
+   *   console.log('Reloading application configuration');
+   *   
+   *   // Reload configuration files
+   *   const newConfig = await loadConfiguration();
+   *   app.updateConfig(newConfig);
+   *   
+   *   // Reinitialize connections with new settings
+   *   await database.reconnect(newConfig.database);
+   *   
+   *   // Clear caches that might contain old config
+   *   cache.clear();
+   *   
+   *   console.log('Configuration reload complete');
+   * });
+   * 
+   * @example
+   * // Hot reload with validation
+   * errorHandler.on('reload', async () => {
+   *   try {
+   *     console.log('Validating new configuration...');
+   *     const newConfig = await validateAndLoadConfig();
+   *     
+   *     console.log('Applying new configuration...');
+   *     await applyConfiguration(newConfig);
+   *     
+   *     console.log('Configuration reload successful');
+   *   } catch (error) {
+   *     console.error('Configuration reload failed:', error);
+   *     // Keep running with old configuration
+   *   }
+   * });
+   * 
+   * @example
+   * // Zero-downtime reload for web servers
+   * errorHandler.on('reload', async () => {
+   *   console.log('Performing zero-downtime reload');
+   *   
+   *   // Update server configuration without stopping
+   *   server.updateMiddleware(await loadMiddleware());
+   *   server.updateRoutes(await loadRoutes());
+   *   
+   *   // Refresh SSL certificates if needed
+   *   const certs = await loadSSLCertificates();
+   *   if (certs.updated) {
+   *     server.updateSSL(certs);
+   *   }
+   *   
+   *   console.log('Zero-downtime reload complete');
+   * });
    */
   async reload(signal) {
     logger.info(`🔄 Reloading configuration (${signal})`);
@@ -442,7 +1475,84 @@ class ErrorHandler extends EventEmitter {
   }
 
   /**
-   * Log error to file
+   * Log error to persistent storage
+   * 
+   * @method logError
+   * @param {Error} error - Error to log
+   * @param {string} source - Source/context of the error
+   * @example
+   * // Manual error logging
+   * try {
+   *   await performRiskyOperation();
+   * } catch (error) {
+   *   await errorHandler.logError(error, 'riskyOperation');
+   *   // Error is now persisted to logs/errors.json
+   * }
+   * 
+   * @example
+   * // Custom error logging with additional context
+   * class ContextualErrorHandler extends ErrorHandler {
+   *   async logError(error, source, context = {}) {
+   *     // Add request ID, user ID, etc.
+   *     const enhancedError = {
+   *       ...error,
+   *       context: {
+   *         requestId: context.requestId,
+   *         userId: context.userId,
+   *         userAgent: context.userAgent,
+   *         timestamp: new Date().toISOString()
+   *       }
+   *     };
+   *     
+   *     await super.logError(enhancedError, source);
+   *   }
+   * }
+   * 
+   * @example
+   * // Read error logs for analysis
+   * import fs from 'fs/promises';
+   * 
+   * async function analyzeErrors() {
+   *   try {
+   *     const logData = await fs.readFile('./logs/errors.json', 'utf-8');
+   *     const errors = JSON.parse(logData);
+   *     
+   *     // Find frequent errors
+   *     const errorCounts = {};
+   *     errors.forEach(log => {
+   *       const key = `${log.error.name}_${log.source}`;
+   *       errorCounts[key] = (errorCounts[key] || 0) + 1;
+   *     });
+   *     
+   *     console.log('Most frequent errors:', errorCounts);
+   *   } catch (error) {
+   *     console.log('Could not read error logs:', error.message);
+   *   }
+   * }
+   * 
+   * @example
+   * // Error log rotation and cleanup
+   * class RotatingErrorHandler extends ErrorHandler {
+   *   async logError(error, source) {
+   *     await super.logError(error, source);
+   *     
+   *     // Check file size and rotate if needed
+   *     const stats = await fs.stat(this.config.errorLogPath);
+   *     const maxSize = 10 * 1024 * 1024; // 10MB
+   *     
+   *     if (stats.size > maxSize) {
+   *       await this.rotateErrorLog();
+   *     }
+   *   }
+   *   
+   *   async rotateErrorLog() {
+   *     const timestamp = new Date().toISOString().slice(0, 10);
+   *     const backupPath = `./logs/errors-${timestamp}.json`;
+   *     
+   *     await fs.rename(this.config.errorLogPath, backupPath);
+   *     console.log(`Error log rotated to ${backupPath}`);
+   *   }
+   * }
    */
   async logError(error, source) {
     const errorLog = {
@@ -491,7 +1601,94 @@ class ErrorHandler extends EventEmitter {
   }
 
   /**
-   * Escalate error to external monitoring
+   * Escalate error to external monitoring systems
+   * 
+   * @method escalateError
+   * @param {Error} originalError - The original error that occurred
+   * @param {Error} recoveryError - Error that occurred during recovery attempt
+   * @example
+   * // Automatic escalation after recovery failure
+   * try {
+   *   await errorHandler.attemptRecovery(dbError, 'database');
+   * } catch (recoveryError) {
+   *   // This will trigger escalation
+   *   await errorHandler.escalateError(dbError, recoveryError);
+   * }
+   * 
+   * @example
+   * // Listen for escalation events
+   * errorHandler.on('error-escalation', async ({ original, recovery, timestamp }) => {
+   *   console.log('Error escalated:', {
+   *     original: original.message,
+   *     recovery: recovery.message,
+   *     time: new Date(timestamp).toISOString()
+   *   });
+   *   
+   *   // Send to external monitoring
+   *   await sendToSlack({
+   *     channel: '#alerts',
+   *     text: `🚨 Error Recovery Failed\nOriginal: ${original.message}\nRecovery: ${recovery.message}`
+   *   });
+   *   
+   *   // Send to PagerDuty
+   *   await createPagerDutyIncident({
+   *     title: 'Error Recovery Failure',
+   *     description: `Failed to recover from ${original.message}`,
+   *     severity: 'high'
+   *   });
+   * });
+   * 
+   * @example
+   * // Custom escalation with context
+   * class MonitoredErrorHandler extends ErrorHandler {
+   *   async escalateError(originalError, recoveryError) {
+   *     // Add system context
+   *     const context = {
+   *       memory: process.memoryUsage(),
+   *       uptime: process.uptime(),
+   *       platform: process.platform,
+   *       nodeVersion: process.version,
+   *       errorHistory: this.getRecentErrors()
+   *     };
+   *     
+   *     // Send to monitoring service
+   *     await this.sendToMonitoring({
+   *       originalError,
+   *       recoveryError,
+   *       context,
+   *       severity: this.calculateSeverity(originalError)
+   *     });
+   *     
+   *     // Call parent escalation
+   *     await super.escalateError(originalError, recoveryError);
+   *   }
+   * }
+   * 
+   * @example
+   * // Multi-channel escalation
+   * errorHandler.on('error-escalation', async (escalation) => {
+   *   const { original, recovery } = escalation;
+   *   
+   *   // Determine escalation channels based on error type
+   *   const channels = [];
+   *   
+   *   if (original.message.includes('database')) {
+   *     channels.push('database-team');
+   *   }
+   *   
+   *   if (original.message.includes('payment')) {
+   *     channels.push('payment-team', 'on-call-engineer');
+   *   }
+   *   
+   *   if (recovery.message.includes('memory')) {
+   *     channels.push('infrastructure-team');
+   *   }
+   *   
+   *   // Send alerts to appropriate teams
+   *   await Promise.all(channels.map(channel => 
+   *     sendAlert(channel, escalation)
+   *   ));
+   * });
    */
   async escalateError(originalError, recoveryError) {
     logger.error('🚨 Escalating error to external monitoring');
@@ -508,7 +1705,105 @@ class ErrorHandler extends EventEmitter {
   }
 
   /**
-   * Get error statistics
+   * Get comprehensive error and recovery statistics
+   * 
+   * @method getStats
+   * @returns {Object} Statistics object with error counts, recovery attempts, and system metrics
+   * @example
+   * // Basic statistics monitoring
+   * const stats = errorHandler.getStats();
+   * console.log('Error Handler Statistics:', {
+   *   totalErrors: Object.values(stats.errorCounts).reduce((a, b) => a + b, 0),
+   *   totalRecoveries: Object.keys(stats.recoveryAttempts).length,
+   *   isRecovering: stats.isRecovering,
+   *   uptime: `${Math.floor(stats.uptime / 3600)} hours`,
+   *   memoryUsage: `${(stats.memory.heapUsed / 1024 / 1024).toFixed(2)} MB`
+   * });
+   * 
+   * @example
+   * // Periodic statistics logging
+   * setInterval(() => {
+   *   const stats = errorHandler.getStats();
+   *   const errorTotal = Object.values(stats.errorCounts).reduce((a, b) => a + b, 0);
+   *   
+   *   if (errorTotal > 0) {
+   *     console.log('Error Summary:', {
+   *       errors: stats.errorCounts,
+   *       recoveries: stats.recoveryAttempts,
+   *       memoryMB: Math.round(stats.memory.heapUsed / 1024 / 1024)
+   *     });
+   *   }
+   * }, 300000); // Every 5 minutes
+   * 
+   * @example
+   * // Statistics-based alerting
+   * function checkErrorThresholds() {
+   *   const stats = errorHandler.getStats();
+   *   const errorCounts = stats.errorCounts;
+   *   
+   *   // Check for error spikes
+   *   Object.entries(errorCounts).forEach(([errorType, count]) => {
+   *     if (count > 10) {
+   *       console.warn(`High error count for ${errorType}: ${count}`);
+   *       sendAlert(`Error spike detected: ${errorType} occurred ${count} times`);
+   *     }
+   *   });
+   *   
+   *   // Check memory usage
+   *   const memUsage = stats.memory.heapUsed / stats.memory.heapTotal;
+   *   if (memUsage > 0.9) {
+   *     sendAlert(`High memory usage: ${(memUsage * 100).toFixed(2)}%`);
+   *   }
+   * }
+   * 
+   * @example
+   * // Export statistics for external monitoring
+   * app.get('/metrics', (req, res) => {
+   *   const stats = errorHandler.getStats();
+   *   
+   *   // Convert to Prometheus format
+   *   const metrics = [
+   *     `# HELP error_total Total number of errors`,
+   *     `# TYPE error_total counter`,
+   *     ...Object.entries(stats.errorCounts).map(([type, count]) => 
+   *       `error_total{type="${type}"} ${count}`
+   *     ),
+   *     ``,
+   *     `# HELP memory_usage_bytes Memory usage in bytes`,
+   *     `# TYPE memory_usage_bytes gauge`,
+   *     `memory_usage_bytes ${stats.memory.heapUsed}`,
+   *     ``,
+   *     `# HELP uptime_seconds Process uptime in seconds`,
+   *     `# TYPE uptime_seconds gauge`,
+   *     `uptime_seconds ${stats.uptime}`
+   *   ].join('\n');
+   *   
+   *   res.set('Content-Type', 'text/plain');
+   *   res.send(metrics);
+   * });
+   * 
+   * @example
+   * // Dashboard data preparation
+   * function prepareDashboardData() {
+   *   const stats = errorHandler.getStats();
+   *   
+   *   return {
+   *     systemHealth: {
+   *       status: stats.isRecovering ? 'recovering' : 'healthy',
+   *       uptime: formatUptime(stats.uptime),
+   *       memory: {
+   *         used: Math.round(stats.memory.heapUsed / 1024 / 1024),
+   *         total: Math.round(stats.memory.heapTotal / 1024 / 1024),
+   *         percentage: Math.round((stats.memory.heapUsed / stats.memory.heapTotal) * 100)
+   *       }
+   *     },
+   *     errorSummary: {
+   *       total: Object.values(stats.errorCounts).reduce((a, b) => a + b, 0),
+   *       byType: stats.errorCounts,
+   *       recentRecoveries: Object.keys(stats.recoveryAttempts).length
+   *     }
+   *   };
+   * }
    */
   getStats() {
     return {
