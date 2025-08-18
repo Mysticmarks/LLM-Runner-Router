@@ -173,12 +173,30 @@ Experience LLM Runner Router in action:
 - 📖 **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation  
 - 🔧 **[Configuration](docs/CONFIG_REFERENCE.md)** - Configuration options and examples
 - ⚡ **[Performance Guide](docs/PERFORMANCE.md)** - Optimization and benchmarking
+- ❌ **[Error Codes](docs/ERROR_CODES.md)** - Complete error reference and recovery strategies
+
+### Development & Extension
+- 🛠️ **[Custom Loaders](docs/CUSTOM_LOADERS.md)** - Create custom model loaders
+- ⚙️ **[Engine Development](docs/ENGINE_DEVELOPMENT.md)** - Build new compute engines
+- 🔌 **[Integration Guide](docs/INTEGRATION.md)** - System integration patterns
+- 🗺️ **[Extension Roadmap](docs/EXTENSION_ROADMAP.md)** - Future features and development plans
+- 📝 **[Plugin Development](docs/PLUGIN_DEVELOPMENT.md)** - Extend system capabilities
 
 ### Advanced Topics  
 - 🧭 **[Routing Strategies](docs/ROUTING_STRATEGIES.md)** - Model selection and load balancing
 - 📦 **[Model Formats](docs/MODEL_FORMATS.md)** - Supported formats and loaders
 - 🚀 **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment strategies
 - 🔒 **[Security](docs/SECURITY.md)** - Security best practices
+- 🧠 **[Memory Management](docs/MEMORY_MANAGEMENT.md)** - Optimize memory usage
+- 💰 **[Cost Optimization](docs/COST_OPTIMIZATION.md)** - Reduce inference costs
+- 📈 **[Scaling Guide](docs/SCALING.md)** - Scale from single to distributed
+- 🌊 **[Streaming Architecture](docs/STREAMING.md)** - Real-time token streaming
+- 📊 **[Benchmarks](docs/BENCHMARKS.md)** - Performance metrics and results
+
+### Best Practices & Migration
+- ✨ **[Best Practices](docs/BEST_PRACTICES.md)** - Recommended patterns and practices
+- 🔄 **[Migration Guide](docs/MIGRATION.md)** - Migrate from other LLM systems
+- 🤝 **[Contributing](CONTRIBUTING.md)** - How to contribute to the project
 
 ### Examples & Tutorials
 - 📋 **[Basic Examples](docs/EXAMPLES.md)** - Simple usage patterns
