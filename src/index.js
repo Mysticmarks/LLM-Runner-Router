@@ -302,8 +302,8 @@ export { ModelRegistry } from './core/Registry.js';
 export { Router } from './core/Router.js';
 export { Pipeline } from './core/Pipeline.js';
 
-// Create default instance
-const defaultRouter = new LLMRouter();
+// Create default instance (with auto-init disabled to prevent duplicate initialization)
+const defaultRouter = new LLMRouter({ autoInit: false });
 
 // Export convenience methods
 export const load = (spec) => defaultRouter.load(spec);
@@ -316,6 +316,7 @@ export const ensemble = (models, prompt, options) => defaultRouter.ensemble(mode
 if (typeof process !== 'undefined' && 
     process.env.AUTO_INIT !== 'false' && 
     process.env.NODE_ENV !== 'test') {
+  // Initialize once
   defaultRouter.initialize().catch(console.error);
 }
 

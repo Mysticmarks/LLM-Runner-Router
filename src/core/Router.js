@@ -314,6 +314,16 @@ class Router extends EventEmitter {
       return spec.format;
     }
     
+    // Check explicit type (same as format)
+    if (spec.type) {
+      return spec.type;
+    }
+    
+    // Check for mock:// protocol
+    if (spec.source && spec.source.startsWith('mock://')) {
+      return 'mock';
+    }
+    
     // Check by file extension
     if (spec.source) {
       const ext = spec.source.split('.').pop().toLowerCase();

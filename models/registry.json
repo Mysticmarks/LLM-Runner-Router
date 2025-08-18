@@ -4,22 +4,15 @@
     {
       "id": "qwen2.5-1.5b-instruct",
       "name": "Qwen 2.5 1.5B Instruct Q4",
-      "version": "2.5",
+      "version": "1.0.0",
       "format": "gguf",
-      "architecture": {
-        "type": "qwen2"
-      },
-      "parameters": {
-        "size": "1.5B",
-        "quantization": "Q4_K_M"
-      },
-      "metadata": {
-        "description": "Alibaba's latest small model - excellent performance for size"
-      },
+      "architecture": {},
+      "parameters": {},
+      "metadata": {},
       "capabilities": {
-        "streaming": true,
+        "streaming": false,
         "batching": false,
-        "quantization": true,
+        "quantization": false,
         "embedding": false,
         "completion": true
       },
@@ -66,22 +59,19 @@
       "path": "models/phi-2/phi-2.Q4_K_M.gguf"
     },
     {
-      "id": "simple-fallback",
-      "name": "Simple Fallback Model",
-      "version": "1.0.0",
-      "format": "simple",
-      "architecture": {},
-      "parameters": {},
-      "metadata": {},
+      "id": "model_megecz9w_d8oi9wl4y",
+      "name": "unknown-model",
+      "format": "mock",
+      "loaded": true,
       "capabilities": {
-        "streaming": false,
+        "streaming": true,
         "batching": false,
         "quantization": false,
         "embedding": false,
         "completion": true
       },
       "metrics": {
-        "loadTime": 1755476041309,
+        "loadTime": 1755478141945,
         "inferenceCount": 0,
         "totalTokens": 0,
         "avgLatency": 0,
