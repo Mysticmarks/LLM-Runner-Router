@@ -6,11 +6,11 @@
 import express from 'express';
 import { createServer } from 'http';
 import { LLMRouter } from './src/index.js';
-import { GGUFLoader } from './src/loaders/GGUFLoader.js';
-import { ONNXLoader } from './src/loaders/ONNXLoader.js';
-import { SafetensorsLoader } from './src/loaders/SafetensorsLoader.js';
-import { HFLoader } from './src/loaders/HFLoader.js';
-import { WebSocketAPI } from './src/api/WebSocket.js';
+import GGUFLoader from './src/loaders/GGUFLoader.js';
+import ONNXLoader from './src/loaders/ONNXLoader.js';
+import SafetensorsLoader from './src/loaders/SafetensorsLoader.js';
+import HFLoader from './src/loaders/HFLoader.js';
+import WebSocketAPI from './src/api/WebSocket.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';

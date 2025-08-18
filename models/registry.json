@@ -56,7 +56,7 @@
         "completion": true
       },
       "metrics": {
-        "loadTime": 1755211711029,
+        "loadTime": null,
         "inferenceCount": 0,
         "totalTokens": 0,
         "avgLatency": 0,
@@ -64,6 +64,29 @@
       },
       "source": "models/phi-2/phi-2.Q4_K_M.gguf",
       "path": "models/phi-2/phi-2.Q4_K_M.gguf"
+    },
+    {
+      "id": "simple-fallback",
+      "name": "Simple Fallback Model",
+      "version": "1.0.0",
+      "format": "simple",
+      "architecture": {},
+      "parameters": {},
+      "metadata": {},
+      "capabilities": {
+        "streaming": false,
+        "batching": false,
+        "quantization": false,
+        "embedding": false,
+        "completion": true
+      },
+      "metrics": {
+        "loadTime": 1755476041309,
+        "inferenceCount": 0,
+        "totalTokens": 0,
+        "avgLatency": 0,
+        "lastUsed": null
+      }
     }
   ]
 }
