@@ -3,8 +3,8 @@
  * Demonstrates how to use all enterprise features together
  */
 
-import { Router } from '../src/core/Router.js';
-import { Registry } from '../src/core/Registry.js';
+import Router from '../src/core/Router.js';
+import { ModelRegistry } from '../src/core/Registry.js';
 import { EnterpriseRouter } from '../src/enterprise/RouterIntegration.js';
 import { createEnterpriseExpressRoutes } from '../src/enterprise/APIIntegration.js';
 import express from 'express';
@@ -70,7 +70,7 @@ async function enterpriseExample() {
   console.log('🏢 Starting Enterprise LLM Router Example...\n');
 
   // 1. Initialize base router and registry
-  const registry = new Registry();
+  const registry = new ModelRegistry();
   const baseRouter = new Router(registry);
 
   // Add some mock models
