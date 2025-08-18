@@ -109,6 +109,54 @@ class Router extends EventEmitter {
    * Select optimal model for task
    * @param {string} prompt - Input prompt
    * @param {object} requirements - Task requirements
+   * @returns {Promise&lt;object>} Selected model object
+   * 
+   * @example
+   * // Basic model selection
+   * const model = await router.selectModel('Hello, world!');
+   * console.log(`Selected: ${model.name}`);
+   * 
+   * @example
+   * // Model selection with requirements
+   * const model = await router.selectModel(
+   *   'Translate this text to French',
+   *   {
+   *     capabilities: {
+   *       translation: true,
+   *       multiLanguage: true
+   *     },
+   *     maxSize: '7B',
+   *     format: 'gguf'
+   *   }
+   * );
+   * 
+   * @example
+   * // Advanced requirements with cost constraints
+   * const model = await router.selectModel(
+   *   'Generate a creative story',
+   *   {
+   *     capabilities: {
+   *       textGeneration: true,
+   *       creativity: true
+   *     },
+   *     maxCost: 0.01,
+   *     minQuality: 0.8,
+   *     timeout: 5000
+   *   }
+   * );
+   * 
+   * @example
+   * // Error handling
+   * try {
+   *   const model = await router.selectModel('Complex task', {
+   *     capabilities: { nonExistentCapability: true }
+   *   });
+   * } catch (error) {
+   *   if (error.message === 'No models match requirements') {
+   *     console.log('Relaxing requirements...');
+   *     const fallbackModel = await router.selectModel('Complex task');
+   *   }
+   * }
    */
   async selectModel(prompt, requirements = {}) {
     const startTime = Date.now();
@@ -168,6 +216,50 @@ class Router extends EventEmitter {
 
   /**
    * Select optimal loader for model format
+   * @param {object} spec - Model specification object
+   * @returns {Promise&lt;object>} Selected loader instance
+   * 
+   * @example
+   * // Select loader by explicit format
+   * const loader = await router.selectLoader({
+   *   format: 'gguf',
+   *   source: '/path/to/model.gguf'
+   * });
+   * 
+   * @example
+   * // Auto-detect format from file extension
+   * const loader = await router.selectLoader({
+   *   source: 'https://example.com/model.onnx'
+   * });
+   * console.log(`Detected format: ${loader.format}`);
+   * 
+   * @example
+   * // HuggingFace model loader selection
+   * const loader = await router.selectLoader({
+   *   source: 'microsoft/DialoGPT-medium',
+   *   type: 'huggingface'
+   * });
+   * 
+   * @example
+   * // Mock loader for testing
+   * const mockLoader = await router.selectLoader({
+   *   source: 'mock://test-model',
+   *   format: 'mock'
+   * });
+   * 
+   * @example
+   * // Error handling for unsupported formats
+   * try {
+   *   const loader = await router.selectLoader({
+   *     format: 'unsupported-format'
+   *   });
+   * } catch (error) {
+   *   console.error('No loader available:', error.message);
+   *   // Fallback to a supported format
+   *   const fallbackLoader = await router.selectLoader({
+   *     format: 'gguf'
+   *   });
+   * }
    */
   async selectLoader(spec) {
     const format = await this.detectFormat(spec);
@@ -342,6 +434,16 @@ class Router extends EventEmitter {
       return spec.format;
     }
     
+    // Check explicit type (same as format)
+    if (spec.type) {
+      return spec.type;
+    }
+    
+    // Check for mock:// protocol
+    if (spec.source &amp;&amp; spec.source.startsWith('mock://')) {
+      return 'mock';
+    }
+    
     // Check by file extension
     if (spec.source) {
       const ext = spec.source.split('.').pop().toLowerCase();
@@ -434,6 +536,32 @@ class Router extends EventEmitter {
 
   /**
    * Get available routing strategies
+   * @returns {string[]} Array of available strategy names
+   * 
+   * @example
+   * // Get all available strategies
+   * const strategies = router.getStrategies();
+   * console.log('Available strategies:', strategies);
+   * // Output: ['quality-first', 'cost-optimized', 'speed-priority', ...]
+   * 
+   * @example
+   * // Use in strategy selection UI
+   * const strategies = router.getStrategies();
+   * const dropdown = strategies.map(strategy => ({
+   *   value: strategy,
+   *   label: strategy.replace('-', ' ').toUpperCase()
+   * }));
+   * 
+   * @example
+   * // Validate strategy before setting
+   * const availableStrategies = router.getStrategies();
+   * const userStrategy = 'custom-strategy';
+   * 
+   * if (availableStrategies.includes(userStrategy)) {
+   *   router.setStrategy(userStrategy);
+   * } else {
+   *   console.warn('Strategy not available, using default');
+   * }
    */
   getStrategies() {
     return Object.values(RoutingStrategies);
@@ -441,6 +569,45 @@ class Router extends EventEmitter {
 
   /**
    * Set routing strategy
+   * @param {string} strategy - Strategy name from RoutingStrategies
+   * @throws {Error} If strategy is invalid
+   * @fires Router#strategy-changed
+   * 
+   * @example
+   * // Set quality-first strategy
+   * router.setStrategy('quality-first');
+   * 
+   * @example
+   * // Set cost-optimized strategy for budget-conscious applications
+   * router.setStrategy('cost-optimized');
+   * console.log('Router will now prioritize cost-effective models');
+   * 
+   * @example
+   * // Set speed-priority for real-time applications
+   * router.setStrategy('speed-priority');
+   * 
+   * @example
+   * // Dynamic strategy switching based on conditions
+   * const isProduction = process.env.NODE_ENV === 'production';
+   * const strategy = isProduction ? 'balanced' : 'quality-first';
+   * router.setStrategy(strategy);
+   * 
+   * @example
+   * // Listen for strategy changes
+   * router.on('strategy-changed', (newStrategy) => {
+   *   console.log(`Strategy changed to: ${newStrategy}`);
+   *   // Update UI, metrics, etc.
+   * });
+   * 
+   * @example
+   * // Error handling for invalid strategies
+   * try {
+   *   router.setStrategy('invalid-strategy');
+   * } catch (error) {
+   *   console.error('Invalid strategy:', error.message);
+   *   // Fallback to default
+   *   router.setStrategy('balanced');
+   * }
    */
   setStrategy(strategy) {
     if (!Object.values(RoutingStrategies).includes(strategy)) {
@@ -454,6 +621,53 @@ class Router extends EventEmitter {
 
   /**
    * Get routing statistics
+   * @returns {object} Statistics object with routing metrics
+   * 
+   * @example
+   * // Basic statistics retrieval
+   * const stats = router.getStats();
+   * console.log(`Total routes: ${stats.totalRoutes}`);
+   * console.log(`Cache hit rate: ${(stats.cacheHitRate * 100).toFixed(1)}%`);
+   * 
+   * @example
+   * // Monitor performance metrics
+   * const stats = router.getStats();
+   * console.log('Router Performance:', {
+   *   totalRoutes: stats.totalRoutes,
+   *   avgLatency: `${stats.avgLatency.toFixed(2)}ms`,
+   *   cacheHitRate: `${(stats.cacheHitRate * 100).toFixed(1)}%`,
+   *   failureRate: `${(stats.failureRate * 100).toFixed(2)}%`
+   * });
+   * 
+   * @example
+   * // Performance monitoring dashboard
+   * function displayRouterMetrics() {
+   *   const stats = router.getStats();
+   *   
+   *   if (stats.failureRate > 0.05) {
+   *     console.warn('High failure rate detected:', stats.failureRate);
+   *   }
+   *   
+   *   if (stats.avgLatency > 1000) {
+   *     console.warn('High latency detected:', stats.avgLatency);
+   *   }
+   *   
+   *   if (stats.cacheHitRate &lt; 0.3) {
+   *     console.info('Low cache hit rate, consider adjusting TTL');
+   *   }
+   * }
+   * 
+   * @example
+   * // Periodic stats logging
+   * setInterval(() => {
+   *   const stats = router.getStats();
+   *   console.log('Router Stats:', {
+   *     routes: stats.totalRoutes,
+   *     cacheHits: stats.cacheHits,
+   *     failures: stats.failures,
+   *     avgLatency: Math.round(stats.avgLatency)
+   *   });
+   * }, 60000); // Every minute
    */
   getStats() {
     return {
@@ -464,7 +678,45 @@ class Router extends EventEmitter {
   }
 
   /**
-   * Cleanup resources
+   * Cleanup resources and stop monitoring
+   * @returns {Promise&lt;void>}
+   * 
+   * @example
+   * // Basic cleanup on application shutdown
+   * await router.cleanup();
+   * console.log('Router resources cleaned up');
+   * 
+   * @example
+   * // Graceful shutdown with cleanup
+   * process.on('SIGTERM', async () => {
+   *   console.log('Shutting down gracefully...');
+   *   await router.cleanup();
+   *   process.exit(0);
+   * });
+   * 
+   * @example
+   * // Cleanup in testing environment
+   * afterEach(async () => {
+   *   await router.cleanup();
+   *   // Ensures clean state between tests
+   * });
+   * 
+   * @example
+   * // Cleanup with error handling
+   * try {
+   *   await router.cleanup();
+   *   console.log('Router cleanup successful');
+   * } catch (error) {
+   *   console.error('Error during cleanup:', error);
+   *   // Force cleanup if needed
+   * }
+   * 
+   * @example
+   * // Cleanup in Express.js application
+   * app.on('close', async () => {
+   *   console.log('Server closing, cleaning up router...');
+   *   await router.cleanup();
+   * });
    */
   async cleanup() {
     this.routeCache.clear();
@@ -488,13 +740,13 @@ export { Router };
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ABTestingManager.html">ABTestingManager</a></li><li><a href="AuditLogger.html">AuditLogger</a></li><li><a href="AuthMiddleware.html">AuthMiddleware</a></li><li><a href="BPETokenizer.html">BPETokenizer</a></li><li><a href="BaseEngine.html">BaseEngine</a></li><li><a href="BaseLoader.html">BaseLoader</a></li><li><a href="BinaryLoader.html">BinaryLoader</a></li><li><a href="BinaryModel.html">BinaryModel</a></li><li><a href="BitNetLoader.html">BitNetLoader</a></li><li><a href="ConversionConfig.html">ConversionConfig</a></li><li><a href="ConversionResult.html">ConversionResult</a></li><li><a href="EnterpriseAuthManager.html">EnterpriseAuthManager</a></li><li><a href="EnterpriseManager.html">EnterpriseManager</a></li><li><a href="EnterpriseRouter.html">EnterpriseRouter</a></li><li><a href="FormatConverter.html">FormatConverter</a></li><li><a href="GGUFLoader.html">GGUFLoader</a></li><li><a href="GGUFModel.html">GGUFModel</a></li><li><a href="GRPCClient.html">GRPCClient</a></li><li><a href="LLMRouter.html">LLMRouter</a></li><li><a href="MockLoader.html">MockLoader</a></li><li><a href="MockModel.html">MockModel</a></li><li><a href="ModelInterface.html">ModelInterface</a></li><li><a href="ModelQuantizer.html">ModelQuantizer</a></li><li><a href="ModelTemplates.html">ModelTemplates</a></li><li><a href="MultiTenancyManager.html">MultiTenancyManager</a></li><li><a href="PyTorchLoader.html">PyTorchLoader</a></li><li><a href="PyTorchModel.html">PyTorchModel</a></li><li><a href="QuantizationConfig.html">QuantizationConfig</a></li><li><a href="QuantizationResult.html">QuantizationResult</a></li><li><a href="Router.html">Router</a></li><li><a href="SLAMonitor.html">SLAMonitor</a></li><li><a href="SentencePieceTokenizer.html">SentencePieceTokenizer</a></li><li><a href="SimpleLoader.html">SimpleLoader</a></li><li><a href="SimpleModel.html">SimpleModel</a></li><li><a href="TokenizationResult.html">TokenizationResult</a></li><li><a href="TokenizerConfig.html">TokenizerConfig</a></li><li><a href="UniversalTokenizer.html">UniversalTokenizer</a></li><li><a href="ValidationConfig.html">ValidationConfig</a></li><li><a href="ValidationSuite.html">ValidationSuite</a></li><li><a href="ValidationSuiteResult.html">ValidationSuiteResult</a></li><li><a href="ValidationTestResult.html">ValidationTestResult</a></li><li><a href="WordPieceTokenizer.html">WordPieceTokenizer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Architectures">Architectures</a></li><li><a href="global.html#AuditEventTypes">AuditEventTypes</a></li><li><a href="global.html#AuthMethods">AuthMethods</a></li><li><a href="global.html#BreachSeverity">BreachSeverity</a></li><li><a href="global.html#Capabilities">Capabilities</a></li><li><a href="global.html#ComplianceFrameworks">ComplianceFrameworks</a></li><li><a href="global.html#EnterpriseFeatures">EnterpriseFeatures</a></li><li><a href="global.html#ExperimentStatus">ExperimentStatus</a></li><li><a href="global.html#IsolationLevels">IsolationLevels</a></li><li><a href="global.html#ModelFormat">ModelFormat</a></li><li><a href="global.html#ModelFormats">ModelFormats</a></li><li><a href="global.html#Permissions">Permissions</a></li><li><a href="global.html#QuantizationMethod">QuantizationMethod</a></li><li><a href="global.html#QuantizationPrecision">QuantizationPrecision</a></li><li><a href="global.html#QuotaTypes">QuotaTypes</a></li><li><a href="global.html#RiskLevels">RiskLevels</a></li><li><a href="global.html#RoutingStrategies">RoutingStrategies</a></li><li><a href="global.html#SLAMetricTypes">SLAMetricTypes</a></li><li><a href="global.html#SLAStatus">SLAStatus</a></li><li><a href="global.html#SessionTypes">SessionTypes</a></li><li><a href="global.html#SplittingAlgorithms">SplittingAlgorithms</a></li><li><a href="global.html#StatisticalTests">StatisticalTests</a></li><li><a href="global.html#TimeWindows">TimeWindows</a></li><li><a href="global.html#TokenizerType">TokenizerType</a></li><li><a href="global.html#UserRoles">UserRoles</a></li><li><a href="global.html#ValidationSeverity">ValidationSeverity</a></li><li><a href="global.html#ValidationTestType">ValidationTestType</a></li><li><a href="global.html#colors">colors</a></li><li><a href="global.html#createEnterpriseExpressRoutes">createEnterpriseExpressRoutes</a></li><li><a href="global.html#createEnterpriseRouter">createEnterpriseRouter</a></li><li><a href="global.html#createEnterpriseWebSocketHandlers">createEnterpriseWebSocketHandlers</a></li><li><a href="global.html#defaultEnterpriseConfig">defaultEnterpriseConfig</a></li><li><a href="global.html#enterpriseVersion">enterpriseVersion</a></li><li><a href="global.html#errorMonitoringMiddleware">errorMonitoringMiddleware</a></li><li><a href="global.html#getEnabledFeatures">getEnabledFeatures</a></li><li><a href="global.html#getMonitoringStatus">getMonitoringStatus</a></li><li><a href="global.html#httpMonitoringMiddleware">httpMonitoringMiddleware</a></li><li><a href="global.html#isFeatureEnabled">isFeatureEnabled</a></li><li><a href="global.html#recordCustomMetric">recordCustomMetric</a></li><li><a href="global.html#registerAlertRule">registerAlertRule</a></li><li><a href="global.html#registerDependency">registerDependency</a></li><li><a href="global.html#registerHealthCheck">registerHealthCheck</a></li><li><a href="global.html#setupMonitoring">setupMonitoring</a></li><li><a href="global.html#startPerformanceProfile">startPerformanceProfile</a></li><li><a href="global.html#validateEnterpriseConfig">validateEnterpriseConfig</a></li><li><a href="global.html#withCacheMonitoring">withCacheMonitoring</a></li><li><a href="global.html#withDatabaseMonitoring">withDatabaseMonitoring</a></li><li><a href="global.html#withModelMonitoring">withModelMonitoring</a></li><li><a href="global.html#withQueueMonitoring">withQueueMonitoring</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ABTestingManager.html">ABTestingManager</a></li><li><a href="AuditLogger.html">AuditLogger</a></li><li><a href="AuthMiddleware.html">AuthMiddleware</a></li><li><a href="BPETokenizer.html">BPETokenizer</a></li><li><a href="BaseEngine.html">BaseEngine</a></li><li><a href="BaseLoader.html">BaseLoader</a></li><li><a href="BinaryLoader.html">BinaryLoader</a></li><li><a href="BinaryModel.html">BinaryModel</a></li><li><a href="BitNetLoader.html">BitNetLoader</a></li><li><a href="ConversionConfig.html">ConversionConfig</a></li><li><a href="ConversionResult.html">ConversionResult</a></li><li><a href="EnterpriseAuthManager.html">EnterpriseAuthManager</a></li><li><a href="EnterpriseManager.html">EnterpriseManager</a></li><li><a href="EnterpriseRouter.html">EnterpriseRouter</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="FormatConverter.html">FormatConverter</a></li><li><a href="GGUFLoader.html">GGUFLoader</a></li><li><a href="GGUFModel.html">GGUFModel</a></li><li><a href="GRPCClient.html">GRPCClient</a></li><li><a href="LLMRouter.html">LLMRouter</a></li><li><a href="MockLoader.html">MockLoader</a></li><li><a href="MockModel.html">MockModel</a></li><li><a href="ModelError.html">ModelError</a></li><li><a href="ModelInterface.html">ModelInterface</a></li><li><a href="ModelQuantizer.html">ModelQuantizer</a></li><li><a href="ModelRegistry.html">ModelRegistry</a></li><li><a href="ModelTemplates.html">ModelTemplates</a></li><li><a href="MultiTenancyManager.html">MultiTenancyManager</a></li><li><a href="Pipeline.html">Pipeline</a></li><li><a href="PyTorchLoader.html">PyTorchLoader</a></li><li><a href="PyTorchModel.html">PyTorchModel</a></li><li><a href="QuantizationConfig.html">QuantizationConfig</a></li><li><a href="QuantizationResult.html">QuantizationResult</a></li><li><a href="Router.html">Router</a></li><li><a href="SLAMonitor.html">SLAMonitor</a></li><li><a href="SentencePieceTokenizer.html">SentencePieceTokenizer</a></li><li><a href="SimpleLoader.html">SimpleLoader</a></li><li><a href="SimpleModel.html">SimpleModel</a></li><li><a href="TokenizationResult.html">TokenizationResult</a></li><li><a href="TokenizerConfig.html">TokenizerConfig</a></li><li><a href="UniversalTokenizer.html">UniversalTokenizer</a></li><li><a href="ValidationConfig.html">ValidationConfig</a></li><li><a href="ValidationSuite.html">ValidationSuite</a></li><li><a href="ValidationSuiteResult.html">ValidationSuiteResult</a></li><li><a href="ValidationTestResult.html">ValidationTestResult</a></li><li><a href="WordPieceTokenizer.html">WordPieceTokenizer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Architectures">Architectures</a></li><li><a href="global.html#AuditEventTypes">AuditEventTypes</a></li><li><a href="global.html#AuthMethods">AuthMethods</a></li><li><a href="global.html#BreachSeverity">BreachSeverity</a></li><li><a href="global.html#Capabilities">Capabilities</a></li><li><a href="global.html#ComplianceFrameworks">ComplianceFrameworks</a></li><li><a href="global.html#EnterpriseFeatures">EnterpriseFeatures</a></li><li><a href="global.html#ExperimentStatus">ExperimentStatus</a></li><li><a href="global.html#IsolationLevels">IsolationLevels</a></li><li><a href="global.html#ModelFormat">ModelFormat</a></li><li><a href="global.html#ModelFormats">ModelFormats</a></li><li><a href="global.html#Permissions">Permissions</a></li><li><a href="global.html#QuantizationMethod">QuantizationMethod</a></li><li><a href="global.html#QuantizationPrecision">QuantizationPrecision</a></li><li><a href="global.html#QuotaTypes">QuotaTypes</a></li><li><a href="global.html#RiskLevels">RiskLevels</a></li><li><a href="global.html#RoutingStrategies">RoutingStrategies</a></li><li><a href="global.html#SLAMetricTypes">SLAMetricTypes</a></li><li><a href="global.html#SLAStatus">SLAStatus</a></li><li><a href="global.html#SessionTypes">SessionTypes</a></li><li><a href="global.html#SplittingAlgorithms">SplittingAlgorithms</a></li><li><a href="global.html#StatisticalTests">StatisticalTests</a></li><li><a href="global.html#TimeWindows">TimeWindows</a></li><li><a href="global.html#TokenizerType">TokenizerType</a></li><li><a href="global.html#UserRoles">UserRoles</a></li><li><a href="global.html#ValidationSeverity">ValidationSeverity</a></li><li><a href="global.html#ValidationTestType">ValidationTestType</a></li><li><a href="global.html#adjustTimeouts">adjustTimeouts</a></li><li><a href="global.html#attemptRecovery">attemptRecovery</a></li><li><a href="global.html#checkConnectivity">checkConnectivity</a></li><li><a href="global.html#clearCache">clearCache</a></li><li><a href="global.html#colors">colors</a></li><li><a href="global.html#createEnterpriseExpressRoutes">createEnterpriseExpressRoutes</a></li><li><a href="global.html#createEnterpriseRouter">createEnterpriseRouter</a></li><li><a href="global.html#createEnterpriseWebSocketHandlers">createEnterpriseWebSocketHandlers</a></li><li><a href="global.html#createMissingResources">createMissingResources</a></li><li><a href="global.html#defaultEnterpriseConfig">defaultEnterpriseConfig</a></li><li><a href="global.html#emergencyShutdown">emergencyShutdown</a></li><li><a href="global.html#enterpriseVersion">enterpriseVersion</a></li><li><a href="global.html#errorMonitoringMiddleware">errorMonitoringMiddleware</a></li><li><a href="global.html#escalateError">escalateError</a></li><li><a href="global.html#executeRecovery">executeRecovery</a></li><li><a href="global.html#getEnabledFeatures">getEnabledFeatures</a></li><li><a href="global.html#getMonitoringStatus">getMonitoringStatus</a></li><li><a href="global.html#getStats">getStats</a></li><li><a href="global.html#gracefulShutdown">gracefulShutdown</a></li><li><a href="global.html#handleCriticalError">handleCriticalError</a></li><li><a href="global.html#handleMemoryLeak">handleMemoryLeak</a></li><li><a href="global.html#httpMonitoringMiddleware">httpMonitoringMiddleware</a></li><li><a href="global.html#isFeatureEnabled">isFeatureEnabled</a></li><li><a href="global.html#logError">logError</a></li><li><a href="global.html#performHealthCheck">performHealthCheck</a></li><li><a href="global.html#recordCustomMetric">recordCustomMetric</a></li><li><a href="global.html#registerAlertRule">registerAlertRule</a></li><li><a href="global.html#registerDependency">registerDependency</a></li><li><a href="global.html#registerHealthCheck">registerHealthCheck</a></li><li><a href="global.html#reinstallDependencies">reinstallDependencies</a></li><li><a href="global.html#reload">reload</a></li><li><a href="global.html#restartProcess">restartProcess</a></li><li><a href="global.html#retryConnection">retryConnection</a></li><li><a href="global.html#selectRecoveryStrategy">selectRecoveryStrategy</a></li><li><a href="global.html#setupHandlers">setupHandlers</a></li><li><a href="global.html#setupMonitoring">setupMonitoring</a></li><li><a href="global.html#softRestart">softRestart</a></li><li><a href="global.html#startHealthMonitoring">startHealthMonitoring</a></li><li><a href="global.html#startPerformanceProfile">startPerformanceProfile</a></li><li><a href="global.html#validateEnterpriseConfig">validateEnterpriseConfig</a></li><li><a href="global.html#withCacheMonitoring">withCacheMonitoring</a></li><li><a href="global.html#withDatabaseMonitoring">withDatabaseMonitoring</a></li><li><a href="global.html#withModelMonitoring">withModelMonitoring</a></li><li><a href="global.html#withQueueMonitoring">withQueueMonitoring</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Aug 17 2025 22:28:58 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Aug 18 2025 01:43:35 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>

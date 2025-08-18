@@ -1970,6 +1970,628 @@ Echo AI Systems - Where logs become poetry</p>
     
 
     
+    <h4 class="name" id="adjustTimeouts"><span class="type-signature"></span>adjustTimeouts<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Adjust system timeouts to handle slow operations</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line710">line 710</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Automatic timeout adjustment after timeouts
+const timeoutError = new Error('Operation timed out');
+timeoutError.code = 'TIMEOUT';
+
+// This will trigger adjustTimeouts recovery
+await errorHandler.handleCriticalError(timeoutError, 'slowOperation');</code></pre>
+
+    <pre class="prettyprint"><code>// Listen for timeout adjustments in your application
+errorHandler.on('adjust-timeouts', ({ multiplier }) => {
+  console.log(`Adjusting timeouts by factor of ${multiplier}`);
+  
+  // Update application timeouts
+  databaseTimeout *= multiplier;
+  apiTimeout *= multiplier;
+  fileOperationTimeout *= multiplier;
+  
+  console.log('New timeouts:', {
+    database: databaseTimeout,
+    api: apiTimeout,
+    fileOperations: fileOperationTimeout
+  });
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Custom timeout adjustment logic
+class AdaptiveErrorHandler extends ErrorHandler {
+  async adjustTimeouts() {
+    // Get current system load
+    const load = await this.getSystemLoad();
+    
+    // Adjust multiplier based on load
+    const multiplier = load > 0.8 ? 2.0 : 1.5;
+    
+    this.config.retryDelay *= multiplier;
+    this.config.gracefulShutdownTimeout *= multiplier;
+    
+    this.emit('adjust-timeouts', { multiplier, load });
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Progressive timeout adjustment
+let timeoutAdjustmentCount = 0;
+
+errorHandler.on('adjust-timeouts', ({ multiplier }) => {
+  timeoutAdjustmentCount++;
+  
+  if (timeoutAdjustmentCount > 3) {
+    console.warn('Multiple timeout adjustments detected, investigating root cause');
+    // Trigger deeper investigation
+    performSystemDiagnostics();
+  }
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="attemptRecovery"><span class="type-signature"></span>attemptRecovery<span class="signature">(error, source)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Attempt to recover from error</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>error</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Error</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The error to recover from</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>source</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Source of the error</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line285">line 285</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Direct recovery attempt
+const connectionError = new Error('Database timeout');
+connectionError.code = 'ETIMEDOUT';
+
+try {
+  await errorHandler.attemptRecovery(connectionError, 'database');
+  console.log('Recovery successful');
+} catch (recoveryError) {
+  console.log('Recovery failed:', recoveryError.message);
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Recovery with event listening
+errorHandler.on('retry-connection', ({ attempt, error }) => {
+  console.log(`Retry attempt ${attempt} for:`, error.message);
+});
+
+const error = new Error('Network unreachable');
+await errorHandler.attemptRecovery(error, 'network');</code></pre>
+
+    <pre class="prettyprint"><code>// Preventing concurrent recoveries
+const error1 = new Error('First error');
+const error2 = new Error('Second error');
+
+// Start first recovery
+const recovery1 = errorHandler.attemptRecovery(error1, 'source1');
+
+// Second recovery will be skipped due to isRecovering flag
+const recovery2 = errorHandler.attemptRecovery(error2, 'source2');
+
+await Promise.all([recovery1, recovery2]);</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="checkConnectivity"><span class="type-signature"></span>checkConnectivity<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Check network connectivity</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line1171">line 1171</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>True if connected, false otherwise</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Basic connectivity check
+const isConnected = await errorHandler.checkConnectivity();
+if (isConnected) {
+  console.log('Network is available');
+} else {
+  console.log('Network is down, switching to offline mode');
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Use in retry logic
+async function fetchData(url) {
+  for (let attempt = 1; attempt &lt;= 3; attempt++) {
+    try {
+      return await fetch(url);
+    } catch (error) {
+      const isConnected = await errorHandler.checkConnectivity();
+      if (!isConnected) {
+        console.log('No internet connection, will retry when connected');
+        await waitForConnection();
+      }
+    }
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Custom connectivity check
+class CustomErrorHandler extends ErrorHandler {
+  async checkConnectivity() {
+    try {
+      // Check your specific service
+      const response = await fetch('https://api.myservice.com/health');
+      return response.ok;
+    } catch {
+      // Fallback to default DNS check
+      return await super.checkConnectivity();
+    }
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Periodic connectivity monitoring
+setInterval(async () => {
+  const isConnected = await errorHandler.checkConnectivity();
+  
+  if (!isConnected) {
+    console.log('Connection lost, pausing background tasks');
+    pauseBackgroundJobs();
+  } else {
+    console.log('Connection restored, resuming background tasks');
+    resumeBackgroundJobs();
+  }
+}, 30000);</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="clearCache"><span class="type-signature"></span>clearCache<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Recovery strategies - Clear cache and free memory</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line504">line 504</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Manual cache clearing
+await errorHandler.clearCache();
+console.log('System caches cleared');</code></pre>
+
+    <pre class="prettyprint"><code>// Listen for cache clear events in your application
+errorHandler.on('clear-cache', () => {
+  // Clear application-specific caches
+  userCache.clear();
+  apiResponseCache.clear();
+  imageCache.clear();
+});
+
+// Trigger cache clear
+await errorHandler.clearCache();</code></pre>
+
+    <pre class="prettyprint"><code>// Memory pressure response
+const memoryUsage = process.memoryUsage();
+const usage = memoryUsage.heapUsed / memoryUsage.heapTotal;
+
+if (usage > 0.9) {
+  console.log('High memory usage detected, clearing caches');
+  await errorHandler.clearCache();
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Force garbage collection with cache clear
+// Run Node.js with: node --expose-gc app.js
+if (global.gc) {
+  await errorHandler.clearCache(); // This will trigger gc()
+  console.log('Garbage collection completed');
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="createEnterpriseExpressRoutes"><span class="type-signature"></span>createEnterpriseExpressRoutes<span class="signature">()</span><span class="type-signature"></span></h4>
     
 
@@ -2328,6 +2950,377 @@ Echo AI Systems - Where logs become poetry</p>
     
 
     
+    <h4 class="name" id="createMissingResources"><span class="type-signature"></span>createMissingResources<span class="signature">(error)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Create missing files and directories</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>error</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Error</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>ENOENT error with path information</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line634">line 634</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Handle missing log directory
+const error = new Error("ENOENT: no such file or directory, open '/app/logs/error.log'");
+await errorHandler.createMissingResources(error);
+// Creates /app/logs/ directory and error.log file</code></pre>
+
+    <pre class="prettyprint"><code>// Handle missing configuration file
+try {
+  const config = await fs.readFile('./config/app.json');
+} catch (error) {
+  if (error.code === 'ENOENT') {
+    await errorHandler.createMissingResources(error);
+    // Creates ./config/ directory and empty app.json file
+    
+    // Now write default configuration
+    const defaultConfig = { port: 3000, env: 'development' };
+    await fs.writeFile('./config/app.json', JSON.stringify(defaultConfig, null, 2));
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Automatic recovery from missing uploads directory
+app.post('/upload', async (req, res) => {
+  try {
+    await saveFile('./uploads/user-file.jpg', req.file);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      await errorHandler.createMissingResources(error);
+      // Retry the save operation
+      await saveFile('./uploads/user-file.jpg', req.file);
+    } else {
+      throw error;
+    }
+  }
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Bulk directory structure creation
+const missingDirs = [
+  './logs/application.log',
+  './temp/cache.json',
+  './data/users.db'
+];
+
+for (const dir of missingDirs) {
+  const error = new Error(`ENOENT: no such file or directory, open '${dir}'`);
+  await errorHandler.createMissingResources(error);
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="emergencyShutdown"><span class="type-signature"></span>emergencyShutdown<span class="signature">(error)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Perform emergency shutdown</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>error</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Error</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Critical error that triggered emergency shutdown</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line1336">line 1336</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Triggered automatically after max retries
+const criticalError = new Error('System corruption detected');
+
+// This will trigger emergency shutdown after max retries
+for (let i = 0; i &lt;= 3; i++) {
+  await errorHandler.handleCriticalError(criticalError, 'corruption');
+}
+// Emergency shutdown initiated</code></pre>
+
+    <pre class="prettyprint"><code>// Manual emergency shutdown
+try {
+  await performCriticalOperation();
+} catch (error) {
+  if (error.message.includes('security breach')) {
+    console.log('Security breach detected, emergency shutdown');
+    await errorHandler.emergencyShutdown(error);
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Emergency shutdown with custom logging
+class SecurityErrorHandler extends ErrorHandler {
+  async emergencyShutdown(error) {
+    // Custom security logging
+    await this.logSecurityIncident(error);
+    
+    // Notify security team
+    await this.notifySecurityTeam(error);
+    
+    // Call parent emergency shutdown
+    await super.emergencyShutdown(error);
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Monitor for emergency conditions
+errorHandler.on('health-check', (health) => {
+  const memUsage = health.memory.heapUsed / health.memory.heapTotal;
+  
+  // Emergency threshold reached
+  if (memUsage > 0.98) {
+    const error = new Error('Critical memory exhaustion');
+    error.code = 'MEM_CRITICAL';
+    errorHandler.emergencyShutdown(error);
+  }
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="errorMonitoringMiddleware"><span class="type-signature"></span>errorMonitoringMiddleware<span class="signature">()</span><span class="type-signature"></span></h4>
     
 
@@ -2407,6 +3400,444 @@ Echo AI Systems - Where logs become poetry</p>
 
 
 
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="escalateError"><span class="type-signature"></span>escalateError<span class="signature">(originalError, recoveryError)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Escalate error to external monitoring systems</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>originalError</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Error</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The original error that occurred</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>recoveryError</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Error</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Error that occurred during recovery attempt</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line1603">line 1603</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Automatic escalation after recovery failure
+try {
+  await errorHandler.attemptRecovery(dbError, 'database');
+} catch (recoveryError) {
+  // This will trigger escalation
+  await errorHandler.escalateError(dbError, recoveryError);
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Listen for escalation events
+errorHandler.on('error-escalation', async ({ original, recovery, timestamp }) => {
+  console.log('Error escalated:', {
+    original: original.message,
+    recovery: recovery.message,
+    time: new Date(timestamp).toISOString()
+  });
+  
+  // Send to external monitoring
+  await sendToSlack({
+    channel: '#alerts',
+    text: `🚨 Error Recovery Failed\nOriginal: ${original.message}\nRecovery: ${recovery.message}`
+  });
+  
+  // Send to PagerDuty
+  await createPagerDutyIncident({
+    title: 'Error Recovery Failure',
+    description: `Failed to recover from ${original.message}`,
+    severity: 'high'
+  });
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Custom escalation with context
+class MonitoredErrorHandler extends ErrorHandler {
+  async escalateError(originalError, recoveryError) {
+    // Add system context
+    const context = {
+      memory: process.memoryUsage(),
+      uptime: process.uptime(),
+      platform: process.platform,
+      nodeVersion: process.version,
+      errorHistory: this.getRecentErrors()
+    };
+    
+    // Send to monitoring service
+    await this.sendToMonitoring({
+      originalError,
+      recoveryError,
+      context,
+      severity: this.calculateSeverity(originalError)
+    });
+    
+    // Call parent escalation
+    await super.escalateError(originalError, recoveryError);
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Multi-channel escalation
+errorHandler.on('error-escalation', async (escalation) => {
+  const { original, recovery } = escalation;
+  
+  // Determine escalation channels based on error type
+  const channels = [];
+  
+  if (original.message.includes('database')) {
+    channels.push('database-team');
+  }
+  
+  if (original.message.includes('payment')) {
+    channels.push('payment-team', 'on-call-engineer');
+  }
+  
+  if (recovery.message.includes('memory')) {
+    channels.push('infrastructure-team');
+  }
+  
+  // Send alerts to appropriate teams
+  await Promise.all(channels.map(channel => 
+    sendAlert(channel, escalation)
+  ));
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="executeRecovery"><span class="type-signature"></span>executeRecovery<span class="signature">(strategy, error)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Execute recovery strategy</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>strategy</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Recovery strategy to execute</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>error</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Error</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Original error that triggered recovery</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line428">line 428</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Execute specific recovery strategy
+const error = new Error('Memory leak detected');
+await errorHandler.executeRecovery('clearCache', error);</code></pre>
+
+    <pre class="prettyprint"><code>// Chain multiple recovery strategies
+try {
+  await errorHandler.executeRecovery('retryConnection', error);
+} catch (firstRecoveryError) {
+  await errorHandler.executeRecovery('restartProcess', error);
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Listen for recovery events
+errorHandler.on('clear-cache', () => {
+  console.log('Application should clear its caches now');
+  myApp.clearUserCache();
+  myApp.clearApiCache();
+});
+
+await errorHandler.executeRecovery('clearCache', error);</code></pre>
+
+    <pre class="prettyprint"><code>// Custom recovery implementation
+class CustomErrorHandler extends ErrorHandler {
+  async executeRecovery(strategy, error) {
+    if (strategy === 'customStrategy') {
+      console.log('Executing custom recovery');
+      await this.customRecoveryMethod(error);
+    } else {
+      await super.executeRecovery(strategy, error);
+    }
+  }
+}</code></pre>
 
 
 
@@ -2654,6 +4085,734 @@ Echo AI Systems - Where logs become poetry</p>
 
 
 
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getStats"><span class="type-signature"></span>getStats<span class="signature">()</span><span class="type-signature"> &rarr; {Object}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get comprehensive error and recovery statistics</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line1707">line 1707</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Statistics object with error counts, recovery attempts, and system metrics</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Basic statistics monitoring
+const stats = errorHandler.getStats();
+console.log('Error Handler Statistics:', {
+  totalErrors: Object.values(stats.errorCounts).reduce((a, b) => a + b, 0),
+  totalRecoveries: Object.keys(stats.recoveryAttempts).length,
+  isRecovering: stats.isRecovering,
+  uptime: `${Math.floor(stats.uptime / 3600)} hours`,
+  memoryUsage: `${(stats.memory.heapUsed / 1024 / 1024).toFixed(2)} MB`
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Periodic statistics logging
+setInterval(() => {
+  const stats = errorHandler.getStats();
+  const errorTotal = Object.values(stats.errorCounts).reduce((a, b) => a + b, 0);
+  
+  if (errorTotal > 0) {
+    console.log('Error Summary:', {
+      errors: stats.errorCounts,
+      recoveries: stats.recoveryAttempts,
+      memoryMB: Math.round(stats.memory.heapUsed / 1024 / 1024)
+    });
+  }
+}, 300000); // Every 5 minutes</code></pre>
+
+    <pre class="prettyprint"><code>// Statistics-based alerting
+function checkErrorThresholds() {
+  const stats = errorHandler.getStats();
+  const errorCounts = stats.errorCounts;
+  
+  // Check for error spikes
+  Object.entries(errorCounts).forEach(([errorType, count]) => {
+    if (count > 10) {
+      console.warn(`High error count for ${errorType}: ${count}`);
+      sendAlert(`Error spike detected: ${errorType} occurred ${count} times`);
+    }
+  });
+  
+  // Check memory usage
+  const memUsage = stats.memory.heapUsed / stats.memory.heapTotal;
+  if (memUsage > 0.9) {
+    sendAlert(`High memory usage: ${(memUsage * 100).toFixed(2)}%`);
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Export statistics for external monitoring
+app.get('/metrics', (req, res) => {
+  const stats = errorHandler.getStats();
+  
+  // Convert to Prometheus format
+  const metrics = [
+    `# HELP error_total Total number of errors`,
+    `# TYPE error_total counter`,
+    ...Object.entries(stats.errorCounts).map(([type, count]) => 
+      `error_total{type="${type}"} ${count}`
+    ),
+    ``,
+    `# HELP memory_usage_bytes Memory usage in bytes`,
+    `# TYPE memory_usage_bytes gauge`,
+    `memory_usage_bytes ${stats.memory.heapUsed}`,
+    ``,
+    `# HELP uptime_seconds Process uptime in seconds`,
+    `# TYPE uptime_seconds gauge`,
+    `uptime_seconds ${stats.uptime}`
+  ].join('\n');
+  
+  res.set('Content-Type', 'text/plain');
+  res.send(metrics);
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Dashboard data preparation
+function prepareDashboardData() {
+  const stats = errorHandler.getStats();
+  
+  return {
+    systemHealth: {
+      status: stats.isRecovering ? 'recovering' : 'healthy',
+      uptime: formatUptime(stats.uptime),
+      memory: {
+        used: Math.round(stats.memory.heapUsed / 1024 / 1024),
+        total: Math.round(stats.memory.heapTotal / 1024 / 1024),
+        percentage: Math.round((stats.memory.heapUsed / stats.memory.heapTotal) * 100)
+      }
+    },
+    errorSummary: {
+      total: Object.values(stats.errorCounts).reduce((a, b) => a + b, 0),
+      byType: stats.errorCounts,
+      recentRecoveries: Object.keys(stats.recoveryAttempts).length
+    }
+  };
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="gracefulShutdown"><span class="type-signature"></span>gracefulShutdown<span class="signature">(signal)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Perform graceful shutdown</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>signal</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Shutdown signal (SIGTERM, SIGINT, etc.)</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line1241">line 1241</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Manual graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('Received SIGTERM, shutting down gracefully');
+  await errorHandler.gracefulShutdown('SIGTERM');
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Application cleanup during shutdown
+errorHandler.on('shutdown', (signal) => {
+  console.log(`Shutdown initiated by ${signal}`);
+  
+  // Close database connections
+  database.close();
+  
+  // Stop background jobs
+  scheduler.stop();
+  
+  // Save in-progress work
+  saveCurrentState();
+  
+  // Signal cleanup complete
+  errorHandler.emit('shutdown-complete');
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Timeout handling during shutdown
+errorHandler.on('shutdown', async (signal) => {
+  console.log('Starting cleanup...');
+  
+  try {
+    // Perform cleanup with its own timeout
+    await Promise.race([
+      performCleanup(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Cleanup timeout')), 25000)
+      )
+    ]);
+    
+    console.log('Cleanup completed successfully');
+  } catch (error) {
+    console.log('Cleanup timed out or failed:', error.message);
+  } finally {
+    errorHandler.emit('shutdown-complete');
+  }
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Docker/Kubernetes integration
+// Graceful shutdown with health check endpoint
+let isShuttingDown = false;
+
+errorHandler.on('shutdown', () => {
+  isShuttingDown = true;
+});
+
+app.get('/health', (req, res) => {
+  if (isShuttingDown) {
+    res.status(503).json({ status: 'shutting down' });
+  } else {
+    res.json({ status: 'healthy' });
+  }
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="handleCriticalError"><span class="type-signature"></span>handleCriticalError<span class="signature">(error, source)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Handle critical errors with recovery</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>error</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Error</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The error to handle</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>source</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Source of the error (e.g., 'uncaughtException')</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line229">line 229</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Manual error handling
+try {
+  await riskyOperation();
+} catch (error) {
+  await errorHandler.handleCriticalError(error, 'riskyOperation');
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Handling database connection errors
+const dbError = new Error('Connection failed');
+dbError.code = 'ECONNREFUSED';
+await errorHandler.handleCriticalError(dbError, 'database');</code></pre>
+
+    <pre class="prettyprint"><code>// Handling memory errors with custom recovery
+const memError = new Error('Out of memory');
+memError.code = 'ENOMEM';
+
+// This will trigger 'clearCache' recovery strategy
+await errorHandler.handleCriticalError(memError, 'memoryOperation');</code></pre>
+
+    <pre class="prettyprint"><code>// Error frequency tracking and max retries
+for (let i = 0; i &lt; 5; i++) {
+  const error = new Error('Repeated error');
+  error.code = 'TEST_ERROR';
+  await errorHandler.handleCriticalError(error, 'testSource');
+  // After maxRetries (default 3), will trigger emergency shutdown
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="handleMemoryLeak"><span class="type-signature"></span>handleMemoryLeak<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Handle memory leak detection</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line155">line 155</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Automatic memory leak detection
+process.on('warning', (warning) => {
+  if (warning.name === 'MaxListenersExceededWarning') {
+    console.log('Memory leak detected:', warning.message);
+    errorHandler.handleMemoryLeak();
+  }
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Custom memory leak detection
+setInterval(() => {
+  const memUsage = process.memoryUsage();
+  const usage = memUsage.heapUsed / memUsage.heapTotal;
+  
+  if (usage > 0.95) {
+    console.warn('Potential memory leak detected');
+    errorHandler.handleMemoryLeak();
+  }
+}, 30000);</code></pre>
+
+    <pre class="prettyprint"><code>// Memory leak handling with diagnostics
+class DiagnosticErrorHandler extends ErrorHandler {
+  handleMemoryLeak() {
+    console.log('Memory leak detected, running diagnostics');
+    
+    // Log memory usage details
+    const usage = process.memoryUsage();
+    console.log('Memory usage:', {
+      rss: `${Math.round(usage.rss / 1024 / 1024)} MB`,
+      heapTotal: `${Math.round(usage.heapTotal / 1024 / 1024)} MB`,
+      heapUsed: `${Math.round(usage.heapUsed / 1024 / 1024)} MB`,
+      external: `${Math.round(usage.external / 1024 / 1024)} MB`
+    });
+    
+    // Trigger heap dump if available
+    if (process.env.NODE_ENV === 'development') {
+      this.createHeapDump();
+    }
+    
+    // Attempt cleanup
+    this.clearCache();
+  }
+}</code></pre>
 
 
 
@@ -2924,6 +5083,406 @@ Echo AI Systems - Where logs become poetry</p>
     
 
 
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="logError"><span class="type-signature"></span>logError<span class="signature">(error, source)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Log error to persistent storage</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>error</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Error</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Error to log</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>source</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Source/context of the error</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line1477">line 1477</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Manual error logging
+try {
+  await performRiskyOperation();
+} catch (error) {
+  await errorHandler.logError(error, 'riskyOperation');
+  // Error is now persisted to logs/errors.json
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Custom error logging with additional context
+class ContextualErrorHandler extends ErrorHandler {
+  async logError(error, source, context = {}) {
+    // Add request ID, user ID, etc.
+    const enhancedError = {
+      ...error,
+      context: {
+        requestId: context.requestId,
+        userId: context.userId,
+        userAgent: context.userAgent,
+        timestamp: new Date().toISOString()
+      }
+    };
+    
+    await super.logError(enhancedError, source);
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Read error logs for analysis
+import fs from 'fs/promises';
+
+async function analyzeErrors() {
+  try {
+    const logData = await fs.readFile('./logs/errors.json', 'utf-8');
+    const errors = JSON.parse(logData);
+    
+    // Find frequent errors
+    const errorCounts = {};
+    errors.forEach(log => {
+      const key = `${log.error.name}_${log.source}`;
+      errorCounts[key] = (errorCounts[key] || 0) + 1;
+    });
+    
+    console.log('Most frequent errors:', errorCounts);
+  } catch (error) {
+    console.log('Could not read error logs:', error.message);
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Error log rotation and cleanup
+class RotatingErrorHandler extends ErrorHandler {
+  async logError(error, source) {
+    await super.logError(error, source);
+    
+    // Check file size and rotate if needed
+    const stats = await fs.stat(this.config.errorLogPath);
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    if (stats.size > maxSize) {
+      await this.rotateErrorLog();
+    }
+  }
+  
+  async rotateErrorLog() {
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const backupPath = `./logs/errors-${timestamp}.json`;
+    
+    await fs.rename(this.config.errorLogPath, backupPath);
+    console.log(`Error log rotated to ${backupPath}`);
+  }
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="performHealthCheck"><span class="type-signature"></span>performHealthCheck<span class="signature">()</span><span class="type-signature"> &rarr; {Object}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Perform comprehensive health check</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line1070">line 1070</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Health status object</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Manual health check
+const health = await errorHandler.performHealthCheck();
+console.log('Current Health Status:', {
+  memoryUsed: `${(health.memory.heapUsed / 1024 / 1024).toFixed(2)} MB`,
+  uptime: `${Math.floor(health.uptime / 3600)} hours`,
+  errorCount: health.errors
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Scheduled health checks with custom intervals
+setInterval(async () => {
+  const health = await errorHandler.performHealthCheck();
+  
+  // Log to external service
+  await logHealthMetrics(health);
+  
+  // Check thresholds
+  if (health.memory.heapUsed > 500 * 1024 * 1024) { // 500MB
+    console.warn('Memory usage high, considering restart');
+  }
+}, 60000);</code></pre>
+
+    <pre class="prettyprint"><code>// Health check with custom metrics
+class CustomErrorHandler extends ErrorHandler {
+  async performHealthCheck() {
+    const baseHealth = await super.performHealthCheck();
+    
+    // Add custom metrics
+    return {
+      ...baseHealth,
+      database: await this.checkDatabaseHealth(),
+      cache: await this.checkCacheHealth(),
+      api: await this.checkAPIHealth()
+    };
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// React to health check results
+errorHandler.on('health-check', async (health) => {
+  const memUsage = health.memory.heapUsed / health.memory.heapTotal;
+  
+  if (memUsage > 0.85) {
+    console.log('High memory usage, clearing caches');
+    await errorHandler.clearCache();
+  }
+  
+  // Store health metrics
+  await database.insertHealthMetric({
+    timestamp: health.timestamp,
+    memory_usage: memUsage,
+    error_count: health.errors,
+    uptime: health.uptime
+  });
+});</code></pre>
 
 
 
@@ -3285,6 +5844,976 @@ Echo AI Systems - Where logs become poetry</p>
     
 
     
+    <h4 class="name" id="reinstallDependencies"><span class="type-signature"></span>reinstallDependencies<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Trigger dependency reinstallation</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line781">line 781</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Automatic dependency reinstall for missing modules
+try {
+  require('some-missing-module');
+} catch (error) {
+  if (error.code === 'MODULE_NOT_FOUND') {
+    await errorHandler.executeRecovery('reinstallDependencies', error);
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Listen for reinstall requirements
+errorHandler.on('reinstall-required', () => {
+  console.log('Dependencies need reinstallation');
+  
+  // Notify operations team
+  sendAlert('Dependencies corrupted, reinstall required');
+  
+  // Log for audit trail
+  logger.warn('Dependency reinstall triggered by error recovery');
+});</code></pre>
+
+    <pre class="prettyprint"><code>// PM2 integration for dependency reinstall
+// In PM2 ecosystem file:
+// {
+//   "name": "app",
+//   "script": "app.js",
+//   "listen_timeout": 3000,
+//   "kill_timeout": 5000
+// }
+
+errorHandler.on('reinstall-required', () => {
+  if (process.send) {
+    // PM2 will receive this and can trigger reinstall script
+    process.send({
+      type: 'reinstall',
+      timestamp: Date.now(),
+      reason: 'dependency_corruption'
+    });
+  }
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Container/Docker environment handling
+errorHandler.on('reinstall-required', async () => {
+  if (process.env.CONTAINER_ENV) {
+    console.log('Container environment detected');
+    
+    // Signal container orchestrator
+    await fetch('http://orchestrator/api/restart-pod', {
+      method: 'POST',
+      body: JSON.stringify({
+        podId: process.env.POD_ID,
+        reason: 'dependency_reinstall_required'
+      })
+    });
+  }
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="reload"><span class="type-signature"></span>reload<span class="signature">(signal)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Reload configuration and reset state</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>signal</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Signal that triggered reload (SIGHUP, etc.)</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line1400">line 1400</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Manual configuration reload
+process.on('SIGHUP', () => {
+  console.log('Received SIGHUP, reloading configuration');
+  errorHandler.reload('SIGHUP');
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Application configuration reload
+errorHandler.on('reload', async () => {
+  console.log('Reloading application configuration');
+  
+  // Reload configuration files
+  const newConfig = await loadConfiguration();
+  app.updateConfig(newConfig);
+  
+  // Reinitialize connections with new settings
+  await database.reconnect(newConfig.database);
+  
+  // Clear caches that might contain old config
+  cache.clear();
+  
+  console.log('Configuration reload complete');
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Hot reload with validation
+errorHandler.on('reload', async () => {
+  try {
+    console.log('Validating new configuration...');
+    const newConfig = await validateAndLoadConfig();
+    
+    console.log('Applying new configuration...');
+    await applyConfiguration(newConfig);
+    
+    console.log('Configuration reload successful');
+  } catch (error) {
+    console.error('Configuration reload failed:', error);
+    // Keep running with old configuration
+  }
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Zero-downtime reload for web servers
+errorHandler.on('reload', async () => {
+  console.log('Performing zero-downtime reload');
+  
+  // Update server configuration without stopping
+  server.updateMiddleware(await loadMiddleware());
+  server.updateRoutes(await loadRoutes());
+  
+  // Refresh SSL certificates if needed
+  const certs = await loadSSLCertificates();
+  if (certs.updated) {
+    server.updateSSL(certs);
+  }
+  
+  console.log('Zero-downtime reload complete');
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="restartProcess"><span class="type-signature"></span>restartProcess<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Restart the entire process</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line857">line 857</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Triggered by critical errors like segmentation faults
+const criticalError = new Error('Segmentation fault detected');
+criticalError.code = 'SEGFAULT';
+
+// This will trigger process restart
+await errorHandler.handleCriticalError(criticalError, 'nativeModule');</code></pre>
+
+    <pre class="prettyprint"><code>// Manual process restart
+if (memoryLeakDetected()) {
+  console.log('Memory leak detected, restarting process');
+  await errorHandler.restartProcess();
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Process restart with PM2 integration
+// PM2 will automatically restart the process
+process.on('message', (msg) => {
+  if (msg === 'restart') {
+    console.log('PM2 restart signal received');
+    // PM2 handles the actual restart
+  }
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Kubernetes pod restart
+class KubernetesErrorHandler extends ErrorHandler {
+  async restartProcess() {
+    if (process.env.KUBERNETES_SERVICE_HOST) {
+      console.log('Kubernetes environment detected');
+      
+      // Signal Kubernetes to restart pod
+      await this.gracefulShutdown('kubernetes-restart');
+      
+      // Exit with code that triggers restart
+      process.exit(1);
+    } else {
+      await super.restartProcess();
+    }
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Process restart with state preservation
+errorHandler.on('shutdown', async () => {
+  // Save critical state before restart
+  await saveApplicationState({
+    activeConnections: getActiveConnections(),
+    pendingTasks: getPendingTasks(),
+    userSessions: getUserSessions(),
+    timestamp: Date.now()
+  });
+  
+  console.log('Application state saved for restart recovery');
+  errorHandler.emit('shutdown-complete');
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="retryConnection"><span class="type-signature"></span>retryConnection<span class="signature">(error)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Retry connection with exponential backoff</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>error</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Error</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Original connection error</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line563">line 563</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Database connection retry
+const dbError = new Error('Connection timeout');
+dbError.code = 'ETIMEDOUT';
+
+try {
+  await errorHandler.retryConnection(dbError);
+  console.log('Database connection restored');
+} catch (error) {
+  console.log('Failed to restore connection after retries');
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Monitor retry attempts
+errorHandler.on('retry-connection', ({ attempt, error }) => {
+  console.log(`Retry ${attempt}/3: ${error.message}`);
+  
+  // Show progress to user
+  updateConnectionStatus(`Retrying connection... (${attempt}/3)`);
+});
+
+await errorHandler.retryConnection(connectionError);</code></pre>
+
+    <pre class="prettyprint"><code>// Custom connectivity check integration
+class DatabaseErrorHandler extends ErrorHandler {
+  async checkConnectivity() {
+    try {
+      await database.ping();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// API service retry with custom logic
+errorHandler.on('retry-connection', async ({ attempt }) => {
+  if (attempt === 1) {
+    console.log('First retry: checking service status');
+    const status = await checkAPIServiceStatus();
+    console.log('Service status:', status);
+  }
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="selectRecoveryStrategy"><span class="type-signature"></span>selectRecoveryStrategy<span class="signature">(error)</span><span class="type-signature"> &rarr; {string}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Select appropriate recovery strategy</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>error</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Error</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The error to analyze</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line362">line 362</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Recovery strategy name</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Memory-related error
+const memError = new Error('JavaScript heap out of memory');
+const strategy = errorHandler.selectRecoveryStrategy(memError);
+console.log(strategy); // 'clearCache'</code></pre>
+
+    <pre class="prettyprint"><code>// Connection error with specific code
+const connError = new Error('Connection refused');
+connError.code = 'ECONNREFUSED';
+const strategy = errorHandler.selectRecoveryStrategy(connError);
+console.log(strategy); // 'retryConnection'</code></pre>
+
+    <pre class="prettyprint"><code>// Missing module error
+const moduleError = new Error('Cannot find module \'missing-package\'');
+const strategy = errorHandler.selectRecoveryStrategy(moduleError);
+console.log(strategy); // 'reinstallDependencies'</code></pre>
+
+    <pre class="prettyprint"><code>// Custom strategy mapping
+const errorHandler = new ErrorHandler({
+  recoveryStrategies: {
+    CUSTOM_CODE: 'customRecovery',
+    API_LIMIT: 'waitAndRetry'
+  }
+});
+
+const customError = new Error('Rate limit exceeded');
+customError.code = 'API_LIMIT';
+const strategy = errorHandler.selectRecoveryStrategy(customError);
+console.log(strategy); // 'waitAndRetry'</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="setupHandlers"><span class="type-signature"></span>setupHandlers<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Setup global error handlers</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line89">line 89</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Automatic setup on construction
+const errorHandler = new ErrorHandler();
+// Handlers are already set up</code></pre>
+
+    <pre class="prettyprint"><code>// Manual setup after configuration changes
+const errorHandler = new ErrorHandler({ autoRestart: false });
+errorHandler.config.autoRestart = true;
+errorHandler.setupHandlers(); // Re-setup with new config</code></pre>
+
+    <pre class="prettyprint"><code>// Listen for specific error types
+process.on('uncaughtException', (error) => {
+  console.log('Caught by global handler:', error.message);
+});
+
+// Trigger test error
+setTimeout(() => {
+  throw new Error('Test uncaught exception');
+}, 1000);</code></pre>
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="setupMonitoring"><span class="type-signature"></span>setupMonitoring<span class="signature">()</span><span class="type-signature"></span></h4>
     
 
@@ -3364,6 +6893,290 @@ Echo AI Systems - Where logs become poetry</p>
 
 
 
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="softRestart"><span class="type-signature"></span>softRestart<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Perform soft restart without process termination</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line934">line 934</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Trigger soft restart manually
+await errorHandler.softRestart();
+console.log('Soft restart completed');</code></pre>
+
+    <pre class="prettyprint"><code>// Application soft restart handling
+errorHandler.on('soft-restart', async () => {
+  console.log('Performing application soft restart');
+  
+  // Clear application state
+  applicationState.reset();
+  
+  // Reinitialize connections
+  await database.reconnect();
+  await redis.reconnect();
+  
+  // Reload configuration
+  config.reload();
+  
+  // Restart background services
+  scheduler.restart();
+  worker.restart();
+  
+  console.log('Soft restart completed successfully');
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Web server soft restart
+errorHandler.on('soft-restart', async () => {
+  // Don't interrupt active connections
+  server.pauseNewConnections();
+  
+  try {
+    // Reload routes and middleware
+    await server.reloadRoutes();
+    await server.reloadMiddleware();
+    
+    // Update configuration
+    await server.updateConfig();
+    
+    console.log('Web server soft restart completed');
+  } finally {
+    // Resume accepting new connections
+    server.resumeNewConnections();
+  }
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Microservice soft restart with health checks
+errorHandler.on('soft-restart', async () => {
+  try {
+    // Mark as unhealthy during restart
+    healthCheck.setStatus('restarting');
+    
+    // Perform restart operations
+    await reinitializeServices();
+    await validateConnections();
+    
+    // Mark as healthy again
+    healthCheck.setStatus('healthy');
+    
+    console.log('Microservice soft restart successful');
+  } catch (error) {
+    healthCheck.setStatus('unhealthy');
+    throw error;
+  }
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="startHealthMonitoring"><span class="type-signature"></span>startHealthMonitoring<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Start health monitoring system</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_ErrorHandler.js.html">core/ErrorHandler.js</a>, <a href="core_ErrorHandler.js.html#line1017">line 1017</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Basic health monitoring
+const errorHandler = new ErrorHandler({
+  healthCheckInterval: 30000, // Check every 30 seconds
+  memoryThreshold: 0.8 // Alert at 80% memory usage
+});
+
+errorHandler.startHealthMonitoring();</code></pre>
+
+    <pre class="prettyprint"><code>// Listen for health events
+errorHandler.on('health-check', (health) => {
+  console.log('System Health:', {
+    memory: `${(health.memory.heapUsed / 1024 / 1024).toFixed(2)} MB`,
+    uptime: `${Math.floor(health.uptime / 60)} minutes`,
+    errors: health.errors
+  });
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Custom health monitoring with alerts
+errorHandler.on('health-check', (health) => {
+  const memoryUsage = health.memory.heapUsed / health.memory.heapTotal;
+  
+  if (memoryUsage > 0.9) {
+    sendAlert(`High memory usage: ${(memoryUsage * 100).toFixed(2)}%`);
+  }
+  
+  if (health.errors > 5) {
+    sendAlert(`High error rate: ${health.errors} errors detected`);
+  }
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Integration with external monitoring
+errorHandler.on('high-error-rate', (errorCount) => {
+  // Send to external monitoring service
+  metrics.increment('error_rate', errorCount);
+  alerts.send('high_error_rate', { count: errorCount });
+});</code></pre>
 
 
 
@@ -3982,13 +7795,13 @@ Echo AI Systems - Where logs become poetry</p>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ABTestingManager.html">ABTestingManager</a></li><li><a href="AuditLogger.html">AuditLogger</a></li><li><a href="AuthMiddleware.html">AuthMiddleware</a></li><li><a href="BPETokenizer.html">BPETokenizer</a></li><li><a href="BaseEngine.html">BaseEngine</a></li><li><a href="BaseLoader.html">BaseLoader</a></li><li><a href="BinaryLoader.html">BinaryLoader</a></li><li><a href="BinaryModel.html">BinaryModel</a></li><li><a href="BitNetLoader.html">BitNetLoader</a></li><li><a href="ConversionConfig.html">ConversionConfig</a></li><li><a href="ConversionResult.html">ConversionResult</a></li><li><a href="EnterpriseAuthManager.html">EnterpriseAuthManager</a></li><li><a href="EnterpriseManager.html">EnterpriseManager</a></li><li><a href="EnterpriseRouter.html">EnterpriseRouter</a></li><li><a href="FormatConverter.html">FormatConverter</a></li><li><a href="GGUFLoader.html">GGUFLoader</a></li><li><a href="GGUFModel.html">GGUFModel</a></li><li><a href="GRPCClient.html">GRPCClient</a></li><li><a href="LLMRouter.html">LLMRouter</a></li><li><a href="MockLoader.html">MockLoader</a></li><li><a href="MockModel.html">MockModel</a></li><li><a href="ModelInterface.html">ModelInterface</a></li><li><a href="ModelQuantizer.html">ModelQuantizer</a></li><li><a href="ModelTemplates.html">ModelTemplates</a></li><li><a href="MultiTenancyManager.html">MultiTenancyManager</a></li><li><a href="PyTorchLoader.html">PyTorchLoader</a></li><li><a href="PyTorchModel.html">PyTorchModel</a></li><li><a href="QuantizationConfig.html">QuantizationConfig</a></li><li><a href="QuantizationResult.html">QuantizationResult</a></li><li><a href="Router.html">Router</a></li><li><a href="SLAMonitor.html">SLAMonitor</a></li><li><a href="SentencePieceTokenizer.html">SentencePieceTokenizer</a></li><li><a href="SimpleLoader.html">SimpleLoader</a></li><li><a href="SimpleModel.html">SimpleModel</a></li><li><a href="TokenizationResult.html">TokenizationResult</a></li><li><a href="TokenizerConfig.html">TokenizerConfig</a></li><li><a href="UniversalTokenizer.html">UniversalTokenizer</a></li><li><a href="ValidationConfig.html">ValidationConfig</a></li><li><a href="ValidationSuite.html">ValidationSuite</a></li><li><a href="ValidationSuiteResult.html">ValidationSuiteResult</a></li><li><a href="ValidationTestResult.html">ValidationTestResult</a></li><li><a href="WordPieceTokenizer.html">WordPieceTokenizer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Architectures">Architectures</a></li><li><a href="global.html#AuditEventTypes">AuditEventTypes</a></li><li><a href="global.html#AuthMethods">AuthMethods</a></li><li><a href="global.html#BreachSeverity">BreachSeverity</a></li><li><a href="global.html#Capabilities">Capabilities</a></li><li><a href="global.html#ComplianceFrameworks">ComplianceFrameworks</a></li><li><a href="global.html#EnterpriseFeatures">EnterpriseFeatures</a></li><li><a href="global.html#ExperimentStatus">ExperimentStatus</a></li><li><a href="global.html#IsolationLevels">IsolationLevels</a></li><li><a href="global.html#ModelFormat">ModelFormat</a></li><li><a href="global.html#ModelFormats">ModelFormats</a></li><li><a href="global.html#Permissions">Permissions</a></li><li><a href="global.html#QuantizationMethod">QuantizationMethod</a></li><li><a href="global.html#QuantizationPrecision">QuantizationPrecision</a></li><li><a href="global.html#QuotaTypes">QuotaTypes</a></li><li><a href="global.html#RiskLevels">RiskLevels</a></li><li><a href="global.html#RoutingStrategies">RoutingStrategies</a></li><li><a href="global.html#SLAMetricTypes">SLAMetricTypes</a></li><li><a href="global.html#SLAStatus">SLAStatus</a></li><li><a href="global.html#SessionTypes">SessionTypes</a></li><li><a href="global.html#SplittingAlgorithms">SplittingAlgorithms</a></li><li><a href="global.html#StatisticalTests">StatisticalTests</a></li><li><a href="global.html#TimeWindows">TimeWindows</a></li><li><a href="global.html#TokenizerType">TokenizerType</a></li><li><a href="global.html#UserRoles">UserRoles</a></li><li><a href="global.html#ValidationSeverity">ValidationSeverity</a></li><li><a href="global.html#ValidationTestType">ValidationTestType</a></li><li><a href="global.html#colors">colors</a></li><li><a href="global.html#createEnterpriseExpressRoutes">createEnterpriseExpressRoutes</a></li><li><a href="global.html#createEnterpriseRouter">createEnterpriseRouter</a></li><li><a href="global.html#createEnterpriseWebSocketHandlers">createEnterpriseWebSocketHandlers</a></li><li><a href="global.html#defaultEnterpriseConfig">defaultEnterpriseConfig</a></li><li><a href="global.html#enterpriseVersion">enterpriseVersion</a></li><li><a href="global.html#errorMonitoringMiddleware">errorMonitoringMiddleware</a></li><li><a href="global.html#getEnabledFeatures">getEnabledFeatures</a></li><li><a href="global.html#getMonitoringStatus">getMonitoringStatus</a></li><li><a href="global.html#httpMonitoringMiddleware">httpMonitoringMiddleware</a></li><li><a href="global.html#isFeatureEnabled">isFeatureEnabled</a></li><li><a href="global.html#recordCustomMetric">recordCustomMetric</a></li><li><a href="global.html#registerAlertRule">registerAlertRule</a></li><li><a href="global.html#registerDependency">registerDependency</a></li><li><a href="global.html#registerHealthCheck">registerHealthCheck</a></li><li><a href="global.html#setupMonitoring">setupMonitoring</a></li><li><a href="global.html#startPerformanceProfile">startPerformanceProfile</a></li><li><a href="global.html#validateEnterpriseConfig">validateEnterpriseConfig</a></li><li><a href="global.html#withCacheMonitoring">withCacheMonitoring</a></li><li><a href="global.html#withDatabaseMonitoring">withDatabaseMonitoring</a></li><li><a href="global.html#withModelMonitoring">withModelMonitoring</a></li><li><a href="global.html#withQueueMonitoring">withQueueMonitoring</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ABTestingManager.html">ABTestingManager</a></li><li><a href="AuditLogger.html">AuditLogger</a></li><li><a href="AuthMiddleware.html">AuthMiddleware</a></li><li><a href="BPETokenizer.html">BPETokenizer</a></li><li><a href="BaseEngine.html">BaseEngine</a></li><li><a href="BaseLoader.html">BaseLoader</a></li><li><a href="BinaryLoader.html">BinaryLoader</a></li><li><a href="BinaryModel.html">BinaryModel</a></li><li><a href="BitNetLoader.html">BitNetLoader</a></li><li><a href="ConversionConfig.html">ConversionConfig</a></li><li><a href="ConversionResult.html">ConversionResult</a></li><li><a href="EnterpriseAuthManager.html">EnterpriseAuthManager</a></li><li><a href="EnterpriseManager.html">EnterpriseManager</a></li><li><a href="EnterpriseRouter.html">EnterpriseRouter</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="FormatConverter.html">FormatConverter</a></li><li><a href="GGUFLoader.html">GGUFLoader</a></li><li><a href="GGUFModel.html">GGUFModel</a></li><li><a href="GRPCClient.html">GRPCClient</a></li><li><a href="LLMRouter.html">LLMRouter</a></li><li><a href="MockLoader.html">MockLoader</a></li><li><a href="MockModel.html">MockModel</a></li><li><a href="ModelError.html">ModelError</a></li><li><a href="ModelInterface.html">ModelInterface</a></li><li><a href="ModelQuantizer.html">ModelQuantizer</a></li><li><a href="ModelRegistry.html">ModelRegistry</a></li><li><a href="ModelTemplates.html">ModelTemplates</a></li><li><a href="MultiTenancyManager.html">MultiTenancyManager</a></li><li><a href="Pipeline.html">Pipeline</a></li><li><a href="PyTorchLoader.html">PyTorchLoader</a></li><li><a href="PyTorchModel.html">PyTorchModel</a></li><li><a href="QuantizationConfig.html">QuantizationConfig</a></li><li><a href="QuantizationResult.html">QuantizationResult</a></li><li><a href="Router.html">Router</a></li><li><a href="SLAMonitor.html">SLAMonitor</a></li><li><a href="SentencePieceTokenizer.html">SentencePieceTokenizer</a></li><li><a href="SimpleLoader.html">SimpleLoader</a></li><li><a href="SimpleModel.html">SimpleModel</a></li><li><a href="TokenizationResult.html">TokenizationResult</a></li><li><a href="TokenizerConfig.html">TokenizerConfig</a></li><li><a href="UniversalTokenizer.html">UniversalTokenizer</a></li><li><a href="ValidationConfig.html">ValidationConfig</a></li><li><a href="ValidationSuite.html">ValidationSuite</a></li><li><a href="ValidationSuiteResult.html">ValidationSuiteResult</a></li><li><a href="ValidationTestResult.html">ValidationTestResult</a></li><li><a href="WordPieceTokenizer.html">WordPieceTokenizer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Architectures">Architectures</a></li><li><a href="global.html#AuditEventTypes">AuditEventTypes</a></li><li><a href="global.html#AuthMethods">AuthMethods</a></li><li><a href="global.html#BreachSeverity">BreachSeverity</a></li><li><a href="global.html#Capabilities">Capabilities</a></li><li><a href="global.html#ComplianceFrameworks">ComplianceFrameworks</a></li><li><a href="global.html#EnterpriseFeatures">EnterpriseFeatures</a></li><li><a href="global.html#ExperimentStatus">ExperimentStatus</a></li><li><a href="global.html#IsolationLevels">IsolationLevels</a></li><li><a href="global.html#ModelFormat">ModelFormat</a></li><li><a href="global.html#ModelFormats">ModelFormats</a></li><li><a href="global.html#Permissions">Permissions</a></li><li><a href="global.html#QuantizationMethod">QuantizationMethod</a></li><li><a href="global.html#QuantizationPrecision">QuantizationPrecision</a></li><li><a href="global.html#QuotaTypes">QuotaTypes</a></li><li><a href="global.html#RiskLevels">RiskLevels</a></li><li><a href="global.html#RoutingStrategies">RoutingStrategies</a></li><li><a href="global.html#SLAMetricTypes">SLAMetricTypes</a></li><li><a href="global.html#SLAStatus">SLAStatus</a></li><li><a href="global.html#SessionTypes">SessionTypes</a></li><li><a href="global.html#SplittingAlgorithms">SplittingAlgorithms</a></li><li><a href="global.html#StatisticalTests">StatisticalTests</a></li><li><a href="global.html#TimeWindows">TimeWindows</a></li><li><a href="global.html#TokenizerType">TokenizerType</a></li><li><a href="global.html#UserRoles">UserRoles</a></li><li><a href="global.html#ValidationSeverity">ValidationSeverity</a></li><li><a href="global.html#ValidationTestType">ValidationTestType</a></li><li><a href="global.html#adjustTimeouts">adjustTimeouts</a></li><li><a href="global.html#attemptRecovery">attemptRecovery</a></li><li><a href="global.html#checkConnectivity">checkConnectivity</a></li><li><a href="global.html#clearCache">clearCache</a></li><li><a href="global.html#colors">colors</a></li><li><a href="global.html#createEnterpriseExpressRoutes">createEnterpriseExpressRoutes</a></li><li><a href="global.html#createEnterpriseRouter">createEnterpriseRouter</a></li><li><a href="global.html#createEnterpriseWebSocketHandlers">createEnterpriseWebSocketHandlers</a></li><li><a href="global.html#createMissingResources">createMissingResources</a></li><li><a href="global.html#defaultEnterpriseConfig">defaultEnterpriseConfig</a></li><li><a href="global.html#emergencyShutdown">emergencyShutdown</a></li><li><a href="global.html#enterpriseVersion">enterpriseVersion</a></li><li><a href="global.html#errorMonitoringMiddleware">errorMonitoringMiddleware</a></li><li><a href="global.html#escalateError">escalateError</a></li><li><a href="global.html#executeRecovery">executeRecovery</a></li><li><a href="global.html#getEnabledFeatures">getEnabledFeatures</a></li><li><a href="global.html#getMonitoringStatus">getMonitoringStatus</a></li><li><a href="global.html#getStats">getStats</a></li><li><a href="global.html#gracefulShutdown">gracefulShutdown</a></li><li><a href="global.html#handleCriticalError">handleCriticalError</a></li><li><a href="global.html#handleMemoryLeak">handleMemoryLeak</a></li><li><a href="global.html#httpMonitoringMiddleware">httpMonitoringMiddleware</a></li><li><a href="global.html#isFeatureEnabled">isFeatureEnabled</a></li><li><a href="global.html#logError">logError</a></li><li><a href="global.html#performHealthCheck">performHealthCheck</a></li><li><a href="global.html#recordCustomMetric">recordCustomMetric</a></li><li><a href="global.html#registerAlertRule">registerAlertRule</a></li><li><a href="global.html#registerDependency">registerDependency</a></li><li><a href="global.html#registerHealthCheck">registerHealthCheck</a></li><li><a href="global.html#reinstallDependencies">reinstallDependencies</a></li><li><a href="global.html#reload">reload</a></li><li><a href="global.html#restartProcess">restartProcess</a></li><li><a href="global.html#retryConnection">retryConnection</a></li><li><a href="global.html#selectRecoveryStrategy">selectRecoveryStrategy</a></li><li><a href="global.html#setupHandlers">setupHandlers</a></li><li><a href="global.html#setupMonitoring">setupMonitoring</a></li><li><a href="global.html#softRestart">softRestart</a></li><li><a href="global.html#startHealthMonitoring">startHealthMonitoring</a></li><li><a href="global.html#startPerformanceProfile">startPerformanceProfile</a></li><li><a href="global.html#validateEnterpriseConfig">validateEnterpriseConfig</a></li><li><a href="global.html#withCacheMonitoring">withCacheMonitoring</a></li><li><a href="global.html#withDatabaseMonitoring">withDatabaseMonitoring</a></li><li><a href="global.html#withModelMonitoring">withModelMonitoring</a></li><li><a href="global.html#withQueueMonitoring">withQueueMonitoring</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Aug 17 2025 22:28:58 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Aug 18 2025 01:43:35 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>

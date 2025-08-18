@@ -22,6 +22,30 @@ class HFLoader extends BaseLoader {
 
   /**
    * Initialize HuggingFace dependencies
+   * 
+   * @example
+   * // Check initialization status
+   * const loader = new HFLoader();
+   * const initialized = await loader.initialize();
+   * 
+   * if (initialized) {
+   *   console.log('HuggingFace libraries available');
+   *   // Can use hub client and transformers.js
+   * } else {
+   *   console.log('Some dependencies missing, fallback mode');
+   *   // Will use direct download fallback
+   * }
+   * 
+   * @example
+   * // Initialize with error handling
+   * const loader = new HFLoader();
+   * try {
+   *   await loader.initialize();
+   *   console.log('Hub client ready:', !!loader.hubClient);
+   *   console.log('Transformers.js ready:', !!loader.transformers);
+   * } catch (error) {
+   *   console.error('Initialization failed:', error.message);
+   * }
    */
   async initialize() {
     try {
@@ -50,6 +74,41 @@ class HFLoader extends BaseLoader {
 
   /**
    * Check if this loader supports the given source
+   * 
+   * @example
+   * // Check various HuggingFace source formats
+   * const loader = new HFLoader();
+   * 
+   * console.log(loader.supports('hf:gpt2'));                    // true
+   * console.log(loader.supports('huggingface:microsoft/DialoGPT-medium')); // true
+   * console.log(loader.supports('https://huggingface.co/bert-base-uncased')); // true
+   * console.log(loader.supports('microsoft/DialoGPT-medium'));  // true
+   * console.log(loader.supports('./local-model.bin'));         // false
+   * 
+   * @example
+   * // Filter supported models from a list
+   * const modelSources = [
+   *   'gpt2',
+   *   'microsoft/DialoGPT-medium',
+   *   'https://huggingface.co/bert-base-uncased',
+   *   './local/model.onnx',
+   *   'hf:distilbert-base-uncased'
+   * ];
+   * 
+   * const supported = modelSources.filter(src => loader.supports(src));
+   * console.log(`${supported.length} HuggingFace models found:`, supported);
+   * 
+   * @example
+   * // Dynamic loader routing
+   * const source = 'microsoft/DialoGPT-medium';
+   * 
+   * if (hfLoader.supports(source)) {
+   *   await hfLoader.load({ source });
+   * } else if (ggufLoader.supports(source)) {
+   *   await ggufLoader.load({ source });
+   * } else {
+   *   console.error('No loader supports this source');
+   * }
    */
   supports(source) {
     if (typeof source !== 'string') return false;
@@ -65,6 +124,73 @@ class HFLoader extends BaseLoader {
 
   /**
    * Load a HuggingFace model
+   * 
+   * @example
+   * // Load with Transformers.js (recommended)
+   * const model = await loader.load({
+   *   source: 'gpt2',
+   *   task: 'text-generation',
+   *   quantized: true  // Use quantized version for speed
+   * });
+   * 
+   * const result = await model.generate('Hello world', { max_new_tokens: 20 });
+   * console.log(result.generated_text);
+   * 
+   * @example
+   * // Load BERT for text classification
+   * const bert = await loader.load({
+   *   source: 'distilbert-base-uncased-finetuned-sst-2-english',
+   *   task: 'text-classification'
+   * });
+   * 
+   * const sentiment = await bert.predict('I love this product!');
+   * console.log('Sentiment:', sentiment[0].label); // POSITIVE/NEGATIVE
+   * 
+   * @example
+   * // Load from Hub with custom cache
+   * const model = await loader.load({
+   *   source: 'microsoft/DialoGPT-medium',
+   *   useTransformers: false, // Force Hub download
+   *   cacheDir: './custom-cache',
+   *   task: 'conversational'
+   * });
+   * 
+   * @example
+   * // Load with progress tracking
+   * const model = await loader.load({
+   *   source: 'facebook/bart-large-cnn',
+   *   task: 'summarization',
+   *   progress_callback: (progress) => {
+   *     console.log(`Loading: ${progress.status}`);
+   *     if (progress.loaded && progress.total) {
+   *       const percent = (progress.loaded / progress.total * 100).toFixed(1);
+   *       console.log(`Progress: ${percent}%`);
+   *     }
+   *   }
+   * });
+   * 
+   * @example
+   * // Load with error handling and fallbacks
+   * let model;
+   * try {
+   *   // Try transformers.js first
+   *   model = await loader.load({
+   *     source: 't5-small',
+   *     task: 'text2text-generation',
+   *     useTransformers: true
+   *   });
+   * } catch (error) {
+   *   console.log('Transformers.js failed, trying Hub download');
+   *   try {
+   *     model = await loader.load({
+   *       source: 't5-small',
+   *       useTransformers: false
+   *     });
+   *   } catch (hubError) {
+   *     console.error('All loading methods failed:', hubError.message);
+   *     throw hubError;
+   *   }
+   * }
    */
   async load(config) {
     const modelId = config.id || `hf-${Date.now()}`;
@@ -123,6 +249,35 @@ class HFLoader extends BaseLoader {
 
   /**
    * Parse model name from various formats
+   * 
+   * @example
+   * // Parse different input formats
+   * const loader = new HFLoader();
+   * 
+   * console.log(loader.parseModelName('hf:gpt2'));                    // 'gpt2'
+   * console.log(loader.parseModelName('huggingface:microsoft/DialoGPT-medium')); // 'microsoft/DialoGPT-medium'
+   * console.log(loader.parseModelName('https://huggingface.co/bert-base-uncased')); // 'bert-base-uncased'
+   * console.log(loader.parseModelName('microsoft/DialoGPT-medium'));  // 'microsoft/DialoGPT-medium'
+   * 
+   * @example
+   * // Extract org and model names
+   * const fullName = loader.parseModelName('microsoft/DialoGPT-medium');
+   * const [org, modelName] = fullName.split('/');
+   * console.log(`Organization: ${org}, Model: ${modelName}`);
+   * 
+   * @example
+   * // Handle edge cases
+   * const inputs = [
+   *   'simple-model',
+   *   'org/model-name',
+   *   'hf:org/model-with-dashes',
+   *   'https://huggingface.co/very/long/path/model'
+   * ];
+   * 
+   * inputs.forEach(input => {
+   *   const parsed = loader.parseModelName(input);
+   *   console.log(`${input} -> ${parsed}`);
+   * });
    */
   parseModelName(source) {
     // Remove prefixes
@@ -142,6 +297,49 @@ class HFLoader extends BaseLoader {
 
   /**
    * Load model using Transformers.js
+   * 
+   * @example
+   * // Load GPT-2 for text generation
+   * const model = await loader.loadWithTransformers('gpt2', {
+   *   task: 'text-generation',
+   *   quantized: true
+   * });
+   * 
+   * // model.instance is the transformers.js pipeline
+   * const result = await model.instance('Hello world');
+   * console.log(result[0].generated_text);
+   * 
+   * @example
+   * // Load BERT with custom environment
+   * const model = await loader.loadWithTransformers('bert-base-uncased', {
+   *   task: 'fill-mask',
+   *   localFiles: './models/bert/',  // Use local files
+   *   quantized: false  // Use full precision
+   * });
+   * 
+   * @example
+   * // Load with progress tracking
+   * const model = await loader.loadWithTransformers('t5-small', {
+   *   task: 'text2text-generation',
+   *   progress_callback: (progress) => {
+   *     console.log('Loading progress:', progress.status);
+   *     if (progress.file) {
+   *       console.log('Current file:', progress.file);
+   *     }
+   *   }
+   * });
+   * 
+   * @example
+   * // Load image model
+   * const visionModel = await loader.loadWithTransformers('google/vit-base-patch16-224', {
+   *   task: 'image-classification',
+   *   quantized: true
+   * });
+   * 
+   * // Use with image data
+   * const image = await fetch('./test-image.jpg').then(r => r.blob());
+   * const classification = await visionModel.instance(image);
+   * console.log('Top prediction:', classification[0]);
    */
   async loadWithTransformers(modelName, config) {
     if (!this.transformers) {
@@ -310,6 +508,49 @@ class HFLoader extends BaseLoader {
 
   /**
    * Tokenize text
+   * 
+   * @example
+   * // Basic tokenization
+   * const model = await loader.load({ source: 'bert-base-uncased' });
+   * const tokens = await loader.tokenize(model.id, 'Hello world!');
+   * console.log('Tokens:', tokens);
+   * 
+   * @example
+   * // Tokenize with BERT model
+   * const bertModel = await loader.load({
+   *   source: 'bert-base-uncased',
+   *   task: 'fill-mask'
+   * });
+   * 
+   * const text = 'The cat sat on the [MASK].';
+   * const tokens = await loader.tokenize(bertModel.id, text);
+   * console.log('BERT tokens:', tokens);
+   * 
+   * @example
+   * // Compare tokenization methods
+   * const text = 'This is a test sentence.';
+   * 
+   * // With transformers tokenizer
+   * const transformerTokens = await loader.tokenize(model.id, text);
+   * 
+   * // Fallback tokenization
+   * const fallbackTokens = text.split(' ');
+   * 
+   * console.log('Transformer tokens:', transformerTokens.length);
+   * console.log('Simple split tokens:', fallbackTokens.length);
+   * 
+   * @example
+   * // Tokenize multiple texts
+   * const texts = [
+   *   'Short text.',
+   *   'This is a much longer piece of text with many words.',
+   *   'Special characters: !@#$%^&*()'
+   * ];
+   * 
+   * for (const text of texts) {
+   *   const tokens = await loader.tokenize(model.id, text);
+   *   console.log(`"${text}" -> ${tokens.length} tokens`);
+   * }
    */
   async tokenize(modelId, text) {
     const model = this.models.get(modelId);
@@ -328,6 +569,59 @@ class HFLoader extends BaseLoader {
 
   /**
    * Generate text (for generative models)
+   * 
+   * @example
+   * // Simple text generation
+   * const model = await loader.load({ source: 'gpt2' });
+   * const result = await loader.generate(model.id, 'Once upon a time');
+   * console.log(result.generated_text);
+   * 
+   * @example
+   * // Generation with custom parameters
+   * const result = await loader.generate(model.id, 'The future of AI is', {
+   *   maxTokens: 100,      // Generate up to 100 tokens
+   *   temperature: 0.8,    // More creative
+   *   doSample: true,      // Use sampling
+   *   topP: 0.9,          // Nucleus sampling
+   *   repetition_penalty: 1.2  // Reduce repetition
+   * });
+   * 
+   * @example
+   * // Conversational generation
+   * const chatModel = await loader.load({ 
+   *   source: 'microsoft/DialoGPT-medium',
+   *   task: 'text-generation'
+   * });
+   * 
+   * const conversation = [
+   *   'User: Hello, how are you?',
+   *   'Bot: I am doing well, thank you!',
+   *   'User: What can you help me with?'
+   * ].join(' ');
+   * 
+   * const response = await loader.generate(chatModel.id, conversation, {
+   *   maxTokens: 50,
+   *   temperature: 0.7
+   * });
+   * 
+   * @example
+   * // Batch generation
+   * const prompts = [
+   *   'The weather today is',
+   *   'My favorite food is',
+   *   'The best movie ever made is'
+   * ];
+   * 
+   * const results = await Promise.all(
+   *   prompts.map(prompt => loader.generate(model.id, prompt, {
+   *     maxTokens: 20,
+   *     temperature: 0.7
+   *   }))
+   * );
+   * 
+   * results.forEach((result, i) => {
+   *   console.log(`${prompts[i]} -> ${result.generated_text}`);
+   * });
    */
   async generate(modelId, prompt, options = {}) {
     const model = this.models.get(modelId);
@@ -353,6 +647,54 @@ class HFLoader extends BaseLoader {
 
   /**
    * Run prediction with the model
+   * 
+   * @example
+   * // Text classification
+   * const classifier = await loader.load({
+   *   source: 'distilbert-base-uncased-finetuned-sst-2-english',
+   *   task: 'text-classification'
+   * });
+   * 
+   * const result = await loader.predict(classifier.id, 'I love this movie!');
+   * console.log('Sentiment:', result[0].label, 'Score:', result[0].score);
+   * 
+   * @example
+   * // Question answering
+   * const qa = await loader.load({
+   *   source: 'distilbert-base-cased-distilled-squad',
+   *   task: 'question-answering'
+   * });
+   * 
+   * const context = 'Paris is the capital of France.';
+   * const question = 'What is the capital of France?';
+   * 
+   * const answer = await loader.predict(qa.id, {
+   *   question,
+   *   context
+   * });
+   * console.log('Answer:', answer.answer);
+   * 
+   * @example
+   * // Fill mask (BERT-style)
+   * const fillMask = await loader.load({
+   *   source: 'bert-base-uncased',
+   *   task: 'fill-mask'
+   * });
+   * 
+   * const result = await loader.predict(fillMask.id, 'The cat sat on the [MASK].');
+   * result.forEach(prediction => {
+   *   console.log(`${prediction.token_str}: ${prediction.score.toFixed(3)}`);
+   * });
+   * 
+   * @example
+   * // Hub-downloaded model (non-transformers)
+   * const hubModel = await loader.load({
+   *   source: 'microsoft/DialoGPT-medium',
+   *   useTransformers: false  // Force hub download
+   * });
+   * 
+   * const result = await loader.predict(hubModel.id, 'Hello there');
+   * console.log('Result:', result); // Will show warning about direct inference
    */
   async predict(modelId, input) {
     const model = this.models.get(modelId);
@@ -382,6 +724,71 @@ class HFLoader extends BaseLoader {
 
   /**
    * Stream predictions
+   * 
+   * @example
+   * // Stream text generation
+   * const generator = await loader.load({
+   *   source: 'gpt2',
+   *   task: 'text-generation'
+   * });
+   * 
+   * console.log('Streaming generation:');
+   * for await (const token of loader.stream(generator.id, 'The future of AI')) {
+   *   process.stdout.write(token);
+   * }
+   * console.log('\n--- Generation complete ---');
+   * 
+   * @example
+   * // Stream with token accumulation
+   * const model = await loader.load({ source: 'gpt2' });
+   * let fullText = 'Once upon a time';
+   * let tokenCount = 0;
+   * 
+   * for await (const token of loader.stream(model.id, 'Once upon a time')) {
+   *   fullText += token;
+   *   tokenCount++;
+   *   
+   *   console.log(`Token ${tokenCount}: "${token}"`);
+   *   
+   *   if (tokenCount >= 10) break; // Limit for demo
+   * }
+   * 
+   * console.log('Complete story start:', fullText);
+   * 
+   * @example
+   * // Non-streaming model fallback
+   * const classifier = await loader.load({
+   *   source: 'distilbert-base-uncased-finetuned-sst-2-english',
+   *   task: 'text-classification'
+   * });
+   * 
+   * // This model doesn't support streaming, so it yields the full result
+   * for await (const result of loader.stream(classifier.id, 'Great product!')) {
+   *   console.log('Classification result:', result);
+   * }
+   * 
+   * @example
+   * // Real-time chat streaming
+   * const chatModel = await loader.load({
+   *   source: 'microsoft/DialoGPT-medium',
+   *   task: 'text-generation'
+   * });
+   * 
+   * const userMessage = 'Hello, how can you help me?';
+   * let botResponse = '';
+   * 
+   * console.log('User:', userMessage);
+   * process.stdout.write('Bot: ');
+   * 
+   * for await (const token of loader.stream(chatModel.id, userMessage)) {
+   *   botResponse += token;
+   *   process.stdout.write(token);
+   *   
+   *   // Add natural typing delay
+   *   await new Promise(resolve => setTimeout(resolve, 50));
+   * }
+   * 
+   * console.log('\n--- Conversation turn complete ---');
    */
   async *stream(modelId, input) {
     const model = this.models.get(modelId);
@@ -490,6 +897,84 @@ class HFLoader extends BaseLoader {
 
   /**
    * Validate model availability
+   * 
+   * @example
+   * // Validate before loading
+   * const validation = await loader.validate({ source: 'gpt2' });
+   * 
+   * if (validation.valid) {
+   *   console.log('Model is available on HuggingFace Hub');
+   *   console.log('Downloads:', validation.modelInfo.downloads);
+   *   console.log('Likes:', validation.modelInfo.likes);
+   *   await loader.load({ source: 'gpt2' });
+   * } else {
+   *   console.error('Model not found:', validation.error);
+   * }
+   * 
+   * @example
+   * // Batch validate multiple models
+   * const modelNames = [
+   *   'gpt2',
+   *   'bert-base-uncased',
+   *   'nonexistent-model',
+   *   'microsoft/DialoGPT-medium'
+   * ];
+   * 
+   * const validations = await Promise.all(
+   *   modelNames.map(async (name) => {
+   *     const result = await loader.validate({ source: name });
+   *     return { name, ...result };
+   *   })
+   * );
+   * 
+   * const validModels = validations.filter(v => v.valid);
+   * console.log(`${validModels.length}/${modelNames.length} models are available`);
+   * 
+   * validModels.forEach(model => {
+   *   console.log(`${model.name}: ${model.modelInfo.downloads} downloads`);
+   * });
+   * 
+   * @example
+   * // Validate with detailed error handling
+   * try {
+   *   const validation = await loader.validate({ 
+   *     source: 'maybe-exists/some-model' 
+   *   });
+   *   
+   *   if (validation.valid) {
+   *     const info = validation.modelInfo;
+   *     console.log(`Model found: ${info.id}`);
+   *     console.log(`Tags: ${info.tags.join(', ')}`);
+   *     
+   *     if (info.downloads > 1000) {
+   *       console.log('Popular model, should be reliable');
+   *     }
+   *   } else {
+   *     console.log(`Model validation failed: ${validation.error}`);
+   *   }
+   * } catch (error) {
+   *   console.error('Network error during validation:', error.message);
+   * }
+   * 
+   * @example
+   * // Use validation for model selection
+   * const candidates = ['gpt2', 'gpt2-medium', 'gpt2-large'];
+   * let selectedModel = null;
+   * 
+   * for (const candidate of candidates) {
+   *   const validation = await loader.validate({ source: candidate });
+   *   if (validation.valid) {
+   *     selectedModel = candidate;
+   *     console.log(`Selected model: ${candidate}`);
+   *     break;
+   *   }
+   * }
+   * 
+   * if (selectedModel) {
+   *   await loader.load({ source: selectedModel });
+   * } else {
+   *   console.error('No valid models found in candidates');
+   * }
    */
   async validate(config) {
     try {

@@ -40,6 +40,38 @@ class GGUFModel extends ModelInterface {
     this.batchSize = parseInt(config.batchSize || process.env.LLM_BATCH_SIZE || 8);
   }
 
+  /**
+   * Load the GGUF model with CPU optimization for VPS environments
+   * 
+   * @example
+   * // Basic model loading
+   * const model = new GGUFModel({ source: './models/llama-7b-q4_k_m.gguf' });
+   * await model.load();
+   * 
+   * @example
+   * // Load with custom CPU settings for VPS
+   * const model = new GGUFModel({
+   *   source: './models/mistral-7b-q4_k_m.gguf',
+   *   maxThreads: 2,        // Limit threads for VPS
+   *   contextSize: 2048,    // Smaller context for memory efficiency
+   *   batchSize: 8          // Smaller batch size for CPU
+   * });
+   * await model.load();
+   * 
+   * @example
+   * // Load with error handling
+   * try {
+   *   const model = new GGUFModel({ source: './models/model.gguf' });
+   *   await model.load();
+   *   console.log('✅ Model loaded successfully');
+   * } catch (error) {
+   *   if (error.message.includes('node-llama-cpp')) {
+   *     console.error('❌ node-llama-cpp dependency missing');
+   *   } else {
+   *     console.error('❌ Failed to load model:', error.message);
+   *   }
+   * }
+   */
   async load() {
     if (this.loaded) return;
     
@@ -104,6 +136,38 @@ class GGUFModel extends ModelInterface {
     }
   }
 
+  /**
+   * Generate text response from a prompt with GGUF model
+   * 
+   * @param {string} prompt - Input text prompt
+   * @param {object} options - Generation options
+   * @returns {Promise<object>} Generation result with text, tokens, and metrics
+   * 
+   * @example
+   * // Simple text generation
+   * const result = await model.generate('Hello, how are you today?');
+   * console.log(result.text);      // Generated response
+   * console.log(result.tokens);    // Number of tokens
+   * console.log(result.latency);   // Generation time in ms
+   * 
+   * @example
+   * // Generation with custom parameters
+   * const result = await model.generate('Explain quantum computing', {
+   *   maxTokens: 300,        // Longer response
+   *   temperature: 0.8,      // More creative
+   *   topK: 50,             // Consider top 50 tokens
+   *   topP: 0.95,           // Nucleus sampling
+   *   repeatPenalty: 1.1,   // Reduce repetition
+   *   stopStrings: ['\n\n', 'End'] // Stop generation at these strings
+   * });
+   * 
+   * @example
+   * // Track performance metrics
+   * const startTime = Date.now();
+   * const result = await model.generate('Write a short story');
+   * console.log(`Generated ${result.tokens} tokens in ${result.latency}ms`);
+   * console.log(`Tokens/sec: ${(result.tokens / result.latency * 1000).toFixed(2)}`);
+   */
   async generate(prompt, options = {}) {
     if (!this.loaded) await this.load();
     
@@ -146,6 +210,59 @@ class GGUFModel extends ModelInterface {
     }
   }
 
+  /**
+   * Stream text generation token by token
+   * 
+   * @param {string} prompt - Input text prompt
+   * @param {object} options - Streaming options
+   * @yields {string} Individual tokens as they're generated
+   * 
+   * @example
+   * // Basic streaming
+   * console.log('Streaming response:');
+   * for await (const token of model.stream('Tell me about AI')) {
+   *   process.stdout.write(token); // Real-time output
+   * }
+   * console.log('\n--- Streaming complete ---');
+   * 
+   * @example
+   * // Streaming with options and token counting
+   * let tokenCount = 0;
+   * let fullResponse = '';
+   * 
+   * for await (const token of model.stream('Explain machine learning', {
+   *   maxTokens: 200,
+   *   temperature: 0.7,
+   *   topP: 0.9
+   * })) {
+   *   fullResponse += token;
+   *   tokenCount++;
+   *   
+   *   // Update UI or log progress
+   *   if (tokenCount % 10 === 0) {
+   *     console.log(`\n[${tokenCount} tokens generated so far...]`);
+   *   }
+   * }
+   * 
+   * console.log(`\nFinal response: ${fullResponse}`);
+   * console.log(`Total tokens: ${tokenCount}`);
+   * 
+   * @example
+   * // Streaming with error handling and timeout
+   * const timeout = setTimeout(() => {
+   *   console.log('Generation taking too long, may need to cancel');
+   * }, 30000); // 30 second timeout
+   * 
+   * try {
+   *   for await (const token of model.stream('Complex question here')) {
+   *     process.stdout.write(token);
+   *   }
+   *   clearTimeout(timeout);
+   * } catch (error) {
+   *   clearTimeout(timeout);
+   *   console.error('Streaming failed:', error.message);
+   * }
+   */
   async *stream(prompt, options = {}) {
     if (!this.loaded) await this.load();
     
@@ -186,6 +303,42 @@ class GGUFModel extends ModelInterface {
     }
   }
 
+  /**
+   * Properly dispose of GGUF model and free all resources
+   * 
+   * @example
+   * // Clean unload with verification
+   * if (model.loaded) {
+   *   await model.unload();
+   *   console.log('📦 Model unloaded successfully');
+   * }
+   * 
+   * @example
+   * // Unload multiple models safely
+   * const models = [model1, model2, model3];
+   * await Promise.all(models.map(async (model) => {
+   *   try {
+   *     await model.unload();
+   *     console.log(`Model ${model.name} unloaded`);
+   *   } catch (error) {
+   *     console.error(`Failed to unload ${model.name}:`, error.message);
+   *   }
+   * }));
+   * 
+   * @example
+   * // Unload with cleanup verification
+   * const memBefore = process.memoryUsage().heapUsed;
+   * await model.unload();
+   * 
+   * // Force garbage collection if available
+   * if (global.gc) {
+   *   global.gc();
+   * }
+   * 
+   * const memAfter = process.memoryUsage().heapUsed;
+   * const memFreed = (memBefore - memAfter) / 1024 / 1024;
+   * console.log(`Memory freed: ${memFreed.toFixed(2)} MB`);
+   */
   async unload() {
     try {
       if (this.session) {
@@ -222,11 +375,102 @@ class GGUFLoader {
   static format = 'gguf';
   static extensions = ['.gguf', '.ggml', '.bin'];
 
+  /**
+   * Check if a file path can be loaded by the GGUF loader
+   * 
+   * @param {string} path - File path to check
+   * @returns {Promise<boolean>} Whether the file can be loaded
+   * 
+   * @example
+   * // Check single file
+   * if (await loader.canLoad('./models/llama-7b.gguf')) {
+   *   console.log('✅ File can be loaded');
+   *   await loader.load({ source: './models/llama-7b.gguf' });
+   * }
+   * 
+   * @example
+   * // Validate multiple model files
+   * const modelPaths = [
+   *   './models/llama-7b.gguf',
+   *   './models/mistral-7b.ggml',
+   *   './models/old-model.bin',
+   *   './models/not-a-model.txt'
+   * ];
+   * 
+   * for (const path of modelPaths) {
+   *   const canLoad = await loader.canLoad(path);
+   *   console.log(`${path}: ${canLoad ? '✅' : '❌'}`);
+   * }
+   * 
+   * @example
+   * // Dynamic model selection
+   * const availableModels = await fs.readdir('./models');
+   * const loadableModels = [];
+   * 
+   * for (const file of availableModels) {
+   *   const fullPath = `./models/${file}`;
+   *   if (await loader.canLoad(fullPath)) {
+   *     loadableModels.push(fullPath);
+   *   }
+   * }
+   * 
+   * console.log(`Found ${loadableModels.length} loadable GGUF models`);
+   */
   async canLoad(path) {
     const ext = path.split('.').pop().toLowerCase();
     return GGUFLoader.extensions.includes(`.${ext}`);
   }
 
+  /**
+   * Load a GGUF model with automatic configuration detection
+   * 
+   * @param {object} spec - Model specification
+   * @returns {Promise<GGUFModel>} Loaded model instance
+   * 
+   * @example
+   * // Load with minimal specification
+   * const model = await loader.load({
+   *   source: './models/llama-7b-q4_k_m.gguf'
+   * });
+   * 
+   * @example
+   * // Load with custom configuration
+   * const model = await loader.load({
+   *   id: 'my-custom-model',
+   *   name: 'Custom Llama 7B',
+   *   source: './models/llama-7b-q4_k_m.gguf',
+   *   quantization: 'q4_k_m',
+   *   context: 4096,
+   *   immediate: true  // Load immediately
+   * });
+   * 
+   * @example
+   * // Load with VPS-optimized settings
+   * const model = await loader.load({
+   *   source: './models/mistral-7b.gguf',
+   *   maxThreads: 2,     // Limit for VPS
+   *   contextSize: 2048, // Smaller context
+   *   batchSize: 8,      // CPU-friendly batch size
+   *   immediate: false   // Defer loading until needed
+   * });
+   * 
+   * // Load when ready to use
+   * await model.load();
+   * 
+   * @example
+   * // Batch loading multiple models
+   * const specs = [
+   *   { source: './models/llama-7b.gguf', name: 'Llama 7B' },
+   *   { source: './models/mistral-7b.gguf', name: 'Mistral 7B' },
+   *   { source: './models/codellama-7b.gguf', name: 'Code Llama 7B' }
+   * ];
+   * 
+   * const models = await Promise.all(
+   *   specs.map(spec => loader.load({ ...spec, immediate: false }))
+   * );
+   * 
+   * console.log(`Loaded ${models.length} GGUF models`);
+   */
   async load(spec) {
     logger.info(`🔮 Loading GGUF model from: ${spec.source}`);
     
@@ -316,6 +560,53 @@ class GGUFLoader {
     return `gguf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
+  /**
+   * Restore a GGUF model from saved data/configuration
+   * 
+   * @param {object} data - Saved model data
+   * @returns {Promise<GGUFModel>} Restored model instance
+   * 
+   * @example
+   * // Restore from saved configuration
+   * const savedData = {
+   *   id: 'llama-7b-model',
+   *   name: 'Llama 7B Q4',
+   *   source: './models/llama-7b-q4_k_m.gguf',
+   *   quantization: 'q4_k_m',
+   *   format: 'gguf'
+   * };
+   * 
+   * const model = await loader.fromData(savedData);
+   * await model.load(); // Load the restored model
+   * 
+   * @example
+   * // Restore from registry export
+   * const registry = JSON.parse(fs.readFileSync('./model-registry.json'));
+   * const restoredModels = [];
+   * 
+   * for (const modelData of registry.models) {
+   *   if (modelData.format === 'gguf') {
+   *     const model = await loader.fromData(modelData);
+   *     restoredModels.push(model);
+   *   }
+   * }
+   * 
+   * console.log(`Restored ${restoredModels.length} GGUF models from registry`);
+   * 
+   * @example
+   * // Restore with error handling
+   * try {
+   *   const model = await loader.fromData(corruptedData);
+   *   await model.load();
+   *   console.log('Model restored and loaded successfully');
+   * } catch (error) {
+   *   console.error('Failed to restore model:', error.message);
+   *   // Fall back to fresh loading
+   *   const freshModel = await loader.load({
+   *     source: corruptedData.source || corruptedData.path
+   *   });
+   * }
+   */
   async fromData(data) {
     // Restore model from saved data with source path
     logger.info('Creating model from data:', data);
