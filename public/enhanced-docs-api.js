@@ -5,7 +5,7 @@
 
 class EnhancedDocsAPI {
     constructor() {
-        this.basePath = '../docs';
+        this.basePath = './docs';
         this.cache = new Map();
         this.searchIndex = [];
         this.initialized = false;
