@@ -30,12 +30,88 @@ class EnhancedDocsAPI {
             'glossary': 'GLOSSARY.md',
             'examples': 'EXAMPLES.md',
             
+            // API Provider Documentation - Main
+            'api-providers': 'api/index.md',
+            'api-introduction': 'api/introduction.md',
+            'api-quickstart': 'api/quickstart.md',
+            
+            // API Provider Documentation - Providers
+            'api-openai': 'api/providers/openai.md',
+            'api-anthropic': 'api/providers/anthropic.md',
+            'api-openrouter': 'api/providers/openrouter.md',
+            'api-groq': 'api/providers/groq.md',
+            
+            // API Provider Documentation - Features
+            'api-streaming': 'api/features/streaming.md',
+            'api-cost-tracking': 'api/features/cost-optimization.md',
+            'api-rate-limiting': 'api/features/rate-limiting.md',
+            'api-caching': 'api/features/caching.md',
+            
+            // REST API Documentation
+            'api-rest': 'api/REST-API.md',
+            'api-rest-reference': 'api/REST-API.md',
+            
+            // API Provider Documentation - Reference
+            'api-loader-reference': 'api/reference/apiloader.md',
+            'api-openai-adapter': 'api/reference/openai-adapter.md',
+            'api-anthropic-adapter': 'api/reference/anthropic-adapter.md',
+            'api-openrouter-adapter': 'api/reference/openrouter-adapter.md',
+            'api-groq-adapter': 'api/reference/groq-adapter.md',
+            
+            // API Provider Documentation - Advanced
+            'api-routing': 'api/advanced/routing.md',
+            'api-enterprise': 'api/advanced/enterprise.md',
+            'api-custom-adapters': 'api/advanced/custom-adapters.md',
+            
+            // API Provider Documentation - Tutorials
+            'api-best-practices': 'api/tutorials/best-practices.md',
+            'api-migration-openai': 'api/tutorials/migrating-from-openai.md',
+            'api-migration-langchain': 'api/tutorials/migrating-from-langchain.md',
+            'api-migration-llamaindex': 'api/tutorials/migrating-from-llamaindex.md',
+            'api-chatbot-tutorial': 'api/tutorials/chatbot-with-fallback.md',
+            'api-rag-tutorial': 'api/tutorials/cost-effective-rag.md',
+            'api-streaming-ui': 'api/tutorials/streaming-ui-integration.md',
+            'api-function-calling': 'api/tutorials/function-calling-patterns.md',
+            
+            // New documentation files
+            'error-codes': 'ERROR_CODES.md',
+            'best-practices': 'BEST_PRACTICES.md',
+            'memory-management': 'MEMORY_MANAGEMENT.md',
+            'cost-optimization': 'COST_OPTIMIZATION.md',
+            'scaling': 'SCALING.md',
+            'custom-loaders': 'CUSTOM_LOADERS.md',
+            'engine-development': 'ENGINE_DEVELOPMENT.md',
+            'integration': 'INTEGRATION.md',
+            'extension-roadmap': 'EXTENSION_ROADMAP.md',
+            'migration': 'MIGRATION.md',
+            'streaming': 'STREAMING.md',
+            'benchmarks': 'BENCHMARKS.md',
+            
             // Examples subdirectory
             'basic-examples': 'examples/BASIC.md',
             'streaming-examples': 'examples/STREAMING.md',
             'api-examples': 'examples/API.md',
             'docker-examples': 'examples/DOCKER.md',
-            'monitoring-examples': 'examples/MONITORING.md'
+            'monitoring-examples': 'examples/MONITORING.md',
+            'examples-basic': 'examples/BASIC.md',
+            'examples-streaming': 'examples/STREAMING.md',
+            'examples-api': 'examples/API.md',
+            'examples-docker': 'examples/DOCKER.md',
+            'examples-monitoring': 'examples/MONITORING.md',
+            
+            // Tutorials subdirectory
+            'tutorials-basic-usage': 'tutorials/basic-usage.md',
+            'tutorials-custom-loaders': 'tutorials/custom-loaders.md',
+            'tutorials-enterprise-setup': 'tutorials/enterprise-setup.md',
+            'tutorials-monitoring-setup': 'tutorials/monitoring-setup.md',
+            'tutorials-streaming-tutorial': 'tutorials/streaming-tutorial.md',
+            
+            // Guides subdirectory
+            'guides-getting-started': 'guides/getting-started.md',
+            'guides-configuration-guide': 'guides/configuration-guide.md',
+            'guides-deployment-guide': 'guides/deployment-guide.md',
+            'guides-migration-guide': 'guides/migration-guide.md',
+            'guides-troubleshooting': 'guides/troubleshooting.md'
         };
     }
 
@@ -384,6 +460,8 @@ Built with 💚 by Echo AI Systems`;
     }
 
     markdownToHtml(markdown) {
+        let html = '';
+        
         if (typeof marked !== 'undefined') {
             // Configure marked to completely eliminate ALL deprecated warnings
             marked.setOptions({
@@ -397,15 +475,62 @@ Built with 💚 by Echo AI Systems`;
                 // langPrefix: '',     // Removed deprecated langPrefix option
             });
             
-            return marked.parse(markdown);
+            html = marked.parse(markdown);
+        } else {
+            // Fallback markdown parser if marked.js is not available
+            html = this.simpleMarkdownToHtml(markdown);
         }
         
-        // Fallback markdown parser if marked.js is not available
-        return this.simpleMarkdownToHtml(markdown);
+        // Convert markdown links to hash routes
+        html = this.processDocumentationLinks(html);
+        
+        return html;
+    }
+    
+    processDocumentationLinks(html) {
+        // Convert various link formats to hash routes
+        
+        // Handle relative .md links like ./ARCHITECTURE.md or ../docs/API.md
+        html = html.replace(/href="([\.\/]*)(docs\/)?([A-Za-z0-9_-]+)\.md"/gi, (match, prefix, docsPath, docName) => {
+            const routeName = this.convertFileNameToRoute(docName);
+            return `href="#${routeName}"`;
+        });
+        
+        // Handle absolute paths like /docs/ARCHITECTURE.md
+        html = html.replace(/href="\/docs\/([A-Za-z0-9_-]+)\.md"/gi, (match, docName) => {
+            const routeName = this.convertFileNameToRoute(docName);
+            return `href="#${routeName}"`;
+        });
+        
+        // Handle examples subdirectory links like examples/STREAMING.md
+        html = html.replace(/href="(examples|tutorials|guides)\/([A-Za-z0-9_-]+)\.md"/gi, (match, dir, docName) => {
+            const routeName = this.convertFileNameToRoute(`${dir}-${docName}`);
+            return `href="#${routeName}"`;
+        });
+        
+        // Handle full URLs that point to documentation
+        html = html.replace(/href="https?:\/\/[^"]*\/docs\/([A-Za-z0-9_-]+)\.md"/gi, (match, docName) => {
+            const routeName = this.convertFileNameToRoute(docName);
+            return `href="#${routeName}"`;
+        });
+        
+        return html;
+    }
+    
+    convertFileNameToRoute(fileName) {
+        // Convert file names to route names
+        // ARCHITECTURE.md -> architecture
+        // API_REFERENCE.md -> api-reference
+        // STREAMING.md -> streaming
+        
+        return fileName
+            .toLowerCase()
+            .replace(/_/g, '-')
+            .replace(/\s+/g, '-');
     }
 
     simpleMarkdownToHtml(markdown) {
-        return markdown
+        let html = markdown
             .replace(/^# (.*$)/gim, '<h1 id="$1">$1</h1>')
             .replace(/^## (.*$)/gim, '<h2 id="$1">$1</h2>')
             .replace(/^### (.*$)/gim, '<h3 id="$1">$1</h3>')
@@ -421,6 +546,9 @@ Built with 💚 by Echo AI Systems`;
             .replace(/\n\n/g, '</p><p>')
             .replace(/^(?!<[h|u|o|p|l])/gm, '<p>')
             .replace(/\n/g, '<br>');
+            
+        // Process links after initial conversion
+        return this.processDocumentationLinks(html);
     }
 
     generateTOC(markdown) {

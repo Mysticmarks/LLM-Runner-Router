@@ -30,6 +30,49 @@ class EnhancedDocsAPI {
             'glossary': 'GLOSSARY.md',
             'examples': 'EXAMPLES.md',
             
+            // API Provider Documentation - Main
+            'api-providers': 'api/index.md',
+            'api-introduction': 'api/introduction.md',
+            'api-quickstart': 'api/quickstart.md',
+            
+            // API Provider Documentation - Providers
+            'api-openai': 'api/providers/openai.md',
+            'api-anthropic': 'api/providers/anthropic.md',
+            'api-openrouter': 'api/providers/openrouter.md',
+            'api-groq': 'api/providers/groq.md',
+            
+            // API Provider Documentation - Features
+            'api-streaming': 'api/features/streaming.md',
+            'api-cost-tracking': 'api/features/cost-optimization.md',
+            'api-rate-limiting': 'api/features/rate-limiting.md',
+            'api-caching': 'api/features/caching.md',
+            
+            // REST API Documentation
+            'api-rest': 'api/REST-API.md',
+            'api-rest-reference': 'api/REST-API.md',
+            
+            // API Provider Documentation - Reference
+            'api-loader-reference': 'api/reference/apiloader.md',
+            'api-openai-adapter': 'api/reference/openai-adapter.md',
+            'api-anthropic-adapter': 'api/reference/anthropic-adapter.md',
+            'api-openrouter-adapter': 'api/reference/openrouter-adapter.md',
+            'api-groq-adapter': 'api/reference/groq-adapter.md',
+            
+            // API Provider Documentation - Advanced
+            'api-routing': 'api/advanced/routing.md',
+            'api-enterprise': 'api/advanced/enterprise.md',
+            'api-custom-adapters': 'api/advanced/custom-adapters.md',
+            
+            // API Provider Documentation - Tutorials
+            'api-best-practices': 'api/tutorials/best-practices.md',
+            'api-migration-openai': 'api/tutorials/migrating-from-openai.md',
+            'api-migration-langchain': 'api/tutorials/migrating-from-langchain.md',
+            'api-migration-llamaindex': 'api/tutorials/migrating-from-llamaindex.md',
+            'api-chatbot-tutorial': 'api/tutorials/chatbot-with-fallback.md',
+            'api-rag-tutorial': 'api/tutorials/cost-effective-rag.md',
+            'api-streaming-ui': 'api/tutorials/streaming-ui-integration.md',
+            'api-function-calling': 'api/tutorials/function-calling-patterns.md',
+            
             // New documentation files
             'error-codes': 'ERROR_CODES.md',
             'best-practices': 'BEST_PRACTICES.md',
