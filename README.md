@@ -59,7 +59,9 @@ Perfect for developers building AI applications, researchers comparing models, a
 
 ## ✨ Core Features
 
-### 🔮 Universal Model Format Support (10 Loaders Implemented)
+### 🔮 Universal Model Support (15+ Loaders Implemented)
+
+#### Local Model Formats
 - **GGUF**: Complete support for GGML/GGUF quantized models with automatic detection ✅
 - **BitNet (1-bit LLMs)**: Revolutionary 1.58-bit quantization for 55-82% energy reduction ✅
 - **ONNX**: Full ONNX Runtime integration for cross-platform inference ✅
@@ -67,7 +69,13 @@ Perfect for developers building AI applications, researchers comparing models, a
 - **HuggingFace Hub**: Direct integration with transformers.js and model downloading ✅
 - **PyTorch**: Native PyTorch model loading ✅
 - **Binary**: Optimized binary format support ✅
-- **Custom Formats**: Extensible loader architecture for proprietary formats
+
+#### 🌐 Cloud API Providers (NEW!)
+- **OpenAI**: GPT-4, GPT-3.5 with function calling and vision ✅
+- **Anthropic**: Claude 3 (Opus, Sonnet, Haiku) with 200k context ✅
+- **OpenRouter**: Access 100+ models through unified API ✅
+- **Groq**: Ultra-fast inference with LPU technology (100+ tokens/sec) ✅
+- **Custom APIs**: Extensible architecture for any API provider
 
 ### ⚡ Multi-Engine Runtime Architecture
 - **WebGPU Engine**: GPU-accelerated inference in browsers and modern runtimes
@@ -133,8 +141,9 @@ npm test
 npm run build
 ```
 
-### ⚡ Basic Usage Example
+### ⚡ Basic Usage Examples
 
+#### Local Models
 ```javascript
 import { LLMRouter } from 'llm-runner-router';
 
@@ -156,6 +165,35 @@ console.log(response.text);
 for await (const chunk of router.stream("Write a story about AI:")) {
   process.stdout.write(chunk.text);
 }
+```
+
+#### Cloud API Models (NEW!)
+```javascript
+import { APILoader } from 'llm-runner-router/loaders';
+
+// Use OpenAI
+const openai = new APILoader({
+  provider: 'openai',
+  apiKey: process.env.OPENAI_API_KEY
+});
+await openai.load('gpt-3.5-turbo');
+const response = await openai.generate('Hello, GPT!');
+
+// Use Anthropic Claude
+const anthropic = new APILoader({
+  provider: 'anthropic',
+  apiKey: process.env.ANTHROPIC_API_KEY  
+});
+await anthropic.load('claude-3-haiku-20240307');
+const claude = await anthropic.generate('Hello, Claude!');
+
+// Use Groq for ultra-fast inference
+const groq = new APILoader({
+  provider: 'groq',
+  apiKey: process.env.GROQ_API_KEY
+});
+await groq.load('mixtral-8x7b-32768');
+const fast = await groq.generate('Generate text at lightning speed!');
 ```
 
 ## 🚀 Live Demo

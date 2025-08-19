@@ -302,6 +302,13 @@ export { ModelRegistry } from './core/Registry.js';
 export { Router } from './core/Router.js';
 export { Pipeline } from './core/Pipeline.js';
 
+// Export API loaders
+export { default as APILoader } from './loaders/APILoader.js';
+export { default as OpenAIAdapter } from './loaders/adapters/OpenAIAdapter.js';
+export { default as AnthropicAdapter } from './loaders/adapters/AnthropicAdapter.js';
+export { default as OpenRouterAdapter } from './loaders/adapters/OpenRouterAdapter.js';
+export { default as GroqAdapter } from './loaders/adapters/GroqAdapter.js';
+
 // Create default instance (with auto-init disabled to prevent duplicate initialization)
 const defaultRouter = new LLMRouter({ autoInit: false });
 
