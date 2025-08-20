@@ -85,6 +85,13 @@ class EnhancedDocsAPI {
             'api-streaming-ui': 'api/tutorials/streaming-ui-integration.md',
             'api-function-calling': 'api/tutorials/function-calling-patterns.md',
             
+            // Provider Integration Documentation
+            'authentication-patterns': 'AUTHENTICATION_PATTERNS.md',
+            'provider-integration-plan': 'PROVIDER_INTEGRATION_PLAN.md',
+            'provider-adapter-architecture': 'PROVIDER_ADAPTER_ARCHITECTURE.md',
+            'provider-integration-checklist': 'PROVIDER_INTEGRATION_CHECKLIST.md',
+            'provider-integration-summary': 'PROVIDER_INTEGRATION_SUMMARY.md',
+            
             // New documentation files
             'error-codes': 'ERROR_CODES.md',
             'best-practices': 'BEST_PRACTICES.md',

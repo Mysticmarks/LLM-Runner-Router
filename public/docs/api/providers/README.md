@@ -376,8 +376,8 @@ try {
 
 ## 📖 Additional Resources
 
-- **[Provider Integration Plan](../PROVIDER_INTEGRATION_PLAN.md)** - Complete roadmap
-- **[Authentication Patterns](../AUTHENTICATION_PATTERNS.md)** - Security guide
+- **[Provider Integration Plan](../../PROVIDER_INTEGRATION_PLAN.md)** - Complete roadmap
+- **[Authentication Patterns](../../AUTHENTICATION_PATTERNS.md)** - Security guide
 - **[Performance Benchmarks](../benchmarks/)** - Speed and cost comparisons
 - **[Example Applications](../examples/)** - Real-world usage patterns
 

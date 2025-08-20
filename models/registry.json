@@ -2,19 +2,22 @@
   "version": "1.0.0",
   "models": [
     {
-      "id": "model_megetg36_ch5bwukib",
-      "name": "unknown-model",
-      "format": "mock",
-      "loaded": true,
+      "id": "simple-fallback",
+      "name": "Simple Fallback Model",
+      "version": "1.0.0",
+      "format": "simple",
+      "architecture": {},
+      "parameters": {},
+      "metadata": {},
       "capabilities": {
-        "streaming": true,
+        "streaming": false,
         "batching": false,
         "quantization": false,
         "embedding": false,
         "completion": true
       },
       "metrics": {
-        "loadTime": 1755478910231,
+        "loadTime": 1755656033464,
         "inferenceCount": 0,
         "totalTokens": 0,
         "avgLatency": 0,
