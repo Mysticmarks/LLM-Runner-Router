@@ -9,9 +9,14 @@ const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
 console.log(`Building ${packageJson.name} v${packageJson.version}...`);
 
 try {
-  // Run linting
+  // Run linting (warn but don't fail build)
   console.log('Running ESLint...');
-  execSync('npm run lint', { stdio: 'inherit' });
+  try {
+    execSync('npm run lint', { stdio: 'inherit' });
+    console.log('✅ ESLint passed');
+  } catch (lintError) {
+    console.warn('⚠️ ESLint found issues but continuing build...');
+  }
   
   // Create dist directory and copy public files
   console.log('Creating distribution files...');

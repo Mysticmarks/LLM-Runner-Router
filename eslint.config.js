@@ -1,18 +1,17 @@
+import js from '@eslint/js';
+import globals from 'globals';
+
 export default [
+  js.configs.recommended,
   {
+    files: ['src/**/*.js', 'tests/**/*.js', '*.js'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
       globals: {
-        console: 'readonly',
-        process: 'readonly',
-        Buffer: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        global: 'readonly',
-        exports: 'writable',
-        module: 'writable',
-        require: 'readonly'
+        ...globals.node,
+        ...globals.browser,
+        ...globals.es2021
       }
     },
     rules: {
