@@ -119,8 +119,32 @@
       "status": "active",
       "notificationsSent": [],
       "escalated": false
+    },
+    "test_alert_1755656869092": {
+      "id": "test_alert_1755656869092",
+      "ruleId": "test_alert",
+      "timestamp": "2025-08-20T02:27:49.092Z",
+      "severity": "warning",
+      "message": "Test alert triggered",
+      "data": {
+        "message": "Test alert triggered",
+        "severity": "warning"
+      },
+      "rule": {
+        "id": "test_alert",
+        "enabled": true,
+        "name": "Test Alert",
+        "description": "Test alert for unit testing",
+        "severity": "warning",
+        "channels": [
+          "console"
+        ]
+      },
+      "status": "active",
+      "notificationsSent": [],
+      "escalated": false
     }
   },
   "history": [],
-  "timestamp": "2025-08-20T02:13:19.269Z"
+  "timestamp": "2025-08-20T02:27:49.189Z"
 }

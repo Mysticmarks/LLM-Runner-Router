@@ -6,8 +6,12 @@
 
 import crypto from 'crypto';
 import { Logger } from './Logger.js';
+import { SecurityValidator } from './SecurityValidator.js';
 
 const logger = new Logger('AuthManager');
+
+// Initialize security validator
+const securityValidator = new SecurityValidator();
 
 /**
  * API Key validation patterns for different providers
@@ -136,9 +140,43 @@ class AuthManager {
    * Store credentials securely
    */
   storeCredentials(provider, credentials) {
+    // Validate credentials with security validator
+    const validation = securityValidator.validateCredentials(provider, credentials);
+    
+    if (!validation.valid) {
+      const error = new Error(`Invalid credentials for ${provider}: ${validation.errors.join(', ')}`);
+      logger.error('🛡️ Security validation failed:', error.message);
+      
+      // Log security event
+      securityValidator.recordSecurityEvent({
+        type: 'credential_validation_failed',
+        severity: 'error',
+        provider,
+        message: `Credential validation failed: ${validation.errors.join(', ')}`,
+        metadata: { errors: validation.errors }
+      });
+      
+      throw error;
+    }
+
+    // Log security recommendations if any
+    if (validation.recommendations && validation.recommendations.length > 0) {
+      logger.warn(`🛡️ Security recommendations for ${provider}:`, validation.recommendations);
+    }
+
     const encrypted = this.encrypt(JSON.stringify(credentials));
     this.credentials.set(provider, encrypted);
-    logger.info(`Credentials stored for ${provider}`);
+    
+    // Log successful credential storage
+    securityValidator.recordSecurityEvent({
+      type: 'credentials_stored',
+      severity: 'info',
+      provider,
+      message: 'Credentials securely stored with validation',
+      metadata: { hasRecommendations: validation.recommendations.length > 0 }
+    });
+    
+    logger.info(`🔐 Credentials validated and stored for ${provider}`);
   }
 
   /**
