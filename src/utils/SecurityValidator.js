@@ -4,7 +4,6 @@
  * Echo AI Systems - Security as the foundation of trust
  */
 
-import crypto from 'crypto';
 import { Logger } from './Logger.js';
 
 const logger = new Logger('SecurityValidator');

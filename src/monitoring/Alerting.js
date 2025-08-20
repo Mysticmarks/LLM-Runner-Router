@@ -6,7 +6,6 @@
 
 import EventEmitter from 'events';
 import { promises as fs } from 'fs';
-import path from 'path';
 import Logger from '../utils/Logger.js';
 
 class AlertingSystem extends EventEmitter {

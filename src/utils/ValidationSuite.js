@@ -7,10 +7,8 @@
 import Logger from './Logger.js';
 import fs from 'fs/promises';
 import path from 'path';
-import { Worker } from 'worker_threads';
 import { EventEmitter } from 'events';
 import { performance } from 'perf_hooks';
-import { createHash } from 'crypto';
 import os from 'os';
 
 /**

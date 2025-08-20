@@ -207,7 +207,7 @@ export class RateLimitManager extends EventEmitter {
     if (this.options.strategies.fixedWindow.enabled) {
       this.limiters.set('fixedWindow', new LimiterClass({
         ...storeConfig,
-        keyGenerator: (req, res) => this.generateKey(req, 'fixed'),
+        keyGenerator: (req, _res) => this.generateKey(req, 'fixed'),
         points: this.options.strategies.fixedWindow.maxRequests,
         duration: this.options.strategies.fixedWindow.windowSizeMs / 1000,
         blockDuration: 60, // Block for 1 minute when limit exceeded
@@ -219,7 +219,7 @@ export class RateLimitManager extends EventEmitter {
     if (this.options.strategies.slidingWindow.enabled) {
       this.limiters.set('slidingWindow', new LimiterClass({
         ...storeConfig,
-        keyGenerator: (req, res) => this.generateKey(req, 'sliding'),
+        keyGenerator: (req, _res) => this.generateKey(req, 'sliding'),
         points: this.options.strategies.slidingWindow.maxRequests,
         duration: this.options.strategies.slidingWindow.windowSizeMs / 1000,
         blockDuration: 60,
@@ -231,7 +231,7 @@ export class RateLimitManager extends EventEmitter {
     if (this.options.strategies.tokenBucket.enabled) {
       this.limiters.set('tokenBucket', new LimiterClass({
         ...storeConfig,
-        keyGenerator: (req, res) => this.generateKey(req, 'token'),
+        keyGenerator: (req, _res) => this.generateKey(req, 'token'),
         points: this.options.strategies.tokenBucket.capacity,
         duration: 1, // 1 second
         blockDuration: 1,
@@ -244,7 +244,7 @@ export class RateLimitManager extends EventEmitter {
     for (const [tier, limits] of Object.entries(this.options.tiers)) {
       this.limiters.set(`tier:${tier}:hourly`, new LimiterClass({
         ...storeConfig,
-        keyGenerator: (req, res) => this.generateKey(req, `tier:${tier}:hourly`),
+        keyGenerator: (req, _res) => this.generateKey(req, `tier:${tier}:hourly`),
         points: limits.requestsPerHour,
         duration: 3600, // 1 hour
         blockDuration: 300 // Block for 5 minutes
@@ -252,7 +252,7 @@ export class RateLimitManager extends EventEmitter {
 
       this.limiters.set(`tier:${tier}:minute`, new LimiterClass({
         ...storeConfig,
-        keyGenerator: (req, res) => this.generateKey(req, `tier:${tier}:minute`),
+        keyGenerator: (req, _res) => this.generateKey(req, `tier:${tier}:minute`),
         points: limits.requestsPerMinute,
         duration: 60, // 1 minute
         blockDuration: 60 // Block for 1 minute
@@ -260,7 +260,7 @@ export class RateLimitManager extends EventEmitter {
 
       this.limiters.set(`tier:${tier}:concurrent`, new LimiterClass({
         ...storeConfig,
-        keyGenerator: (req, res) => this.generateKey(req, `tier:${tier}:concurrent`),
+        keyGenerator: (req, _res) => this.generateKey(req, `tier:${tier}:concurrent`),
         points: limits.concurrentRequests,
         duration: 1, // 1 second
         blockDuration: 1,

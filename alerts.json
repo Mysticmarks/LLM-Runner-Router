@@ -143,8 +143,56 @@
       "status": "active",
       "notificationsSent": [],
       "escalated": false
+    },
+    "test_alert_1755667296444": {
+      "id": "test_alert_1755667296444",
+      "ruleId": "test_alert",
+      "timestamp": "2025-08-20T05:21:36.445Z",
+      "severity": "warning",
+      "message": "Test alert triggered",
+      "data": {
+        "message": "Test alert triggered",
+        "severity": "warning"
+      },
+      "rule": {
+        "id": "test_alert",
+        "enabled": true,
+        "name": "Test Alert",
+        "description": "Test alert for unit testing",
+        "severity": "warning",
+        "channels": [
+          "console"
+        ]
+      },
+      "status": "active",
+      "notificationsSent": [],
+      "escalated": false
+    },
+    "test_alert_1755718899592": {
+      "id": "test_alert_1755718899592",
+      "ruleId": "test_alert",
+      "timestamp": "2025-08-20T19:41:39.592Z",
+      "severity": "warning",
+      "message": "Test alert triggered",
+      "data": {
+        "message": "Test alert triggered",
+        "severity": "warning"
+      },
+      "rule": {
+        "id": "test_alert",
+        "enabled": true,
+        "name": "Test Alert",
+        "description": "Test alert for unit testing",
+        "severity": "warning",
+        "channels": [
+          "console"
+        ]
+      },
+      "status": "active",
+      "notificationsSent": [],
+      "escalated": false
     }
   },
   "history": [],
-  "timestamp": "2025-08-20T02:27:49.189Z"
+  "timestamp": "2025-08-20T19:41:39.628Z"
 }

@@ -7,7 +7,6 @@
 import { BaseLoader } from './BaseLoader.js';
 import { Logger } from '../utils/Logger.js';
 import fs from 'fs/promises';
-import { createReadStream } from 'fs';
 
 class SafetensorsLoader extends BaseLoader {
   constructor() {

@@ -10,7 +10,6 @@ import compression from 'compression';
 import morgan from 'morgan';
 import helmet from 'helmet';
 import { EventEmitter } from 'events';
-import { promisify } from 'util';
 import { createHash } from 'crypto';
 
 export class APIGateway extends EventEmitter {
@@ -491,7 +490,7 @@ export class APIGateway extends EventEmitter {
    * Create authentication middleware
    */
   createAuthMiddleware() {
-    return async (req, res, next) => {
+    return async (req, res, _next) => {
       try {
         // Check for authorization header or API key
         const authHeader = req.headers.authorization;
@@ -639,7 +638,7 @@ export class APIGateway extends EventEmitter {
    * Create proxy handler for routing to services
    */
   createProxyHandler(route) {
-    return async (req, res, next) => {
+    return async (req, res, _next) => {
       try {
         const service = this.options.services[route.target];
         if (!service) {
@@ -726,7 +725,7 @@ export class APIGateway extends EventEmitter {
    */
   async callService(serviceName, args) {
     const service = this.options.services[serviceName];
-    const { method, path, body, headers, query } = args;
+    const { method, path, body, headers, _query } = args;
     
     // Simulate service call (in real implementation, use axios or similar)
     const response = await fetch(`${service.url}${path}`, {
@@ -750,7 +749,7 @@ export class APIGateway extends EventEmitter {
    * Setup error handling
    */
   setupErrorHandling() {
-    this.app.use((error, req, res, next) => {
+    this.app.use((error, req, res, _next) => {
       this.emit('error', error);
       
       res.status(500).json({

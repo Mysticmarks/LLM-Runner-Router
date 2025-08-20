@@ -1,0 +1,5512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Class: ModelRegistry</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Class: ModelRegistry</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>ModelRegistry<span class="signature">()</span><span class="type-signature"></span></h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+    
+
+    
+    <h4 class="name" id="ModelRegistry"><span class="type-signature"></span>new ModelRegistry<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Manages the lifecycle of LLM models including registration, loading,
+indexing, and cleanup. Supports multiple model formats through pluggable loaders
+and provides intelligent model selection and caching.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Basic usage
+import { ModelRegistry } from './core/Registry.js';
+
+const registry = new ModelRegistry();
+await registry.initialize();
+
+// Register a model
+await registry.register({
+  id: 'llama-7b',
+  name: 'Llama 7B',
+  format: 'gguf',
+  path: './models/llama-7b.gguf'
+});
+
+// Get and use a model
+const model = await registry.get('llama-7b');
+const response = await model.generate('Hello world');</code></pre>
+
+    <pre class="prettyprint"><code>// Advanced configuration
+const registry = new ModelRegistry({
+  registryPath: './custom/models.json',
+  maxModels: 50
+});
+
+// Listen for events
+registry.on('registered', (model) => {
+  console.log('New model registered:', model.name);
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Production setup with error handling
+const registry = new ModelRegistry({
+  registryPath: './production/registry.json',
+  maxModels: 20
+});
+
+try {
+  await registry.initialize();
+  
+  // Register loaders for different formats
+  registry.registerLoader('gguf', new GGUFLoader());
+  registry.registerLoader('onnx', new ONNXLoader());
+  registry.registerLoader('safetensors', new SafetensorsLoader());
+  
+  console.log(`Registry ready with ${registry.getModelCount()} models`);
+} catch (error) {
+  console.error('Failed to initialize registry:', error);
+}</code></pre>
+
+
+
+    
+    </div>
+
+    
+        <h3 class="subsection-title">Extends</h3>
+
+        
+
+
+    <ul>
+        <li>EventEmitter</li>
+    </ul>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="cleanup"><span class="type-signature">(async) </span>cleanup<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Clean up all models and clear the registry</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line636">line 636</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Clean shutdown
+process.on('SIGINT', async () => {
+  console.log('Shutting down...');
+  await registry.cleanup();
+  process.exit(0);
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Reset registry for testing
+afterEach(async () => {
+  await registry.cleanup();
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Clean up before reconfiguration
+await registry.cleanup();
+const newRegistry = new ModelRegistry({
+  registryPath: './new-registry.json',
+  maxModels: 200
+});
+await newRegistry.initialize();</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="evictLRU"><span class="type-signature">(async) </span>evictLRU<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Evict the least recently used model when registry reaches capacity</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line487">line 487</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// This method is called automatically when maxModels is reached
+const registry = new ModelRegistry({ maxModels: 3 });
+await registry.register(model1); // count: 1
+await registry.register(model2); // count: 2  
+await registry.register(model3); // count: 3
+await registry.register(model4); // evictLRU() called, oldest removed</code></pre>
+
+    <pre class="prettyprint"><code>// Manual eviction for memory management
+const memoryUsage = process.memoryUsage();
+if (memoryUsage.heapUsed > threshold) {
+  await registry.evictLRU();
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="get"><span class="type-signature">(async) </span>get<span class="signature">(id)</span><span class="type-signature"> &rarr; {Promise.&lt;(Object|undefined)>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get a model by ID and load it if not already loaded</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The model ID</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line229">line 229</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>The model or undefined if not found</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;(Object|undefined)></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Get and auto-load a model
+const model = await registry.get('gpt-3.5-turbo');
+if (model) {
+  console.log('Model ready:', model.name);
+  const response = await model.generate('Hello world');
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Handle missing models
+const model = await registry.get('nonexistent-model');
+if (!model) {
+  console.warn('Model not found in registry');
+  return;
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Check if model was already loaded
+const model = await registry.get('llama-7b');
+if (model.loaded) {
+  console.log('Model was already loaded');
+} else {
+  console.log('Model was loaded during get()');
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getAll"><span class="type-signature"></span>getAll<span class="signature">()</span><span class="type-signature"> &rarr; {Array}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get all registered models (loaded and unloaded)</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line290">line 290</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Array of all registered models</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// List all registered models
+const allModels = registry.getAll();
+allModels.forEach(model => {
+  console.log(`${model.name} (${model.format}) - ${model.loaded ? 'loaded' : 'unloaded'}`);
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Count models by format
+const all = registry.getAll();
+const formatCounts = all.reduce((acc, model) => {
+  acc[model.format] = (acc[model.format] || 0) + 1;
+  return acc;
+}, {});
+console.log('Models by format:', formatCounts);</code></pre>
+
+    <pre class="prettyprint"><code>// Find models that need loading
+const unloadedModels = registry.getAll().filter(m => !m.loaded);
+console.log(`${unloadedModels.length} models need loading`);</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getAvailable"><span class="type-signature"></span>getAvailable<span class="signature">()</span><span class="type-signature"> &rarr; {Array}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get all currently loaded models</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line262">line 262</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Array of loaded models</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Get only loaded models for immediate use
+const loadedModels = registry.getAvailable();
+console.log(`${loadedModels.length} models ready for inference`);</code></pre>
+
+    <pre class="prettyprint"><code>// Find fastest loaded model
+const available = registry.getAvailable();
+const fastest = available.reduce((prev, current) => 
+  (current.metrics?.speed || 0) > (prev.metrics?.speed || 0) ? current : prev
+);</code></pre>
+
+    <pre class="prettyprint"><code>// Check if any models are available
+const available = registry.getAvailable();
+if (available.length === 0) {
+  console.warn('No models currently loaded');
+  // Load a default model
+  await registry.get('default-model');
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getByFormat"><span class="type-signature"></span>getByFormat<span class="signature">(format)</span><span class="type-signature"> &rarr; {Array}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get all models of a specific format</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>format</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The model format (e.g., 'gguf', 'onnx', 'safetensors')</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line320">line 320</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Array of models with the specified format</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Get all GGUF models
+const ggufModels = registry.getByFormat('gguf');
+console.log(`Found ${ggufModels.length} GGUF models`);</code></pre>
+
+    <pre class="prettyprint"><code>// Load all models of a specific format
+const onnxModels = registry.getByFormat('onnx');
+for (const model of onnxModels) {
+  if (!model.loaded) {
+    await model.load();
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Find best model for a format
+const safetensorsModels = registry.getByFormat('safetensors');
+const bestModel = safetensorsModels.find(m => m.capabilities?.chat &amp;&amp; m.loaded);
+if (!bestModel &amp;&amp; safetensorsModels.length > 0) {
+  await registry.get(safetensorsModels[0].id);
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getLoader"><span class="type-signature"></span>getLoader<span class="signature">(format)</span><span class="type-signature"> &rarr; {Object|undefined}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get the registered loader for a specific format</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>format</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The format name</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line378">line 378</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>The loader or undefined if not found</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+|
+
+<span class="param-type">undefined</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Get a specific loader
+const ggufLoader = registry.getLoader('gguf');
+if (ggufLoader) {
+  const model = await ggufLoader.load('./models/model.gguf');
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Check if format is supported
+const formats = ['gguf', 'onnx', 'safetensors'];
+const supportedFormats = formats.filter(fmt => registry.getLoader(fmt));
+console.log('Supported formats:', supportedFormats);</code></pre>
+
+    <pre class="prettyprint"><code>// Fallback to default loader
+const loader = registry.getLoader('custom-format') || registry.getLoader('gguf');
+if (!loader) {
+  throw new Error('No suitable loader found');
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getModelCount"><span class="type-signature"></span>getModelCount<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get the total number of registered models</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line607">line 607</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Number of registered models</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Check registry size
+const count = registry.getModelCount();
+console.log(`Registry contains ${count} models`);</code></pre>
+
+    <pre class="prettyprint"><code>// Monitor registry capacity
+const count = registry.getModelCount();
+const maxModels = registry.config.maxModels;
+const utilizationPercent = (count / maxModels) * 100;
+console.log(`Registry utilization: ${utilizationPercent.toFixed(1)}%`);</code></pre>
+
+    <pre class="prettyprint"><code>// Conditional model registration
+if (registry.getModelCount() &lt; registry.config.maxModels) {
+  await registry.register(newModel);
+} else {
+  console.warn('Registry at capacity, oldest model will be evicted');
+  await registry.register(newModel);
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="indexModel"><span class="type-signature"></span>indexModel<span class="signature">(model)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Index a model by format and capabilities for fast lookup</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>model</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The model to index</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line450">line 450</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>// This method is called automatically during registration
+// but can be used manually for re-indexing
+const model = {
+  id: 'custom-model',
+  format: 'gguf',
+  capabilities: { chat: true, completion: true }
+};
+registry.indexModel(model);
+
+// Now the model can be found by format
+const ggufModels = registry.getByFormat('gguf'); // includes custom-model</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="initialize"><span class="type-signature">(async) </span>initialize<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Initialize the registry by loading persisted models</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line137">line 137</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Basic initialization
+const registry = new ModelRegistry();
+await registry.initialize();</code></pre>
+
+    <pre class="prettyprint"><code>// Initialize with custom config
+const registry = new ModelRegistry({
+  registryPath: './custom/registry.json',
+  maxModels: 50
+});
+await registry.initialize();</code></pre>
+
+    <pre class="prettyprint"><code>// Handle initialization errors gracefully
+try {
+  await registry.initialize();
+  console.log('Registry ready');
+} catch (error) {
+  console.warn('Starting with empty registry:', error.message);
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="loadRegistry"><span class="type-signature">(async) </span>loadRegistry<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Load registry data from persistent storage</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line520">line 520</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Registry data or empty structure</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Object></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>// Called automatically during initialize()
+// Returns structure like:
+// {
+//   version: '1.0.0',
+//   models: [
+//     { id: 'model1', name: 'Model 1', format: 'gguf', ... },
+//     { id: 'model2', name: 'Model 2', format: 'onnx', ... }
+//   ]
+// }</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="register"><span class="type-signature">(async) </span>register<span class="signature">(model)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Register a model in the registry</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>model</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The model to register</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line186">line 186</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>The registered model</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Object></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Register a simple model
+const model = {
+  id: 'gpt-3.5-turbo',
+  name: 'GPT-3.5 Turbo',
+  format: 'openai',
+  capabilities: { chat: true, completion: true }
+};
+await registry.register(model);</code></pre>
+
+    <pre class="prettyprint"><code>// Register a local GGUF model
+const localModel = {
+  id: 'llama-7b-q4',
+  name: 'Llama 7B Q4',
+  format: 'gguf',
+  path: './models/llama-7b-q4.gguf',
+  capabilities: { chat: true, instruct: true }
+};
+const registered = await registry.register(localModel);
+console.log('Registered:', registered.id);</code></pre>
+
+    <pre class="prettyprint"><code>// Handle registration with full capacity
+const registry = new ModelRegistry({ maxModels: 2 });
+await registry.register(model1);
+await registry.register(model2);
+// This will evict the least recently used model
+await registry.register(model3);</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="registerFromData"><span class="type-signature">(async) </span>registerFromData<span class="signature">(data)</span><span class="type-signature"> &rarr; {Promise.&lt;(Object|null)>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Register a model from serialized data using appropriate loader</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>data</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Serialized model data</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line573">line 573</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>The registered model or null if no loader found</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;(Object|null)></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Used during registry initialization to restore models
+const modelData = {
+  id: 'restored-model',
+  format: 'gguf',
+  path: './models/restored.gguf',
+  capabilities: { chat: true }
+};
+const model = await registry.registerFromData(modelData);</code></pre>
+
+    <pre class="prettyprint"><code>// Handle missing loaders gracefully
+const model = await registry.registerFromData(unknownFormatData);
+if (!model) {
+  console.warn('No loader available for format:', unknownFormatData.format);
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="registerLoader"><span class="type-signature"></span>registerLoader<span class="signature">(format, loader)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Register a loader for a specific model format</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>format</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The format name (e.g., 'gguf', 'onnx')</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>loader</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The loader instance</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line350">line 350</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Register a custom GGUF loader
+import { GGUFLoader } from '../loaders/GGUFLoader.js';
+const ggufLoader = new GGUFLoader();
+registry.registerLoader('gguf', ggufLoader);</code></pre>
+
+    <pre class="prettyprint"><code>// Register multiple loaders
+import { ONNXLoader } from '../loaders/ONNXLoader.js';
+import { SafetensorsLoader } from '../loaders/SafetensorsLoader.js';
+
+registry.registerLoader('onnx', new ONNXLoader());
+registry.registerLoader('safetensors', new SafetensorsLoader());</code></pre>
+
+    <pre class="prettyprint"><code>// Register a custom loader with configuration
+class CustomLoader {
+  constructor(config) { this.config = config; }
+  async fromData(data) { return {}; }
+}
+registry.registerLoader('custom', new CustomLoader({ gpuAcceleration: true }));</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="saveRegistry"><span class="type-signature">(async) </span>saveRegistry<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Save current registry state to persistent storage</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line544">line 544</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Called automatically after model registration
+// Manual save for critical moments
+await registry.register(importantModel);
+await registry.saveRegistry(); // Ensure persistence</code></pre>
+
+    <pre class="prettyprint"><code>// Periodic backup
+setInterval(async () => {
+  await registry.saveRegistry();
+  console.log('Registry backed up');
+}, 30000); // Every 30 seconds</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="search"><span class="type-signature"></span>search<span class="signature">(criteria)</span><span class="type-signature"> &rarr; {Array}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Search for models based on criteria</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>criteria</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Search criteria</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>name</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Name pattern (regex)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>format</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Exact format match</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line419">line 419</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Array of matching models</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Search by name pattern
+const gptModels = registry.search({ name: 'gpt' });
+console.log(`Found ${gptModels.length} GPT models`);</code></pre>
+
+    <pre class="prettyprint"><code>// Search by format
+const ggufModels = registry.search({ format: 'gguf' });</code></pre>
+
+    <pre class="prettyprint"><code>// Combined search criteria
+const llamaGgufModels = registry.search({ 
+  name: 'llama', 
+  format: 'gguf' 
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Case-insensitive search with regex
+const largeModels = registry.search({ name: '(7b|13b|70b)' });
+const chatModels = registry.search({ name: 'chat|instruct' });</code></pre>
+
+    <pre class="prettyprint"><code>// Find models and load the best one
+const candidates = registry.search({ name: 'llama.*7b' });
+if (candidates.length > 0) {
+  const bestModel = candidates.sort((a, b) => 
+    (b.metrics?.quality || 0) - (a.metrics?.quality || 0)
+  )[0];
+  await registry.get(bestModel.id);
+}</code></pre>
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>ModelRegistry<span class="signature">(config<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+    
+
+    
+    <h4 class="name" id="ModelRegistry"><span class="type-signature"></span>new ModelRegistry<span class="signature">(config<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Create a new Model Registry</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>config</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    {}
+                
+                </td>
+            
+
+            <td class="description last"><p>Configuration options</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>registryPath</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    './models/registry.json'
+                
+                </td>
+            
+
+            <td class="description last"><p>Path to persist registry data</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>maxModels</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    100
+                
+                </td>
+            
+
+            <td class="description last"><p>Maximum number of models to keep in memory</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line95">line 95</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Default configuration
+const registry = new ModelRegistry();</code></pre>
+
+    <pre class="prettyprint"><code>// Custom configuration
+const registry = new ModelRegistry({
+  registryPath: './my-models/registry.json',
+  maxModels: 50
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Development setup
+const devRegistry = new ModelRegistry({
+  registryPath: './dev/registry.json',
+  maxModels: 10  // Lower limit for development
+});</code></pre>
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="cleanup"><span class="type-signature">(async) </span>cleanup<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Clean up all models and clear the registry</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line636">line 636</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Clean shutdown
+process.on('SIGINT', async () => {
+  console.log('Shutting down...');
+  await registry.cleanup();
+  process.exit(0);
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Reset registry for testing
+afterEach(async () => {
+  await registry.cleanup();
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Clean up before reconfiguration
+await registry.cleanup();
+const newRegistry = new ModelRegistry({
+  registryPath: './new-registry.json',
+  maxModels: 200
+});
+await newRegistry.initialize();</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="evictLRU"><span class="type-signature">(async) </span>evictLRU<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Evict the least recently used model when registry reaches capacity</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line487">line 487</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// This method is called automatically when maxModels is reached
+const registry = new ModelRegistry({ maxModels: 3 });
+await registry.register(model1); // count: 1
+await registry.register(model2); // count: 2  
+await registry.register(model3); // count: 3
+await registry.register(model4); // evictLRU() called, oldest removed</code></pre>
+
+    <pre class="prettyprint"><code>// Manual eviction for memory management
+const memoryUsage = process.memoryUsage();
+if (memoryUsage.heapUsed > threshold) {
+  await registry.evictLRU();
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="get"><span class="type-signature">(async) </span>get<span class="signature">(id)</span><span class="type-signature"> &rarr; {Promise.&lt;(Object|undefined)>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get a model by ID and load it if not already loaded</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The model ID</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line229">line 229</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>The model or undefined if not found</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;(Object|undefined)></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Get and auto-load a model
+const model = await registry.get('gpt-3.5-turbo');
+if (model) {
+  console.log('Model ready:', model.name);
+  const response = await model.generate('Hello world');
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Handle missing models
+const model = await registry.get('nonexistent-model');
+if (!model) {
+  console.warn('Model not found in registry');
+  return;
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Check if model was already loaded
+const model = await registry.get('llama-7b');
+if (model.loaded) {
+  console.log('Model was already loaded');
+} else {
+  console.log('Model was loaded during get()');
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getAll"><span class="type-signature"></span>getAll<span class="signature">()</span><span class="type-signature"> &rarr; {Array}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get all registered models (loaded and unloaded)</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line290">line 290</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Array of all registered models</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// List all registered models
+const allModels = registry.getAll();
+allModels.forEach(model => {
+  console.log(`${model.name} (${model.format}) - ${model.loaded ? 'loaded' : 'unloaded'}`);
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Count models by format
+const all = registry.getAll();
+const formatCounts = all.reduce((acc, model) => {
+  acc[model.format] = (acc[model.format] || 0) + 1;
+  return acc;
+}, {});
+console.log('Models by format:', formatCounts);</code></pre>
+
+    <pre class="prettyprint"><code>// Find models that need loading
+const unloadedModels = registry.getAll().filter(m => !m.loaded);
+console.log(`${unloadedModels.length} models need loading`);</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getAvailable"><span class="type-signature"></span>getAvailable<span class="signature">()</span><span class="type-signature"> &rarr; {Array}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get all currently loaded models</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line262">line 262</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Array of loaded models</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Get only loaded models for immediate use
+const loadedModels = registry.getAvailable();
+console.log(`${loadedModels.length} models ready for inference`);</code></pre>
+
+    <pre class="prettyprint"><code>// Find fastest loaded model
+const available = registry.getAvailable();
+const fastest = available.reduce((prev, current) => 
+  (current.metrics?.speed || 0) > (prev.metrics?.speed || 0) ? current : prev
+);</code></pre>
+
+    <pre class="prettyprint"><code>// Check if any models are available
+const available = registry.getAvailable();
+if (available.length === 0) {
+  console.warn('No models currently loaded');
+  // Load a default model
+  await registry.get('default-model');
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getByFormat"><span class="type-signature"></span>getByFormat<span class="signature">(format)</span><span class="type-signature"> &rarr; {Array}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get all models of a specific format</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>format</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The model format (e.g., 'gguf', 'onnx', 'safetensors')</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line320">line 320</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Array of models with the specified format</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Get all GGUF models
+const ggufModels = registry.getByFormat('gguf');
+console.log(`Found ${ggufModels.length} GGUF models`);</code></pre>
+
+    <pre class="prettyprint"><code>// Load all models of a specific format
+const onnxModels = registry.getByFormat('onnx');
+for (const model of onnxModels) {
+  if (!model.loaded) {
+    await model.load();
+  }
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Find best model for a format
+const safetensorsModels = registry.getByFormat('safetensors');
+const bestModel = safetensorsModels.find(m => m.capabilities?.chat &amp;&amp; m.loaded);
+if (!bestModel &amp;&amp; safetensorsModels.length > 0) {
+  await registry.get(safetensorsModels[0].id);
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getLoader"><span class="type-signature"></span>getLoader<span class="signature">(format)</span><span class="type-signature"> &rarr; {Object|undefined}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get the registered loader for a specific format</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>format</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The format name</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line378">line 378</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>The loader or undefined if not found</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+|
+
+<span class="param-type">undefined</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Get a specific loader
+const ggufLoader = registry.getLoader('gguf');
+if (ggufLoader) {
+  const model = await ggufLoader.load('./models/model.gguf');
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Check if format is supported
+const formats = ['gguf', 'onnx', 'safetensors'];
+const supportedFormats = formats.filter(fmt => registry.getLoader(fmt));
+console.log('Supported formats:', supportedFormats);</code></pre>
+
+    <pre class="prettyprint"><code>// Fallback to default loader
+const loader = registry.getLoader('custom-format') || registry.getLoader('gguf');
+if (!loader) {
+  throw new Error('No suitable loader found');
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getModelCount"><span class="type-signature"></span>getModelCount<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get the total number of registered models</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line607">line 607</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Number of registered models</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Check registry size
+const count = registry.getModelCount();
+console.log(`Registry contains ${count} models`);</code></pre>
+
+    <pre class="prettyprint"><code>// Monitor registry capacity
+const count = registry.getModelCount();
+const maxModels = registry.config.maxModels;
+const utilizationPercent = (count / maxModels) * 100;
+console.log(`Registry utilization: ${utilizationPercent.toFixed(1)}%`);</code></pre>
+
+    <pre class="prettyprint"><code>// Conditional model registration
+if (registry.getModelCount() &lt; registry.config.maxModels) {
+  await registry.register(newModel);
+} else {
+  console.warn('Registry at capacity, oldest model will be evicted');
+  await registry.register(newModel);
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="indexModel"><span class="type-signature"></span>indexModel<span class="signature">(model)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Index a model by format and capabilities for fast lookup</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>model</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The model to index</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line450">line 450</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>// This method is called automatically during registration
+// but can be used manually for re-indexing
+const model = {
+  id: 'custom-model',
+  format: 'gguf',
+  capabilities: { chat: true, completion: true }
+};
+registry.indexModel(model);
+
+// Now the model can be found by format
+const ggufModels = registry.getByFormat('gguf'); // includes custom-model</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="initialize"><span class="type-signature">(async) </span>initialize<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Initialize the registry by loading persisted models</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line137">line 137</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Basic initialization
+const registry = new ModelRegistry();
+await registry.initialize();</code></pre>
+
+    <pre class="prettyprint"><code>// Initialize with custom config
+const registry = new ModelRegistry({
+  registryPath: './custom/registry.json',
+  maxModels: 50
+});
+await registry.initialize();</code></pre>
+
+    <pre class="prettyprint"><code>// Handle initialization errors gracefully
+try {
+  await registry.initialize();
+  console.log('Registry ready');
+} catch (error) {
+  console.warn('Starting with empty registry:', error.message);
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="loadRegistry"><span class="type-signature">(async) </span>loadRegistry<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Load registry data from persistent storage</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line520">line 520</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Registry data or empty structure</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Object></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>// Called automatically during initialize()
+// Returns structure like:
+// {
+//   version: '1.0.0',
+//   models: [
+//     { id: 'model1', name: 'Model 1', format: 'gguf', ... },
+//     { id: 'model2', name: 'Model 2', format: 'onnx', ... }
+//   ]
+// }</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="register"><span class="type-signature">(async) </span>register<span class="signature">(model)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Register a model in the registry</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>model</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The model to register</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line186">line 186</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>The registered model</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Object></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Register a simple model
+const model = {
+  id: 'gpt-3.5-turbo',
+  name: 'GPT-3.5 Turbo',
+  format: 'openai',
+  capabilities: { chat: true, completion: true }
+};
+await registry.register(model);</code></pre>
+
+    <pre class="prettyprint"><code>// Register a local GGUF model
+const localModel = {
+  id: 'llama-7b-q4',
+  name: 'Llama 7B Q4',
+  format: 'gguf',
+  path: './models/llama-7b-q4.gguf',
+  capabilities: { chat: true, instruct: true }
+};
+const registered = await registry.register(localModel);
+console.log('Registered:', registered.id);</code></pre>
+
+    <pre class="prettyprint"><code>// Handle registration with full capacity
+const registry = new ModelRegistry({ maxModels: 2 });
+await registry.register(model1);
+await registry.register(model2);
+// This will evict the least recently used model
+await registry.register(model3);</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="registerFromData"><span class="type-signature">(async) </span>registerFromData<span class="signature">(data)</span><span class="type-signature"> &rarr; {Promise.&lt;(Object|null)>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Register a model from serialized data using appropriate loader</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>data</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Serialized model data</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line573">line 573</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>The registered model or null if no loader found</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;(Object|null)></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Used during registry initialization to restore models
+const modelData = {
+  id: 'restored-model',
+  format: 'gguf',
+  path: './models/restored.gguf',
+  capabilities: { chat: true }
+};
+const model = await registry.registerFromData(modelData);</code></pre>
+
+    <pre class="prettyprint"><code>// Handle missing loaders gracefully
+const model = await registry.registerFromData(unknownFormatData);
+if (!model) {
+  console.warn('No loader available for format:', unknownFormatData.format);
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="registerLoader"><span class="type-signature"></span>registerLoader<span class="signature">(format, loader)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Register a loader for a specific model format</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>format</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The format name (e.g., 'gguf', 'onnx')</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>loader</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The loader instance</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line350">line 350</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Register a custom GGUF loader
+import { GGUFLoader } from '../loaders/GGUFLoader.js';
+const ggufLoader = new GGUFLoader();
+registry.registerLoader('gguf', ggufLoader);</code></pre>
+
+    <pre class="prettyprint"><code>// Register multiple loaders
+import { ONNXLoader } from '../loaders/ONNXLoader.js';
+import { SafetensorsLoader } from '../loaders/SafetensorsLoader.js';
+
+registry.registerLoader('onnx', new ONNXLoader());
+registry.registerLoader('safetensors', new SafetensorsLoader());</code></pre>
+
+    <pre class="prettyprint"><code>// Register a custom loader with configuration
+class CustomLoader {
+  constructor(config) { this.config = config; }
+  async fromData(data) { return {}; }
+}
+registry.registerLoader('custom', new CustomLoader({ gpuAcceleration: true }));</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="saveRegistry"><span class="type-signature">(async) </span>saveRegistry<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Save current registry state to persistent storage</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line544">line 544</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Called automatically after model registration
+// Manual save for critical moments
+await registry.register(importantModel);
+await registry.saveRegistry(); // Ensure persistence</code></pre>
+
+    <pre class="prettyprint"><code>// Periodic backup
+setInterval(async () => {
+  await registry.saveRegistry();
+  console.log('Registry backed up');
+}, 30000); // Every 30 seconds</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="search"><span class="type-signature"></span>search<span class="signature">(criteria)</span><span class="type-signature"> &rarr; {Array}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Search for models based on criteria</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>criteria</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Search criteria</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>name</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Name pattern (regex)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>format</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Exact format match</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="core_Registry.js.html">core/Registry.js</a>, <a href="core_Registry.js.html#line419">line 419</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Array of matching models</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Search by name pattern
+const gptModels = registry.search({ name: 'gpt' });
+console.log(`Found ${gptModels.length} GPT models`);</code></pre>
+
+    <pre class="prettyprint"><code>// Search by format
+const ggufModels = registry.search({ format: 'gguf' });</code></pre>
+
+    <pre class="prettyprint"><code>// Combined search criteria
+const llamaGgufModels = registry.search({ 
+  name: 'llama', 
+  format: 'gguf' 
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Case-insensitive search with regex
+const largeModels = registry.search({ name: '(7b|13b|70b)' });
+const chatModels = registry.search({ name: 'chat|instruct' });</code></pre>
+
+    <pre class="prettyprint"><code>// Find models and load the best one
+const candidates = registry.search({ name: 'llama.*7b' });
+if (candidates.length > 0) {
+  const bestModel = candidates.sort((a, b) => 
+    (b.metrics?.quality || 0) - (a.metrics?.quality || 0)
+  )[0];
+  await registry.get(bestModel.id);
+}</code></pre>
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ABTestingManager.html">ABTestingManager</a></li><li><a href="AuditLogger.html">AuditLogger</a></li><li><a href="AuthMiddleware.html">AuthMiddleware</a></li><li><a href="BPETokenizer.html">BPETokenizer</a></li><li><a href="BaseEngine.html">BaseEngine</a></li><li><a href="BaseLoader.html">BaseLoader</a></li><li><a href="BinaryLoader.html">BinaryLoader</a></li><li><a href="BinaryModel.html">BinaryModel</a></li><li><a href="BitNetLoader.html">BitNetLoader</a></li><li><a href="ConversionConfig.html">ConversionConfig</a></li><li><a href="ConversionResult.html">ConversionResult</a></li><li><a href="EnterpriseAuthManager.html">EnterpriseAuthManager</a></li><li><a href="EnterpriseManager.html">EnterpriseManager</a></li><li><a href="EnterpriseRouter.html">EnterpriseRouter</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="FormatConverter.html">FormatConverter</a></li><li><a href="GGUFLoader.html">GGUFLoader</a></li><li><a href="GGUFModel.html">GGUFModel</a></li><li><a href="GRPCClient.html">GRPCClient</a></li><li><a href="LLMRouter.html">LLMRouter</a></li><li><a href="MockLoader.html">MockLoader</a></li><li><a href="MockModel.html">MockModel</a></li><li><a href="ModelError.html">ModelError</a></li><li><a href="ModelInterface.html">ModelInterface</a></li><li><a href="ModelQuantizer.html">ModelQuantizer</a></li><li><a href="ModelRegistry.html">ModelRegistry</a></li><li><a href="ModelTemplates.html">ModelTemplates</a></li><li><a href="MultiTenancyManager.html">MultiTenancyManager</a></li><li><a href="Pipeline.html">Pipeline</a></li><li><a href="PyTorchLoader.html">PyTorchLoader</a></li><li><a href="PyTorchModel.html">PyTorchModel</a></li><li><a href="QuantizationConfig.html">QuantizationConfig</a></li><li><a href="QuantizationResult.html">QuantizationResult</a></li><li><a href="Router.html">Router</a></li><li><a href="SLAMonitor.html">SLAMonitor</a></li><li><a href="SentencePieceTokenizer.html">SentencePieceTokenizer</a></li><li><a href="SimpleLoader.html">SimpleLoader</a></li><li><a href="SimpleModel.html">SimpleModel</a></li><li><a href="TokenizationResult.html">TokenizationResult</a></li><li><a href="TokenizerConfig.html">TokenizerConfig</a></li><li><a href="UniversalTokenizer.html">UniversalTokenizer</a></li><li><a href="ValidationConfig.html">ValidationConfig</a></li><li><a href="ValidationSuite.html">ValidationSuite</a></li><li><a href="ValidationSuiteResult.html">ValidationSuiteResult</a></li><li><a href="ValidationTestResult.html">ValidationTestResult</a></li><li><a href="WordPieceTokenizer.html">WordPieceTokenizer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Architectures">Architectures</a></li><li><a href="global.html#AuditEventTypes">AuditEventTypes</a></li><li><a href="global.html#AuthMethods">AuthMethods</a></li><li><a href="global.html#BreachSeverity">BreachSeverity</a></li><li><a href="global.html#Capabilities">Capabilities</a></li><li><a href="global.html#ComplianceFrameworks">ComplianceFrameworks</a></li><li><a href="global.html#EnterpriseFeatures">EnterpriseFeatures</a></li><li><a href="global.html#ExperimentStatus">ExperimentStatus</a></li><li><a href="global.html#IsolationLevels">IsolationLevels</a></li><li><a href="global.html#ModelFormat">ModelFormat</a></li><li><a href="global.html#ModelFormats">ModelFormats</a></li><li><a href="global.html#Permissions">Permissions</a></li><li><a href="global.html#QuantizationMethod">QuantizationMethod</a></li><li><a href="global.html#QuantizationPrecision">QuantizationPrecision</a></li><li><a href="global.html#QuotaTypes">QuotaTypes</a></li><li><a href="global.html#RiskLevels">RiskLevels</a></li><li><a href="global.html#RoutingStrategies">RoutingStrategies</a></li><li><a href="global.html#SLAMetricTypes">SLAMetricTypes</a></li><li><a href="global.html#SLAStatus">SLAStatus</a></li><li><a href="global.html#SessionTypes">SessionTypes</a></li><li><a href="global.html#SplittingAlgorithms">SplittingAlgorithms</a></li><li><a href="global.html#StatisticalTests">StatisticalTests</a></li><li><a href="global.html#TimeWindows">TimeWindows</a></li><li><a href="global.html#TokenizerType">TokenizerType</a></li><li><a href="global.html#UserRoles">UserRoles</a></li><li><a href="global.html#ValidationSeverity">ValidationSeverity</a></li><li><a href="global.html#ValidationTestType">ValidationTestType</a></li><li><a href="global.html#adjustTimeouts">adjustTimeouts</a></li><li><a href="global.html#attemptRecovery">attemptRecovery</a></li><li><a href="global.html#checkConnectivity">checkConnectivity</a></li><li><a href="global.html#clearCache">clearCache</a></li><li><a href="global.html#colors">colors</a></li><li><a href="global.html#createEnterpriseExpressRoutes">createEnterpriseExpressRoutes</a></li><li><a href="global.html#createEnterpriseRouter">createEnterpriseRouter</a></li><li><a href="global.html#createEnterpriseWebSocketHandlers">createEnterpriseWebSocketHandlers</a></li><li><a href="global.html#createMissingResources">createMissingResources</a></li><li><a href="global.html#defaultEnterpriseConfig">defaultEnterpriseConfig</a></li><li><a href="global.html#emergencyShutdown">emergencyShutdown</a></li><li><a href="global.html#enterpriseVersion">enterpriseVersion</a></li><li><a href="global.html#errorMonitoringMiddleware">errorMonitoringMiddleware</a></li><li><a href="global.html#escalateError">escalateError</a></li><li><a href="global.html#executeRecovery">executeRecovery</a></li><li><a href="global.html#getEnabledFeatures">getEnabledFeatures</a></li><li><a href="global.html#getMonitoringStatus">getMonitoringStatus</a></li><li><a href="global.html#getStats">getStats</a></li><li><a href="global.html#gracefulShutdown">gracefulShutdown</a></li><li><a href="global.html#handleCriticalError">handleCriticalError</a></li><li><a href="global.html#handleMemoryLeak">handleMemoryLeak</a></li><li><a href="global.html#httpMonitoringMiddleware">httpMonitoringMiddleware</a></li><li><a href="global.html#isFeatureEnabled">isFeatureEnabled</a></li><li><a href="global.html#logError">logError</a></li><li><a href="global.html#performHealthCheck">performHealthCheck</a></li><li><a href="global.html#recordCustomMetric">recordCustomMetric</a></li><li><a href="global.html#registerAlertRule">registerAlertRule</a></li><li><a href="global.html#registerDependency">registerDependency</a></li><li><a href="global.html#registerHealthCheck">registerHealthCheck</a></li><li><a href="global.html#reinstallDependencies">reinstallDependencies</a></li><li><a href="global.html#reload">reload</a></li><li><a href="global.html#restartProcess">restartProcess</a></li><li><a href="global.html#retryConnection">retryConnection</a></li><li><a href="global.html#selectRecoveryStrategy">selectRecoveryStrategy</a></li><li><a href="global.html#setupHandlers">setupHandlers</a></li><li><a href="global.html#setupMonitoring">setupMonitoring</a></li><li><a href="global.html#softRestart">softRestart</a></li><li><a href="global.html#startHealthMonitoring">startHealthMonitoring</a></li><li><a href="global.html#startPerformanceProfile">startPerformanceProfile</a></li><li><a href="global.html#validateEnterpriseConfig">validateEnterpriseConfig</a></li><li><a href="global.html#withCacheMonitoring">withCacheMonitoring</a></li><li><a href="global.html#withDatabaseMonitoring">withDatabaseMonitoring</a></li><li><a href="global.html#withModelMonitoring">withModelMonitoring</a></li><li><a href="global.html#withQueueMonitoring">withQueueMonitoring</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Aug 18 2025 01:43:35 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

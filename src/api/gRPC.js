@@ -483,7 +483,7 @@ export class GRPCServer extends EventEmitter {
         call.end();
       });
 
-      call.on('error', (error) => {
+      call.on('error', (_error) => {
         this.incrementMetric('totalErrors');
         this.activeSessions.delete(sessionId);
         this.decrementMetric('activeConnections');

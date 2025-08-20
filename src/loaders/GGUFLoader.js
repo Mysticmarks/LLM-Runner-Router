@@ -5,7 +5,6 @@
 
 import { ModelInterface } from '../core/ModelInterface.js';
 import { Logger } from '../utils/Logger.js';
-import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs/promises';
 

@@ -7,7 +7,6 @@
 import { EventEmitter } from 'events';
 import { Worker } from 'worker_threads';
 import { cpus } from 'os';
-import path from 'path';
 import { Logger } from '../utils/Logger.js';
 
 class NodeNativeEngine extends EventEmitter {

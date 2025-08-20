@@ -9,7 +9,6 @@ import fs from 'fs/promises';
 import path from 'path';
 import { Worker } from 'worker_threads';
 import { EventEmitter } from 'events';
-import { createHash } from 'crypto';
 
 // Import native quantization when available
 let NativeQuantizer = null;

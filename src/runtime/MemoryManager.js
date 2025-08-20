@@ -6,7 +6,6 @@
 
 import { Logger } from '../utils/Logger.js';
 import os from 'os';
-import { performance } from 'perf_hooks';
 
 class MemoryManager {
   constructor(config = {}) {

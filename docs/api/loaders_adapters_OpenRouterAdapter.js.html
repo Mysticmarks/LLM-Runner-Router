@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: loaders/adapters/OpenRouterAdapter.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: loaders/adapters/OpenRouterAdapter.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * 🌐 OpenRouter Adapter
+ * Unified API access to multiple LLM providers
+ * Echo AI Systems - One API, all models
+ */
+
+import APILoader from '../APILoader.js';
+import { Logger } from '../../utils/Logger.js';
+
+const logger = new Logger('OpenRouterAdapter');
+
+/**
+ * Popular OpenRouter models
+ */
+const POPULAR_MODELS = {
+  'openai/gpt-4-turbo-preview': {
+    contextWindow: 128000,
+    provider: 'OpenAI',
+    speed: 'medium',
+    intelligence: 'very_high'
+  },
+  'anthropic/claude-3-opus': {
+    contextWindow: 200000,
+    provider: 'Anthropic',
+    speed: 'medium',
+    intelligence: 'very_high'
+  },
+  'google/gemini-pro': {
+    contextWindow: 32000,
+    provider: 'Google',
+    speed: 'fast',
+    intelligence: 'high'
+  },
+  'meta-llama/llama-3-70b-instruct': {
+    contextWindow: 8192,
+    provider: 'Meta',
+    speed: 'medium',
+    intelligence: 'high'
+  },
+  'mistralai/mixtral-8x7b-instruct': {
+    contextWindow: 32000,
+    provider: 'Mistral',
+    speed: 'fast',
+    intelligence: 'high'
+  },
+  'cohere/command-r-plus': {
+    contextWindow: 128000,
+    provider: 'Cohere',
+    speed: 'medium',
+    intelligence: 'high'
+  },
+  'perplexity/sonar-medium-online': {
+    contextWindow: 16000,
+    provider: 'Perplexity',
+    speed: 'fast',
+    intelligence: 'high',
+    features: ['web_search']
+  }
+};
+
+/**
+ * OpenRouter unified adapter
+ */
+class OpenRouterAdapter extends APILoader {
+  constructor(config = {}) {
+    super({
+      ...config,
+      provider: 'openrouter',
+      baseURL: config.baseURL || 'https://openrouter.ai/api/v1',
+      apiKey: config.apiKey || process.env.OPENROUTER_API_KEY
+    });
+    
+    this.appName = config.appName || 'LLM-Runner-Router';
+    this.siteUrl = config.siteUrl || 'https://github.com/MCERQUA/LLM-Runner-Router';
+    this.models = new Map();
+    this.providers = new Set();
+    
+    logger.info('🌐 OpenRouter Adapter initialized');
+  }
+
+  /**
+   * Build OpenRouter-specific headers
+   */
+  getHeaders() {
+    return {
+      'Authorization': `Bearer ${this.apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': this.siteUrl,
+      'X-Title': this.appName
+    };
+  }
+
+  /**
+   * Fetch and cache available models
+   */
+  async fetchAvailableModels() {
+    try {
+      const response = await fetch(`${this.baseURL}/models`, {
+        headers: this.getHeaders()
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch models');
+      }
+      
+      const data = await response.json();
+      
+      // Cache models and providers
+      this.models.clear();
+      this.providers.clear();
+      
+      for (const model of data.data) {
+        this.models.set(model.id, {
+          id: model.id,
+          name: model.name,
+          description: model.description,
+          contextLength: model.context_length,
+          pricing: {
+            prompt: model.pricing?.prompt || 0,
+            completion: model.pricing?.completion || 0
+          },
+          topProvider: model.top_provider,
+          perRequestLimits: model.per_request_limits
+        });
+        
+        if (model.top_provider) {
+          this.providers.add(model.top_provider);
+        }
+      }
+      
+      logger.info(`📚 Loaded ${this.models.size} models from ${this.providers.size} providers`);
+      return Array.from(this.models.values());
+      
+    } catch (error) {
+      logger.warn('Failed to fetch live models, using defaults');
+      return Object.keys(POPULAR_MODELS).map(id => ({
+        id,
+        ...POPULAR_MODELS[id]
+      }));
+    }
+  }
+
+  /**
+   * Load OpenRouter model
+   */
+  async load(modelId = 'auto', options = {}) {
+    // Fetch available models if not cached
+    if (this.models.size === 0) {
+      await this.fetchAvailableModels();
+    }
+    
+    // Special handling for 'auto' mode
+    if (modelId === 'auto') {
+      logger.info('Using OpenRouter auto mode for optimal model selection');
+    } else if (!modelId.includes('/')) {
+      // Try to find model by partial match
+      const matches = Array.from(this.models.keys()).filter(id => 
+        id.toLowerCase().includes(modelId.toLowerCase())
+      );
+      
+      if (matches.length === 1) {
+        modelId = matches[0];
+      } else if (matches.length > 1) {
+        logger.warn(`Multiple models match "${modelId}":`, matches);
+        modelId = matches[0];
+      }
+    }
+    
+    const modelInfo = this.models.get(modelId) || POPULAR_MODELS[modelId];
+    
+    const model = await super.load(modelId, {
+      ...options,
+      metadata: {
+        ...modelInfo,
+        provider: 'openrouter',
+        streaming: true,
+        ...options.metadata
+      }
+    });
+    
+    return model;
+  }
+
+  /**
+   * OpenRouter completion with provider preferences
+   */
+  async complete(prompt, options = {}) {
+    const request = {
+      model: options.model?.modelId || 'auto',
+      messages: options.messages || [{ role: 'user', content: prompt }],
+      temperature: options.temperature,
+      max_tokens: options.maxTokens,
+      top_p: options.topP,
+      top_k: options.topK,
+      frequency_penalty: options.frequencyPenalty,
+      presence_penalty: options.presencePenalty,
+      repetition_penalty: options.repetitionPenalty,
+      stream: options.stream ?? false
+    };
+    
+    // OpenRouter-specific options
+    if (options.providers) {
+      request.providers = options.providers;
+    }
+    
+    if (options.route) {
+      request.route = options.route; // 'fallback' or specific routing
+    }
+    
+    if (options.transforms) {
+      request.transforms = options.transforms; // ['middle-out'] for compression
+    }
+    
+    return this.executeRequest(request, options);
+  }
+
+  /**
+   * Execute OpenRouter API request
+   */
+  async executeRequest(request, options = {}) {
+    const endpoint = `${this.baseURL}/chat/completions`;
+    
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(request)
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(`OpenRouter API error: ${error.error?.message || response.statusText}`);
+      }
+      
+      // Get model used from headers
+      const modelUsed = response.headers.get('X-Model') || request.model;
+      
+      if (request.stream) {
+        return this.handleStream(response, modelUsed);
+      } else {
+        const data = await response.json();
+        return this.formatResponse(data, modelUsed);
+      }
+      
+    } catch (error) {
+      logger.error('OpenRouter request failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Handle streaming response
+   */
+  async* handleStream(response, modelUsed) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') return;
+            
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) {
+                yield { 
+                  text: content, 
+                  model: modelUsed,
+                  raw: parsed 
+                };
+              }
+            } catch (e) {
+              // Skip invalid JSON
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  /**
+   * Format OpenRouter response
+   */
+  formatResponse(data, modelUsed) {
+    const choice = data.choices?.[0];
+    
+    return {
+      text: choice?.message?.content || '',
+      model: modelUsed || data.model,
+      provider: data.provider,
+      finishReason: choice?.finish_reason,
+      usage: {
+        promptTokens: data.usage?.prompt_tokens,
+        completionTokens: data.usage?.completion_tokens,
+        totalTokens: data.usage?.total_tokens
+      },
+      id: data.id,
+      created: data.created
+    };
+  }
+
+  /**
+   * Get provider-specific limits
+   */
+  async getLimits() {
+    try {
+      const response = await fetch(`${this.baseURL}/auth/key`, {
+        headers: this.getHeaders()
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch limits');
+      }
+      
+      const data = await response.json();
+      
+      return {
+        limit: data.limit,
+        usage: data.usage,
+        isFreeTier: data.is_free_tier,
+        limitRemaining: data.limit_remaining,
+        rateLimit: data.rate_limit
+      };
+      
+    } catch (error) {
+      logger.warn('Failed to fetch limits:', error);
+      return null;
+    }
+  }
+
+  /**
+   * List models by provider
+   */
+  async listModelsByProvider(provider) {
+    if (this.models.size === 0) {
+      await this.fetchAvailableModels();
+    }
+    
+    const providerModels = [];
+    for (const [id, model] of this.models) {
+      if (model.topProvider === provider || id.startsWith(provider.toLowerCase())) {
+        providerModels.push(model);
+      }
+    }
+    
+    return providerModels;
+  }
+
+  /**
+   * Get cheapest model for requirements
+   */
+  async getCheapestModel(requirements = {}) {
+    if (this.models.size === 0) {
+      await this.fetchAvailableModels();
+    }
+    
+    let cheapest = null;
+    let lowestCost = Infinity;
+    
+    for (const model of this.models.values()) {
+      // Check requirements
+      if (requirements.minContext &amp;&amp; model.contextLength &lt; requirements.minContext) {
+        continue;
+      }
+      
+      const totalCost = (model.pricing?.prompt || 0) + (model.pricing?.completion || 0);
+      if (totalCost &lt; lowestCost) {
+        lowestCost = totalCost;
+        cheapest = model;
+      }
+    }
+    
+    return cheapest;
+  }
+
+  /**
+   * Get fastest model
+   */
+  async getFastestModel(requirements = {}) {
+    // OpenRouter doesn't provide speed metrics, use heuristics
+    const fastModels = [
+      'openrouter/auto',
+      'google/gemini-flash',
+      'mistralai/mistral-7b-instruct',
+      'meta-llama/llama-3-8b-instruct'
+    ];
+    
+    if (this.models.size === 0) {
+      await this.fetchAvailableModels();
+    }
+    
+    for (const modelId of fastModels) {
+      if (this.models.has(modelId)) {
+        return this.models.get(modelId);
+      }
+    }
+    
+    // Return first available model
+    return this.models.values().next().value;
+  }
+
+  /**
+   * Calculate generation cost
+   */
+  calculateCost(usage, modelId) {
+    const model = this.models.get(modelId);
+    if (!model?.pricing) {
+      return {
+        inputCost: 0,
+        outputCost: 0,
+        totalCost: 0,
+        currency: 'USD',
+        note: 'Pricing not available'
+      };
+    }
+    
+    const inputCost = (usage.promptTokens / 1000000) * (model.pricing.prompt || 0);
+    const outputCost = (usage.completionTokens / 1000000) * (model.pricing.completion || 0);
+    
+    return {
+      inputCost,
+      outputCost,
+      totalCost: inputCost + outputCost,
+      currency: 'USD',
+      model: modelId,
+      provider: model.topProvider
+    };
+  }
+
+  /**
+   * Get model recommendations
+   */
+  async getRecommendations(useCase) {
+    const recommendations = {
+      'coding': ['anthropic/claude-3-opus', 'openai/gpt-4-turbo-preview'],
+      'chat': ['anthropic/claude-3-haiku', 'openai/gpt-3.5-turbo'],
+      'creative': ['anthropic/claude-3-opus', 'openai/gpt-4'],
+      'analysis': ['anthropic/claude-3-sonnet', 'google/gemini-pro'],
+      'translation': ['google/gemini-pro', 'anthropic/claude-3-haiku'],
+      'summarization': ['mistralai/mixtral-8x7b-instruct', 'anthropic/claude-3-haiku'],
+      'fast': ['mistralai/mistral-7b-instruct', 'meta-llama/llama-3-8b-instruct'],
+      'cheap': ['meta-llama/llama-3-8b-instruct', 'mistralai/mistral-7b-instruct']
+    };
+    
+    return recommendations[useCase] || ['openrouter/auto'];
+  }
+}
+
+export default OpenRouterAdapter;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ABTestingManager.html">ABTestingManager</a></li><li><a href="APILoader.html">APILoader</a></li><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="AuditLogger.html">AuditLogger</a></li><li><a href="AuthManager.html">AuthManager</a></li><li><a href="AuthMiddleware.html">AuthMiddleware</a></li><li><a href="AzureOpenAIAdapter.html">AzureOpenAIAdapter</a></li><li><a href="BPETokenizer.html">BPETokenizer</a></li><li><a href="BaseEngine.html">BaseEngine</a></li><li><a href="BaseLoader.html">BaseLoader</a></li><li><a href="BedrockAdapter.html">BedrockAdapter</a></li><li><a href="BinaryLoader.html">BinaryLoader</a></li><li><a href="BinaryModel.html">BinaryModel</a></li><li><a href="BitNetLoader.html">BitNetLoader</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="ConversionConfig.html">ConversionConfig</a></li><li><a href="ConversionResult.html">ConversionResult</a></li><li><a href="DeepSeekAdapter.html">DeepSeekAdapter</a></li><li><a href="EnterpriseAuthManager.html">EnterpriseAuthManager</a></li><li><a href="EnterpriseManager.html">EnterpriseManager</a></li><li><a href="EnterpriseRouter.html">EnterpriseRouter</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="FireworksAdapter.html">FireworksAdapter</a></li><li><a href="FormatConverter.html">FormatConverter</a></li><li><a href="GGUFLoader.html">GGUFLoader</a></li><li><a href="GGUFModel.html">GGUFModel</a></li><li><a href="GRPCClient.html">GRPCClient</a></li><li><a href="GroqAdapter.html">GroqAdapter</a></li><li><a href="LLMRouter.html">LLMRouter</a></li><li><a href="MistralAdapter.html">MistralAdapter</a></li><li><a href="MockLoader.html">MockLoader</a></li><li><a href="MockModel.html">MockModel</a></li><li><a href="ModelError.html">ModelError</a></li><li><a href="ModelInterface.html">ModelInterface</a></li><li><a href="ModelQuantizer.html">ModelQuantizer</a></li><li><a href="ModelRegistry.html">ModelRegistry</a></li><li><a href="ModelTemplates.html">ModelTemplates</a></li><li><a href="MultiTenancyManager.html">MultiTenancyManager</a></li><li><a href="NovitaAdapter.html">NovitaAdapter</a></li><li><a href="OpenAIAdapter.html">OpenAIAdapter</a></li><li><a href="OpenRouterAdapter.html">OpenRouterAdapter</a></li><li><a href="PerplexityAdapter.html">PerplexityAdapter</a></li><li><a href="Pipeline.html">Pipeline</a></li><li><a href="PyTorchLoader.html">PyTorchLoader</a></li><li><a href="PyTorchModel.html">PyTorchModel</a></li><li><a href="QuantizationConfig.html">QuantizationConfig</a></li><li><a href="QuantizationResult.html">QuantizationResult</a></li><li><a href="Router.html">Router</a></li><li><a href="SLAMonitor.html">SLAMonitor</a></li><li><a href="SentencePieceTokenizer.html">SentencePieceTokenizer</a></li><li><a href="SimpleLoader.html">SimpleLoader</a></li><li><a href="SimpleModel.html">SimpleModel</a></li><li><a href="TogetherAdapter.html">TogetherAdapter</a></li><li><a href="TokenizationResult.html">TokenizationResult</a></li><li><a href="TokenizerConfig.html">TokenizerConfig</a></li><li><a href="UniversalTokenizer.html">UniversalTokenizer</a></li><li><a href="ValidationConfig.html">ValidationConfig</a></li><li><a href="ValidationSuite.html">ValidationSuite</a></li><li><a href="ValidationSuiteResult.html">ValidationSuiteResult</a></li><li><a href="ValidationTestResult.html">ValidationTestResult</a></li><li><a href="VertexAIAdapter.html">VertexAIAdapter</a></li><li><a href="WordPieceTokenizer.html">WordPieceTokenizer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ADAPTER_REGISTRY">ADAPTER_REGISTRY</a></li><li><a href="global.html#API_KEY_PATTERNS">API_KEY_PATTERNS</a></li><li><a href="global.html#AUTH_TYPES">AUTH_TYPES</a></li><li><a href="global.html#AZURE_API_VERSIONS">AZURE_API_VERSIONS</a></li><li><a href="global.html#AZURE_OPENAI_MODELS">AZURE_OPENAI_MODELS</a></li><li><a href="global.html#Architectures">Architectures</a></li><li><a href="global.html#AuditEventTypes">AuditEventTypes</a></li><li><a href="global.html#AuthMethods">AuthMethods</a></li><li><a href="global.html#BEDROCK_MODELS">BEDROCK_MODELS</a></li><li><a href="global.html#BreachSeverity">BreachSeverity</a></li><li><a href="global.html#CLAUDE_MODELS">CLAUDE_MODELS</a></li><li><a href="global.html#COHERE_MODELS">COHERE_MODELS</a></li><li><a href="global.html#COMPLIANCE_FEATURES">COMPLIANCE_FEATURES</a></li><li><a href="global.html#Capabilities">Capabilities</a></li><li><a href="global.html#ComplianceFrameworks">ComplianceFrameworks</a></li><li><a href="global.html#DEEPSEEK_ENDPOINTS">DEEPSEEK_ENDPOINTS</a></li><li><a href="global.html#DEEPSEEK_MODELS">DEEPSEEK_MODELS</a></li><li><a href="global.html#EnterpriseFeatures">EnterpriseFeatures</a></li><li><a href="global.html#ExperimentStatus">ExperimentStatus</a></li><li><a href="global.html#FIREWORKS_MODELS">FIREWORKS_MODELS</a></li><li><a href="global.html#GROQ_MODELS">GROQ_MODELS</a></li><li><a href="global.html#INPUT_TYPES">INPUT_TYPES</a></li><li><a href="global.html#IsolationLevels">IsolationLevels</a></li><li><a href="global.html#MISTRAL_MODELS">MISTRAL_MODELS</a></li><li><a href="global.html#MODEL_CATEGORIES">MODEL_CATEGORIES</a></li><li><a href="global.html#ModelFormat">ModelFormat</a></li><li><a href="global.html#ModelFormats">ModelFormats</a></li><li><a href="global.html#NOVITA_ENDPOINTS">NOVITA_ENDPOINTS</a></li><li><a href="global.html#NOVITA_MODELS">NOVITA_MODELS</a></li><li><a href="global.html#OPENAI_MODELS">OPENAI_MODELS</a></li><li><a href="global.html#PERPLEXITY_MODELS">PERPLEXITY_MODELS</a></li><li><a href="global.html#POPULAR_MODELS">POPULAR_MODELS</a></li><li><a href="global.html#PROVIDER_AUTH_CONFIG">PROVIDER_AUTH_CONFIG</a></li><li><a href="global.html#PROVIDER_CATEGORIES">PROVIDER_CATEGORIES</a></li><li><a href="global.html#PROVIDER_CONFIGS">PROVIDER_CONFIGS</a></li><li><a href="global.html#PROVIDER_FEATURES">PROVIDER_FEATURES</a></li><li><a href="global.html#Permissions">Permissions</a></li><li><a href="global.html#QuantizationMethod">QuantizationMethod</a></li><li><a href="global.html#QuantizationPrecision">QuantizationPrecision</a></li><li><a href="global.html#QuotaTypes">QuotaTypes</a></li><li><a href="global.html#RiskLevels">RiskLevels</a></li><li><a href="global.html#RoutingStrategies">RoutingStrategies</a></li><li><a href="global.html#SAFETY_LEVELS">SAFETY_LEVELS</a></li><li><a href="global.html#SLAMetricTypes">SLAMetricTypes</a></li><li><a href="global.html#SLAStatus">SLAStatus</a></li><li><a href="global.html#SessionTypes">SessionTypes</a></li><li><a href="global.html#SplittingAlgorithms">SplittingAlgorithms</a></li><li><a href="global.html#StatisticalTests">StatisticalTests</a></li><li><a href="global.html#TOGETHER_MODELS">TOGETHER_MODELS</a></li><li><a href="global.html#TimeWindows">TimeWindows</a></li><li><a href="global.html#TokenizerType">TokenizerType</a></li><li><a href="global.html#UserRoles">UserRoles</a></li><li><a href="global.html#VERTEX_AI_MODELS">VERTEX_AI_MODELS</a></li><li><a href="global.html#VERTEX_REGIONS">VERTEX_REGIONS</a></li><li><a href="global.html#ValidationSeverity">ValidationSeverity</a></li><li><a href="global.html#ValidationTestType">ValidationTestType</a></li><li><a href="global.html#adjustTimeouts">adjustTimeouts</a></li><li><a href="global.html#attemptRecovery">attemptRecovery</a></li><li><a href="global.html#checkConnectivity">checkConnectivity</a></li><li><a href="global.html#clearCache">clearCache</a></li><li><a href="global.html#colors">colors</a></li><li><a href="global.html#createAdapter">createAdapter</a></li><li><a href="global.html#createEnterpriseExpressRoutes">createEnterpriseExpressRoutes</a></li><li><a href="global.html#createEnterpriseRouter">createEnterpriseRouter</a></li><li><a href="global.html#createEnterpriseWebSocketHandlers">createEnterpriseWebSocketHandlers</a></li><li><a href="global.html#createMissingResources">createMissingResources</a></li><li><a href="global.html#defaultEnterpriseConfig">defaultEnterpriseConfig</a></li><li><a href="global.html#emergencyShutdown">emergencyShutdown</a></li><li><a href="global.html#enterpriseVersion">enterpriseVersion</a></li><li><a href="global.html#errorMonitoringMiddleware">errorMonitoringMiddleware</a></li><li><a href="global.html#escalateError">escalateError</a></li><li><a href="global.html#executeRecovery">executeRecovery</a></li><li><a href="global.html#getAdapter">getAdapter</a></li><li><a href="global.html#getEnabledFeatures">getEnabledFeatures</a></li><li><a href="global.html#getMonitoringStatus">getMonitoringStatus</a></li><li><a href="global.html#getProviderAuthType">getProviderAuthType</a></li><li><a href="global.html#getProviderInfo">getProviderInfo</a></li><li><a href="global.html#getProvidersByCategory">getProvidersByCategory</a></li><li><a href="global.html#getProvidersByFeature">getProvidersByFeature</a></li><li><a href="global.html#getStats">getStats</a></li><li><a href="global.html#getSupportedProviders">getSupportedProviders</a></li><li><a href="global.html#gracefulShutdown">gracefulShutdown</a></li><li><a href="global.html#handleCriticalError">handleCriticalError</a></li><li><a href="global.html#handleMemoryLeak">handleMemoryLeak</a></li><li><a href="global.html#httpMonitoringMiddleware">httpMonitoringMiddleware</a></li><li><a href="global.html#isFeatureEnabled">isFeatureEnabled</a></li><li><a href="global.html#isProviderSupported">isProviderSupported</a></li><li><a href="global.html#logError">logError</a></li><li><a href="global.html#performHealthCheck">performHealthCheck</a></li><li><a href="global.html#recordCustomMetric">recordCustomMetric</a></li><li><a href="global.html#registerAlertRule">registerAlertRule</a></li><li><a href="global.html#registerDependency">registerDependency</a></li><li><a href="global.html#registerHealthCheck">registerHealthCheck</a></li><li><a href="global.html#reinstallDependencies">reinstallDependencies</a></li><li><a href="global.html#reload">reload</a></li><li><a href="global.html#restartProcess">restartProcess</a></li><li><a href="global.html#retryConnection">retryConnection</a></li><li><a href="global.html#selectRecoveryStrategy">selectRecoveryStrategy</a></li><li><a href="global.html#setupHandlers">setupHandlers</a></li><li><a href="global.html#setupMonitoring">setupMonitoring</a></li><li><a href="global.html#softRestart">softRestart</a></li><li><a href="global.html#startHealthMonitoring">startHealthMonitoring</a></li><li><a href="global.html#startPerformanceProfile">startPerformanceProfile</a></li><li><a href="global.html#validateEnterpriseConfig">validateEnterpriseConfig</a></li><li><a href="global.html#withCacheMonitoring">withCacheMonitoring</a></li><li><a href="global.html#withDatabaseMonitoring">withDatabaseMonitoring</a></li><li><a href="global.html#withModelMonitoring">withModelMonitoring</a></li><li><a href="global.html#withQueueMonitoring">withQueueMonitoring</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Aug 20 2025 19:41:21 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

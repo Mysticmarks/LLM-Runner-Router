@@ -455,7 +455,7 @@ export class AuthenticationManager extends EventEmitter {
 
       const cleanKey = key.replace('llmr_', '');
       
-      for (const [id, apiKey] of this.apiKeys) {
+      for (const [_id, apiKey] of this.apiKeys) {
         if (!apiKey.active) continue;
         
         if (apiKey.expiresAt && apiKey.expiresAt < new Date()) {
@@ -589,7 +589,7 @@ export class AuthenticationManager extends EventEmitter {
     }
 
     // Revoke all API keys for this user
-    for (const [keyId, apiKey] of this.apiKeys) {
+    for (const [_keyId, apiKey] of this.apiKeys) {
       if (apiKey.userId === userId) {
         this.revokeApiKey(keyId);
       }
@@ -647,7 +647,7 @@ export class AuthenticationManager extends EventEmitter {
   listApiKeys(userId) {
     const apiKeys = [];
     
-    for (const [id, apiKey] of this.apiKeys) {
+    for (const [_id, apiKey] of this.apiKeys) {
       if (apiKey.userId === userId) {
         apiKeys.push({
           ...apiKey,
@@ -694,7 +694,7 @@ export class AuthenticationManager extends EventEmitter {
     }
 
     // Remove expired API keys
-    for (const [keyId, apiKey] of this.apiKeys) {
+    for (const [_keyId, apiKey] of this.apiKeys) {
       if (apiKey.expiresAt && apiKey.expiresAt < now) {
         apiKey.active = false;
       }

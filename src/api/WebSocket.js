@@ -512,7 +512,7 @@ class WebSocketAPI extends EventEmitter {
     const payload = JSON.stringify(message);
     let sent = 0;
     
-    for (const [clientId, client] of this.clients) {
+    for (const [_clientId, client] of this.clients) {
       if (filter && !filter(client)) continue;
       
       if (client.ws.readyState === client.ws.OPEN) {
@@ -535,7 +535,7 @@ class WebSocketAPI extends EventEmitter {
     this.heartbeatTimer = setInterval(() => {
       const now = Date.now();
       
-      for (const [clientId, client] of this.clients) {
+      for (const [_clientId, client] of this.clients) {
         // Check for inactive clients
         if (now - client.lastActivity > this.config.heartbeatInterval * 2) {
           this.logger.warn(`Client ${clientId} inactive, disconnecting`);
@@ -587,7 +587,7 @@ class WebSocketAPI extends EventEmitter {
     }
     
     // Close all connections
-    for (const [clientId, client] of this.clients) {
+    for (const [_clientId, client] of this.clients) {
       client.ws.close(1000, 'Server shutting down');
     }
     

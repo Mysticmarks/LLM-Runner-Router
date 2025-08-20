@@ -10,7 +10,6 @@ import path from 'path';
 import { spawn } from 'child_process';
 import { EventEmitter } from 'events';
 import { createHash } from 'crypto';
-import { promisify } from 'util';
 
 /**
  * Supported model formats

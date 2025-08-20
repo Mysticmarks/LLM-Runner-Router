@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: loaders/adapters/MistralAdapter.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: loaders/adapters/MistralAdapter.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * 🇪🇺 Mistral AI Adapter
+ * Direct integration with Mistral AI API for European data residency
+ * Features: Competitive pricing, instruction following, European compliance
+ */
+
+import APILoader from '../APILoader.js';
+import { Logger } from '../../utils/Logger.js';
+import { AuthManager } from '../../utils/AuthManager.js';
+
+const logger = new Logger('MistralAdapter');
+
+/**
+ * Mistral AI model configurations
+ */
+const MISTRAL_MODELS = {
+  'mistral-large-latest': {
+    name: 'Mistral Large',
+    contextWindow: 32768,
+    maxOutput: 8192,
+    cost: { input: 8, output: 24 },
+    features: ['reasoning', 'coding', 'multilingual', 'function_calling'],
+    strengths: ['complex_reasoning', 'mathematics', 'code_generation'],
+    languages: ['en', 'fr', 'de', 'es', 'it', 'pt', 'ru', 'zh', 'ja', 'ko']
+  },
+  'mistral-medium-latest': {
+    name: 'Mistral Medium',
+    contextWindow: 32768,
+    maxOutput: 8192,
+    cost: { input: 2.7, output: 8.1 },
+    features: ['balanced', 'coding', 'reasoning'],
+    strengths: ['general_purpose', 'cost_effective'],
+    languages: ['en', 'fr', 'de', 'es', 'it']
+  },
+  'mistral-small-latest': {
+    name: 'Mistral Small',
+    contextWindow: 32768,
+    maxOutput: 8192,
+    cost: { input: 2, output: 6 },
+    features: ['lightweight', 'fast', 'cost_effective'],
+    strengths: ['simple_tasks', 'classification', 'summarization'],
+    languages: ['en', 'fr', 'de', 'es', 'it']
+  },
+  'mistral-tiny': {
+    name: 'Mistral Tiny',
+    contextWindow: 32768,
+    maxOutput: 8192,
+    cost: { input: 0.25, output: 0.25 },
+    features: ['ultra_fast', 'lightweight', 'cost_effective'],
+    strengths: ['simple_queries', 'classification', 'basic_chat'],
+    languages: ['en', 'fr', 'de', 'es', 'it']
+  },
+  'open-mistral-7b': {
+    name: 'Open Mistral 7B',
+    contextWindow: 32768,
+    maxOutput: 8192,
+    cost: { input: 0.25, output: 0.25 },
+    features: ['open_source', 'cost_effective', 'apache_license'],
+    strengths: ['general_purpose', 'fine_tuning'],
+    languages: ['en', 'fr', 'de', 'es', 'it'],
+    openSource: true
+  },
+  'open-mixtral-8x7b': {
+    name: 'Open Mixtral 8x7B',
+    contextWindow: 32768,
+    maxOutput: 8192,
+    cost: { input: 0.7, output: 0.7 },
+    features: ['mixture_of_experts', 'open_source', 'multilingual'],
+    strengths: ['complex_reasoning', 'code_generation', 'multilingual'],
+    languages: ['en', 'fr', 'de', 'es', 'it', 'pt', 'ru', 'zh', 'ja'],
+    openSource: true
+  },
+  'open-mixtral-8x22b': {
+    name: 'Open Mixtral 8x22B',
+    contextWindow: 64000,
+    maxOutput: 8192,
+    cost: { input: 2, output: 6 },
+    features: ['mixture_of_experts', 'large_context', 'open_source'],
+    strengths: ['complex_reasoning', 'long_context', 'multilingual'],
+    languages: ['en', 'fr', 'de', 'es', 'it', 'pt', 'ru', 'zh', 'ja', 'ko'],
+    openSource: true
+  },
+  'mistral-embed': {
+    name: 'Mistral Embed',
+    contextWindow: 8192,
+    maxOutput: 1024, // Embedding dimensions
+    cost: { input: 0.1, output: 0 },
+    features: ['embeddings', 'semantic_search', 'multilingual'],
+    strengths: ['retrieval', 'similarity', 'clustering'],
+    languages: ['en', 'fr', 'de', 'es', 'it'],
+    type: 'embedding'
+  }
+};
+
+/**
+ * Mistral AI safety levels
+ */
+const SAFETY_LEVELS = {
+  'none': 'No content filtering',
+  'low': 'Minimal content filtering',
+  'medium': 'Balanced content filtering', 
+  'high': 'Strict content filtering'
+};
+
+/**
+ * Mistral AI adapter with European compliance features
+ */
+class MistralAdapter extends APILoader {
+  constructor(config = {}) {
+    super({
+      ...config,
+      provider: 'mistral',
+      baseURL: config.baseURL || 'https://api.mistral.ai/v1',
+      apiKey: config.apiKey || process.env.MISTRAL_API_KEY
+    });
+
+    // Mistral-specific configuration
+    this.safetyLevel = config.safetyLevel || 'medium';
+    this.randomSeed = config.randomSeed;
+    this.enableJsonMode = config.enableJsonMode || false;
+    
+    // European compliance features
+    this.dataResidency = config.dataResidency || 'eu';
+    this.enableGDPR = config.enableGDPR !== false;
+    this.organizationId = config.organizationId;
+
+    this.authManager = new AuthManager();
+    this.models = new Map();
+
+    // Validate configuration
+    this.validateConfig();
+
+    logger.info(`🇪🇺 Mistral AI Adapter initialized (Data residency: ${this.dataResidency})`);
+  }
+
+  /**
+   * Validate Mistral AI configuration
+   */
+  validateConfig() {
+    if (!this.apiKey) {
+      throw new Error('Mistral AI API key is required');
+    }
+
+    const validation = this.authManager.validateApiKey('mistral', this.apiKey);
+    if (!validation.valid) {
+      throw new Error(`Invalid Mistral AI API key: ${validation.error}`);
+    }
+
+    if (!SAFETY_LEVELS[this.safetyLevel]) {
+      logger.warn(`Unknown safety level: ${this.safetyLevel}. Using 'medium'.`);
+      this.safetyLevel = 'medium';
+    }
+  }
+
+  /**
+   * Get Mistral AI headers
+   */
+  getHeaders() {
+    const headers = {
+      'Authorization': `Bearer ${this.apiKey}`,
+      'Content-Type': 'application/json',
+      'User-Agent': 'LLM-Runner-Router/2.0.0'
+    };
+
+    if (this.organizationId) {
+      headers['Mistral-Organization'] = this.organizationId;
+    }
+
+    return headers;
+  }
+
+  /**
+   * Load Mistral AI model
+   */
+  async load(modelId = 'mistral-small-latest', options = {}) {
+    try {
+      const modelConfig = MISTRAL_MODELS[modelId];
+      
+      if (!modelConfig) {
+        logger.warn(`Unknown Mistral model: ${modelId}. Using default config.`);
+      }
+
+      // Test model availability
+      if (options.testConnection !== false) {
+        await this.testModelAvailability(modelId);
+      }
+
+      const model = {
+        id: `mistral:${modelId}`,
+        provider: 'mistral',
+        modelId: modelId,
+        type: 'mistral',
+        config: {
+          safetyLevel: this.safetyLevel,
+          dataResidency: this.dataResidency,
+          ...options
+        },
+        metadata: {
+          ...modelConfig,
+          streaming: true,
+          european: true,
+          gdpr_compliant: this.enableGDPR,
+          open_source: modelConfig?.openSource || false,
+          loaded: true,
+          loadedAt: Date.now()
+        }
+      };
+
+      this.models.set(modelId, model);
+      this.model = model;
+      this.loaded = true;
+
+      logger.success(`✅ Loaded Mistral model: ${model.id}`);
+      return model;
+
+    } catch (error) {
+      logger.error(`Failed to load Mistral model ${modelId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Test Mistral model availability
+   */
+  async testModelAvailability(modelId) {
+    try {
+      const response = await fetch(`${this.baseURL}/models`, {
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`Model availability check failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const availableModels = data.data?.map(m => m.id) || [];
+
+      if (!availableModels.includes(modelId)) {
+        logger.warn(`Model ${modelId} may not be available`);
+      }
+
+      logger.debug(`✅ Model availability test passed for ${modelId}`);
+      return true;
+    } catch (error) {
+      logger.warn(`⚠️ Model availability test failed: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate completion using Mistral AI
+   */
+  async complete(prompt, options = {}) {
+    const model = options.model || this.model;
+    
+    if (!model) {
+      throw new Error('No model loaded');
+    }
+
+    // Build Mistral-specific request
+    const request = this.buildMistralRequest(prompt, model, options);
+    const endpoint = this.getMistralEndpoint(model);
+
+    try {
+      if (options.stream &amp;&amp; model.metadata.streaming) {
+        return await this.streamCompletion(request, endpoint, model, options);
+      } else {
+        return await this.standardCompletion(request, endpoint, model, options);
+      }
+    } catch (error) {
+      logger.error(`Mistral AI request failed: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Build Mistral AI request
+   */
+  buildMistralRequest(prompt, model, options) {
+    const modelType = model.metadata?.type || 'chat';
+    
+    if (modelType === 'embedding') {
+      return {
+        model: model.modelId,
+        input: Array.isArray(prompt) ? prompt : [prompt],
+        encoding_format: options.encodingFormat || 'float'
+      };
+    }
+
+    // Chat completion request
+    const request = {
+      model: model.modelId,
+      messages: options.messages || [
+        { role: 'user', content: prompt }
+      ],
+      max_tokens: options.maxTokens || model.metadata.maxOutput || 1000,
+      temperature: options.temperature || 0.7,
+      top_p: options.topP || 1.0,
+      stream: options.stream || false,
+      safe_prompt: this.safetyLevel !== 'none'
+    };
+
+    // Add optional parameters
+    if (this.randomSeed !== undefined) {
+      request.random_seed = this.randomSeed;
+    }
+
+    if (options.stop) {
+      request.stop = Array.isArray(options.stop) ? options.stop : [options.stop];
+    }
+
+    // Function calling support for compatible models
+    if (options.functions &amp;&amp; model.metadata.features?.includes('function_calling')) {
+      request.functions = options.functions;
+      request.function_call = options.functionCall || 'auto';
+    }
+
+    // JSON mode for compatible models
+    if (this.enableJsonMode &amp;&amp; options.responseFormat === 'json_object') {
+      request.response_format = { type: 'json_object' };
+    }
+
+    return request;
+  }
+
+  /**
+   * Get Mistral AI endpoint
+   */
+  getMistralEndpoint(model) {
+    const modelType = model.metadata?.type || 'chat';
+    
+    switch (modelType) {
+      case 'embedding':
+        return `${this.baseURL}/embeddings`;
+      
+      default:
+        return `${this.baseURL}/chat/completions`;
+    }
+  }
+
+  /**
+   * Standard (non-streaming) completion
+   */
+  async standardCompletion(request, endpoint, model, options) {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(request)
+    });
+
+    if (!response.ok) {
+      await this.handleMistralError(response);
+    }
+
+    const data = await response.json();
+    return this.parseMistralResponse(data, model);
+  }
+
+  /**
+   * Streaming completion
+   */
+  async streamCompletion(request, endpoint, model, options) {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ ...request, stream: true })
+    });
+
+    if (!response.ok) {
+      await this.handleMistralError(response);
+    }
+
+    return this.handleMistralStream(response, model);
+  }
+
+  /**
+   * Handle Mistral AI errors
+   */
+  async handleMistralError(response) {
+    const errorText = await response.text();
+    let errorData;
+    
+    try {
+      errorData = JSON.parse(errorText);
+    } catch {
+      errorData = { message: errorText };
+    }
+
+    // Mistral-specific error handling
+    if (response.status === 401) {
+      throw new Error('Mistral AI authentication failed. Check API key.');
+    } else if (response.status === 402) {
+      throw new Error('Mistral AI quota exceeded. Check billing.');
+    } else if (response.status === 429) {
+      const retryAfter = response.headers.get('retry-after');
+      throw new Error(`Mistral AI rate limit exceeded. Retry after ${retryAfter} seconds.`);
+    }
+
+    const message = errorData.message || `Mistral AI error (${response.status})`;
+    throw new Error(message);
+  }
+
+  /**
+   * Parse Mistral AI response
+   */
+  parseMistralResponse(data, model) {
+    const modelType = model.metadata?.type || 'chat';
+    
+    if (modelType === 'embedding') {
+      return this.parseEmbeddingResponse(data, model);
+    }
+
+    // Chat completion response
+    const choice = data.choices?.[0];
+    const text = choice?.message?.content || '';
+    const usage = data.usage || {};
+
+    return {
+      text,
+      model: model.id,
+      provider: 'mistral',
+      usage: {
+        promptTokens: usage.prompt_tokens || 0,
+        completionTokens: usage.completion_tokens || 0,
+        totalTokens: usage.total_tokens || 0
+      },
+      cost: this.calculateCost(usage, model.modelId),
+      finishReason: choice?.finish_reason || 'unknown',
+      metadata: {
+        safetyLevel: this.safetyLevel,
+        dataResidency: this.dataResidency,
+        functionCall: choice?.message?.function_call
+      },
+      timestamp: Date.now()
+    };
+  }
+
+  /**
+   * Parse embedding response
+   */
+  parseEmbeddingResponse(data, model) {
+    const embeddings = data.data?.map(item => item.embedding) || [];
+    const usage = data.usage || {};
+
+    return {
+      embeddings,
+      model: model.id,
+      provider: 'mistral',
+      usage: {
+        promptTokens: usage.prompt_tokens || 0,
+        completionTokens: 0,
+        totalTokens: usage.total_tokens || 0
+      },
+      cost: this.calculateCost(usage, model.modelId),
+      metadata: {
+        count: embeddings.length,
+        dimensions: embeddings[0]?.length || 0
+      },
+      timestamp: Date.now()
+    };
+  }
+
+  /**
+   * Handle Mistral AI streaming response
+   */
+  async *handleMistralStream(response, model) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') return;
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content;
+              
+              if (content) {
+                yield {
+                  text: content,
+                  model: model.id,
+                  provider: 'mistral',
+                  chunk: true,
+                  metadata: {
+                    safetyLevel: this.safetyLevel
+                  },
+                  timestamp: Date.now()
+                };
+              }
+            } catch (e) {
+              // Skip invalid JSON
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  /**
+   * Calculate cost based on Mistral AI pricing
+   */
+  calculateCost(usage, modelId) {
+    const modelConfig = MISTRAL_MODELS[modelId];
+    if (!modelConfig || !modelConfig.cost) return 0;
+
+    const inputCost = (usage.prompt_tokens / 1000000) * modelConfig.cost.input;
+    const outputCost = (usage.completion_tokens / 1000000) * modelConfig.cost.output;
+    
+    return inputCost + outputCost;
+  }
+
+  /**
+   * List available Mistral AI models
+   */
+  async listModels() {
+    try {
+      const response = await fetch(`${this.baseURL}/models`, {
+        headers: this.getHeaders()
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.data?.map(model => ({
+          id: model.id,
+          name: model.id,
+          provider: 'mistral',
+          created: model.created,
+          metadata: MISTRAL_MODELS[model.id] || {}
+        })) || [];
+      }
+    } catch (error) {
+      logger.warn('Failed to fetch Mistral models, using defaults');
+    }
+
+    // Return default models
+    return Object.keys(MISTRAL_MODELS).map(id => ({
+      id,
+      name: MISTRAL_MODELS[id].name,
+      provider: 'mistral',
+      metadata: MISTRAL_MODELS[id]
+    }));
+  }
+
+  /**
+   * Get adapter information
+   */
+  getInfo() {
+    return {
+      name: 'MistralAdapter',
+      version: '1.0.0',
+      provider: 'mistral',
+      baseURL: this.baseURL,
+      safetyLevel: this.safetyLevel,
+      dataResidency: this.dataResidency,
+      gdprCompliant: this.enableGDPR,
+      modelsLoaded: this.models.size,
+      features: ['streaming', 'function_calling', 'multilingual', 'european_compliance'],
+      languages: ['en', 'fr', 'de', 'es', 'it', 'pt', 'ru', 'zh', 'ja', 'ko'],
+      models: Object.keys(MISTRAL_MODELS),
+      openSourceModels: Object.keys(MISTRAL_MODELS).filter(id => MISTRAL_MODELS[id].openSource),
+      status: 'ready'
+    };
+  }
+
+  /**
+   * Unload model
+   */
+  async unload(modelId) {
+    if (this.models.has(modelId)) {
+      this.models.delete(modelId);
+      logger.info(`Mistral model ${modelId} unloaded`);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Clean up resources
+   */
+  async dispose() {
+    this.models.clear();
+    logger.info('Mistral AI adapter disposed');
+  }
+}
+
+export default MistralAdapter;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ABTestingManager.html">ABTestingManager</a></li><li><a href="APILoader.html">APILoader</a></li><li><a href="AnthropicAdapter.html">AnthropicAdapter</a></li><li><a href="AuditLogger.html">AuditLogger</a></li><li><a href="AuthManager.html">AuthManager</a></li><li><a href="AuthMiddleware.html">AuthMiddleware</a></li><li><a href="AzureOpenAIAdapter.html">AzureOpenAIAdapter</a></li><li><a href="BPETokenizer.html">BPETokenizer</a></li><li><a href="BaseEngine.html">BaseEngine</a></li><li><a href="BaseLoader.html">BaseLoader</a></li><li><a href="BedrockAdapter.html">BedrockAdapter</a></li><li><a href="BinaryLoader.html">BinaryLoader</a></li><li><a href="BinaryModel.html">BinaryModel</a></li><li><a href="BitNetLoader.html">BitNetLoader</a></li><li><a href="CohereAdapter.html">CohereAdapter</a></li><li><a href="ConversionConfig.html">ConversionConfig</a></li><li><a href="ConversionResult.html">ConversionResult</a></li><li><a href="DeepSeekAdapter.html">DeepSeekAdapter</a></li><li><a href="EnterpriseAuthManager.html">EnterpriseAuthManager</a></li><li><a href="EnterpriseManager.html">EnterpriseManager</a></li><li><a href="EnterpriseRouter.html">EnterpriseRouter</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="FireworksAdapter.html">FireworksAdapter</a></li><li><a href="FormatConverter.html">FormatConverter</a></li><li><a href="GGUFLoader.html">GGUFLoader</a></li><li><a href="GGUFModel.html">GGUFModel</a></li><li><a href="GRPCClient.html">GRPCClient</a></li><li><a href="GroqAdapter.html">GroqAdapter</a></li><li><a href="LLMRouter.html">LLMRouter</a></li><li><a href="MistralAdapter.html">MistralAdapter</a></li><li><a href="MockLoader.html">MockLoader</a></li><li><a href="MockModel.html">MockModel</a></li><li><a href="ModelError.html">ModelError</a></li><li><a href="ModelInterface.html">ModelInterface</a></li><li><a href="ModelQuantizer.html">ModelQuantizer</a></li><li><a href="ModelRegistry.html">ModelRegistry</a></li><li><a href="ModelTemplates.html">ModelTemplates</a></li><li><a href="MultiTenancyManager.html">MultiTenancyManager</a></li><li><a href="NovitaAdapter.html">NovitaAdapter</a></li><li><a href="OpenAIAdapter.html">OpenAIAdapter</a></li><li><a href="OpenRouterAdapter.html">OpenRouterAdapter</a></li><li><a href="PerplexityAdapter.html">PerplexityAdapter</a></li><li><a href="Pipeline.html">Pipeline</a></li><li><a href="PyTorchLoader.html">PyTorchLoader</a></li><li><a href="PyTorchModel.html">PyTorchModel</a></li><li><a href="QuantizationConfig.html">QuantizationConfig</a></li><li><a href="QuantizationResult.html">QuantizationResult</a></li><li><a href="Router.html">Router</a></li><li><a href="SLAMonitor.html">SLAMonitor</a></li><li><a href="SentencePieceTokenizer.html">SentencePieceTokenizer</a></li><li><a href="SimpleLoader.html">SimpleLoader</a></li><li><a href="SimpleModel.html">SimpleModel</a></li><li><a href="TogetherAdapter.html">TogetherAdapter</a></li><li><a href="TokenizationResult.html">TokenizationResult</a></li><li><a href="TokenizerConfig.html">TokenizerConfig</a></li><li><a href="UniversalTokenizer.html">UniversalTokenizer</a></li><li><a href="ValidationConfig.html">ValidationConfig</a></li><li><a href="ValidationSuite.html">ValidationSuite</a></li><li><a href="ValidationSuiteResult.html">ValidationSuiteResult</a></li><li><a href="ValidationTestResult.html">ValidationTestResult</a></li><li><a href="VertexAIAdapter.html">VertexAIAdapter</a></li><li><a href="WordPieceTokenizer.html">WordPieceTokenizer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ADAPTER_REGISTRY">ADAPTER_REGISTRY</a></li><li><a href="global.html#API_KEY_PATTERNS">API_KEY_PATTERNS</a></li><li><a href="global.html#AUTH_TYPES">AUTH_TYPES</a></li><li><a href="global.html#AZURE_API_VERSIONS">AZURE_API_VERSIONS</a></li><li><a href="global.html#AZURE_OPENAI_MODELS">AZURE_OPENAI_MODELS</a></li><li><a href="global.html#Architectures">Architectures</a></li><li><a href="global.html#AuditEventTypes">AuditEventTypes</a></li><li><a href="global.html#AuthMethods">AuthMethods</a></li><li><a href="global.html#BEDROCK_MODELS">BEDROCK_MODELS</a></li><li><a href="global.html#BreachSeverity">BreachSeverity</a></li><li><a href="global.html#CLAUDE_MODELS">CLAUDE_MODELS</a></li><li><a href="global.html#COHERE_MODELS">COHERE_MODELS</a></li><li><a href="global.html#COMPLIANCE_FEATURES">COMPLIANCE_FEATURES</a></li><li><a href="global.html#Capabilities">Capabilities</a></li><li><a href="global.html#ComplianceFrameworks">ComplianceFrameworks</a></li><li><a href="global.html#DEEPSEEK_ENDPOINTS">DEEPSEEK_ENDPOINTS</a></li><li><a href="global.html#DEEPSEEK_MODELS">DEEPSEEK_MODELS</a></li><li><a href="global.html#EnterpriseFeatures">EnterpriseFeatures</a></li><li><a href="global.html#ExperimentStatus">ExperimentStatus</a></li><li><a href="global.html#FIREWORKS_MODELS">FIREWORKS_MODELS</a></li><li><a href="global.html#GROQ_MODELS">GROQ_MODELS</a></li><li><a href="global.html#INPUT_TYPES">INPUT_TYPES</a></li><li><a href="global.html#IsolationLevels">IsolationLevels</a></li><li><a href="global.html#MISTRAL_MODELS">MISTRAL_MODELS</a></li><li><a href="global.html#MODEL_CATEGORIES">MODEL_CATEGORIES</a></li><li><a href="global.html#ModelFormat">ModelFormat</a></li><li><a href="global.html#ModelFormats">ModelFormats</a></li><li><a href="global.html#NOVITA_ENDPOINTS">NOVITA_ENDPOINTS</a></li><li><a href="global.html#NOVITA_MODELS">NOVITA_MODELS</a></li><li><a href="global.html#OPENAI_MODELS">OPENAI_MODELS</a></li><li><a href="global.html#PERPLEXITY_MODELS">PERPLEXITY_MODELS</a></li><li><a href="global.html#POPULAR_MODELS">POPULAR_MODELS</a></li><li><a href="global.html#PROVIDER_AUTH_CONFIG">PROVIDER_AUTH_CONFIG</a></li><li><a href="global.html#PROVIDER_CATEGORIES">PROVIDER_CATEGORIES</a></li><li><a href="global.html#PROVIDER_CONFIGS">PROVIDER_CONFIGS</a></li><li><a href="global.html#PROVIDER_FEATURES">PROVIDER_FEATURES</a></li><li><a href="global.html#Permissions">Permissions</a></li><li><a href="global.html#QuantizationMethod">QuantizationMethod</a></li><li><a href="global.html#QuantizationPrecision">QuantizationPrecision</a></li><li><a href="global.html#QuotaTypes">QuotaTypes</a></li><li><a href="global.html#RiskLevels">RiskLevels</a></li><li><a href="global.html#RoutingStrategies">RoutingStrategies</a></li><li><a href="global.html#SAFETY_LEVELS">SAFETY_LEVELS</a></li><li><a href="global.html#SLAMetricTypes">SLAMetricTypes</a></li><li><a href="global.html#SLAStatus">SLAStatus</a></li><li><a href="global.html#SessionTypes">SessionTypes</a></li><li><a href="global.html#SplittingAlgorithms">SplittingAlgorithms</a></li><li><a href="global.html#StatisticalTests">StatisticalTests</a></li><li><a href="global.html#TOGETHER_MODELS">TOGETHER_MODELS</a></li><li><a href="global.html#TimeWindows">TimeWindows</a></li><li><a href="global.html#TokenizerType">TokenizerType</a></li><li><a href="global.html#UserRoles">UserRoles</a></li><li><a href="global.html#VERTEX_AI_MODELS">VERTEX_AI_MODELS</a></li><li><a href="global.html#VERTEX_REGIONS">VERTEX_REGIONS</a></li><li><a href="global.html#ValidationSeverity">ValidationSeverity</a></li><li><a href="global.html#ValidationTestType">ValidationTestType</a></li><li><a href="global.html#adjustTimeouts">adjustTimeouts</a></li><li><a href="global.html#attemptRecovery">attemptRecovery</a></li><li><a href="global.html#checkConnectivity">checkConnectivity</a></li><li><a href="global.html#clearCache">clearCache</a></li><li><a href="global.html#colors">colors</a></li><li><a href="global.html#createAdapter">createAdapter</a></li><li><a href="global.html#createEnterpriseExpressRoutes">createEnterpriseExpressRoutes</a></li><li><a href="global.html#createEnterpriseRouter">createEnterpriseRouter</a></li><li><a href="global.html#createEnterpriseWebSocketHandlers">createEnterpriseWebSocketHandlers</a></li><li><a href="global.html#createMissingResources">createMissingResources</a></li><li><a href="global.html#defaultEnterpriseConfig">defaultEnterpriseConfig</a></li><li><a href="global.html#emergencyShutdown">emergencyShutdown</a></li><li><a href="global.html#enterpriseVersion">enterpriseVersion</a></li><li><a href="global.html#errorMonitoringMiddleware">errorMonitoringMiddleware</a></li><li><a href="global.html#escalateError">escalateError</a></li><li><a href="global.html#executeRecovery">executeRecovery</a></li><li><a href="global.html#getAdapter">getAdapter</a></li><li><a href="global.html#getEnabledFeatures">getEnabledFeatures</a></li><li><a href="global.html#getMonitoringStatus">getMonitoringStatus</a></li><li><a href="global.html#getProviderAuthType">getProviderAuthType</a></li><li><a href="global.html#getProviderInfo">getProviderInfo</a></li><li><a href="global.html#getProvidersByCategory">getProvidersByCategory</a></li><li><a href="global.html#getProvidersByFeature">getProvidersByFeature</a></li><li><a href="global.html#getStats">getStats</a></li><li><a href="global.html#getSupportedProviders">getSupportedProviders</a></li><li><a href="global.html#gracefulShutdown">gracefulShutdown</a></li><li><a href="global.html#handleCriticalError">handleCriticalError</a></li><li><a href="global.html#handleMemoryLeak">handleMemoryLeak</a></li><li><a href="global.html#httpMonitoringMiddleware">httpMonitoringMiddleware</a></li><li><a href="global.html#isFeatureEnabled">isFeatureEnabled</a></li><li><a href="global.html#isProviderSupported">isProviderSupported</a></li><li><a href="global.html#logError">logError</a></li><li><a href="global.html#performHealthCheck">performHealthCheck</a></li><li><a href="global.html#recordCustomMetric">recordCustomMetric</a></li><li><a href="global.html#registerAlertRule">registerAlertRule</a></li><li><a href="global.html#registerDependency">registerDependency</a></li><li><a href="global.html#registerHealthCheck">registerHealthCheck</a></li><li><a href="global.html#reinstallDependencies">reinstallDependencies</a></li><li><a href="global.html#reload">reload</a></li><li><a href="global.html#restartProcess">restartProcess</a></li><li><a href="global.html#retryConnection">retryConnection</a></li><li><a href="global.html#selectRecoveryStrategy">selectRecoveryStrategy</a></li><li><a href="global.html#setupHandlers">setupHandlers</a></li><li><a href="global.html#setupMonitoring">setupMonitoring</a></li><li><a href="global.html#softRestart">softRestart</a></li><li><a href="global.html#startHealthMonitoring">startHealthMonitoring</a></li><li><a href="global.html#startPerformanceProfile">startPerformanceProfile</a></li><li><a href="global.html#validateEnterpriseConfig">validateEnterpriseConfig</a></li><li><a href="global.html#withCacheMonitoring">withCacheMonitoring</a></li><li><a href="global.html#withDatabaseMonitoring">withDatabaseMonitoring</a></li><li><a href="global.html#withModelMonitoring">withModelMonitoring</a></li><li><a href="global.html#withQueueMonitoring">withQueueMonitoring</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Aug 20 2025 19:41:21 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

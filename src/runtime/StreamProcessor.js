@@ -7,7 +7,6 @@
 import { Logger } from '../utils/Logger.js';
 import { EventEmitter } from 'events';
 import { Transform, Readable, pipeline } from 'stream';
-import { performance } from 'perf_hooks';
 
 class StreamProcessor extends EventEmitter {
   constructor(config = {}) {

@@ -40,6 +40,17 @@ class EnhancedDocsAPI {
             'api-anthropic': 'api/providers/anthropic.md',
             'api-openrouter': 'api/providers/openrouter.md',
             'api-groq': 'api/providers/groq.md',
+            'api-huggingface': 'api/providers/huggingface.md',
+            'api-local': 'api/providers/local.md',
+            'api-azure-openai': 'api/providers/azure-openai.md',
+            'api-bedrock': 'api/providers/bedrock.md',
+            'api-vertex-ai': 'api/providers/vertex-ai.md',
+            'api-mistral': 'api/providers/mistral.md',
+            'api-together-ai': 'api/providers/together-ai.md',
+            'api-fireworks': 'api/providers/fireworks.md',
+            'api-deepinfra': 'api/providers/deepinfra.md',
+            'api-cohere': 'api/providers/cohere.md',
+            'api-perplexity': 'api/providers/perplexity.md',
             
             // API Provider Documentation - Features
             'api-streaming': 'api/features/streaming.md',
@@ -53,10 +64,11 @@ class EnhancedDocsAPI {
             
             // API Provider Documentation - Reference
             'api-loader-reference': 'api/reference/apiloader.md',
-            'api-openai-adapter': 'api/reference/openai-adapter.md',
-            'api-anthropic-adapter': 'api/reference/anthropic-adapter.md',
-            'api-openrouter-adapter': 'api/reference/openrouter-adapter.md',
-            'api-groq-adapter': 'api/reference/groq-adapter.md',
+            'api-adapters-openai': 'api/reference/adapters/openai.md',
+            'api-adapters-anthropic': 'api/reference/adapters/anthropic.md',
+            'api-adapters-groq': 'api/reference/adapters/groq.md',
+            'api-adapters-openrouter': 'api/reference/adapters/openrouter.md',
+            'api-adapters-custom': 'api/reference/adapters/custom.md',
             
             // API Provider Documentation - Advanced
             'api-routing': 'api/advanced/routing.md',
@@ -72,6 +84,13 @@ class EnhancedDocsAPI {
             'api-rag-tutorial': 'api/tutorials/cost-effective-rag.md',
             'api-streaming-ui': 'api/tutorials/streaming-ui-integration.md',
             'api-function-calling': 'api/tutorials/function-calling-patterns.md',
+            
+            // Provider Integration Documentation
+            'authentication-patterns': 'AUTHENTICATION_PATTERNS.md',
+            'provider-integration-plan': 'PROVIDER_INTEGRATION_PLAN.md',
+            'provider-adapter-architecture': 'PROVIDER_ADAPTER_ARCHITECTURE.md',
+            'provider-integration-checklist': 'PROVIDER_INTEGRATION_CHECKLIST.md',
+            'provider-integration-summary': 'PROVIDER_INTEGRATION_SUMMARY.md',
             
             // New documentation files
             'error-codes': 'ERROR_CODES.md',
