@@ -584,7 +584,7 @@ MIT License - Because sharing is caring, and AI should be for everyone.
 
 ## 🙏 Acknowledgments
 
-- **[Mysticmarks](https://github.com/mysticmarks)** for invaluable contributions to the LLM Router architecture and provider integration strategies
+- **[Mysticmarks](https://github.com/Mysticmarks)** for invaluable contributions to the LLM Router architecture and provider integration strategies
 - The Quantum Field for probabilistic inspiration
 - Coffee for keeping us in a superposition of awake and asleep
 - You, for reading this far and joining our neural revolution
