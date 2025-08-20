@@ -12,8 +12,10 @@ const logger = new Logger('APILoader');
 
 /**
  * API Provider configurations
+ * Comprehensive configuration for all 24 supported LLM providers
  */
 const PROVIDER_CONFIGS = {
+  // Existing providers
   openai: {
     baseURL: 'https://api.openai.com/v1',
     models: ['gpt-4-turbo-preview', 'gpt-4', 'gpt-3.5-turbo', 'gpt-3.5-turbo-16k'],
@@ -22,7 +24,9 @@ const PROVIDER_CONFIGS = {
       'Content-Type': 'application/json'
     }),
     streaming: true,
-    costPerMillion: { input: 10, output: 30 } // Example pricing
+    authType: 'api_key',
+    costPerMillion: { input: 10, output: 30 },
+    features: ['function_calling', 'vision', 'json_mode']
   },
   anthropic: {
     baseURL: 'https://api.anthropic.com/v1',
@@ -33,7 +37,9 @@ const PROVIDER_CONFIGS = {
       'Content-Type': 'application/json'
     }),
     streaming: true,
-    costPerMillion: { input: 15, output: 75 }
+    authType: 'api_key',
+    costPerMillion: { input: 15, output: 75 },
+    features: ['long_context', 'safety_focus']
   },
   openrouter: {
     baseURL: 'https://openrouter.ai/api/v1',
@@ -45,7 +51,9 @@ const PROVIDER_CONFIGS = {
       'X-Title': 'LLM-Runner-Router'
     }),
     streaming: true,
-    costPerMillion: { input: 0, output: 0 } // OpenRouter provides per-model pricing
+    authType: 'api_key',
+    costPerMillion: { input: 0, output: 0 }, // OpenRouter provides per-model pricing
+    features: ['multi_provider', 'model_routing']
   },
   groq: {
     baseURL: 'https://api.groq.com/openai/v1',
@@ -55,7 +63,222 @@ const PROVIDER_CONFIGS = {
       'Content-Type': 'application/json'
     }),
     streaming: true,
-    costPerMillion: { input: 0.27, output: 0.27 } // Groq's fast inference pricing
+    authType: 'api_key',
+    costPerMillion: { input: 0.27, output: 0.27 }, // Groq's fast inference pricing
+    features: ['ultra_fast', 'lpu_technology']
+  },
+
+  // Phase 1: Enterprise Cloud Giants
+  bedrock: {
+    baseURL: null, // Uses AWS SDK
+    models: [
+      'anthropic.claude-3-opus-20240229-v1:0',
+      'anthropic.claude-3-sonnet-20240229-v1:0', 
+      'anthropic.claude-3-haiku-20240307-v1:0',
+      'meta.llama2-70b-chat-v1',
+      'mistral.mixtral-8x7b-instruct-v0:1',
+      'amazon.titan-text-express-v1',
+      'cohere.command-text-v14'
+    ],
+    headers: () => ({
+      'Content-Type': 'application/json',
+      'User-Agent': 'LLM-Runner-Router/2.0.0'
+    }),
+    streaming: true,
+    authType: 'aws_sdk',
+    costPerMillion: { input: 15, output: 75 }, // Varies by model
+    features: ['enterprise', 'aws_native', 'multi_model']
+  },
+  'azure-openai': {
+    baseURL: null, // Set dynamically from endpoint
+    models: ['gpt-4-turbo', 'gpt-4', 'gpt-35-turbo', 'gpt-35-turbo-16k', 'dall-e-3', 'text-embedding-ada-002'],
+    headers: (apiKey) => ({
+      'api-key': apiKey,
+      'Content-Type': 'application/json'
+    }),
+    streaming: true,
+    authType: 'api_key', // or azure_sdk
+    costPerMillion: { input: 10, output: 30 }, // Same as OpenAI
+    features: ['enterprise', 'compliance', 'azure_ad', 'hipaa', 'soc2']
+  },
+  'vertex-ai': {
+    baseURL: null, // Set dynamically from project/location
+    models: [
+      'gemini-1.5-pro',
+      'gemini-1.0-pro',
+      'gemini-1.0-pro-vision',
+      'text-bison',
+      'chat-bison',
+      'code-bison',
+      'textembedding-gecko'
+    ],
+    headers: () => ({
+      'Content-Type': 'application/json',
+      'User-Agent': 'LLM-Runner-Router/2.0.0'
+    }),
+    streaming: true,
+    authType: 'gcp_sdk',
+    costPerMillion: { input: 3.5, output: 10.5 }, // Varies by model
+    features: ['multimodal', 'enterprise', 'gcp_native', 'mlops']
+  },
+  mistral: {
+    baseURL: 'https://api.mistral.ai/v1',
+    models: [
+      'mistral-large-latest',
+      'mistral-medium-latest', 
+      'mistral-small-latest',
+      'mistral-tiny',
+      'open-mistral-7b',
+      'open-mixtral-8x7b',
+      'open-mixtral-8x22b',
+      'mistral-embed'
+    ],
+    headers: (apiKey) => ({
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    }),
+    streaming: true,
+    authType: 'api_key',
+    costPerMillion: { input: 8, output: 24 }, // Varies by model
+    features: ['european', 'gdpr_compliant', 'multilingual', 'function_calling']
+  },
+
+  // Phase 2: High-Performance Inference
+  together: {
+    baseURL: 'https://api.together.xyz/v1',
+    models: [
+      'meta-llama/Llama-2-70b-chat-hf',
+      'meta-llama/Llama-2-13b-chat-hf',
+      'meta-llama/CodeLlama-34b-Instruct-hf',
+      'mistralai/Mixtral-8x7B-Instruct-v0.1',
+      'mistralai/Mistral-7B-Instruct-v0.1'
+    ],
+    headers: (apiKey) => ({
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    }),
+    streaming: true,
+    authType: 'api_key',
+    costPerMillion: { input: 0.9, output: 0.9 }, // Varies by model
+    features: ['open_source', 'batch_processing', 'fine_tuning']
+  },
+  fireworks: {
+    baseURL: 'https://api.fireworks.ai/inference/v1',
+    models: [
+      'accounts/fireworks/models/llama-v3p1-70b-instruct',
+      'accounts/fireworks/models/llama-v3p1-8b-instruct',
+      'accounts/fireworks/models/mixtral-8x7b-instruct',
+      'accounts/fireworks/models/firefunction-v2'
+    ],
+    headers: (apiKey) => ({
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    }),
+    streaming: true,
+    authType: 'api_key',
+    costPerMillion: { input: 0.9, output: 0.9 }, // Varies by model
+    features: ['fire_attention', 'function_calling', 'structured_output', 'hipaa', 'soc2']
+  },
+  deepinfra: {
+    baseURL: 'https://api.deepinfra.com/v1/openai',
+    models: [
+      'meta-llama/Llama-2-70b-chat-hf',
+      'mistralai/Mixtral-8x7B-Instruct-v0.1',
+      'codellama/CodeLlama-34b-Instruct-hf'
+    ],
+    headers: (apiKey) => ({
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    }),
+    streaming: true,
+    authType: 'api_key',
+    costPerMillion: { input: 0.27, output: 0.27 }, // 50% cost savings
+    features: ['cost_effective', 'gpu_optimization', 'serverless']
+  },
+  replicate: {
+    baseURL: 'https://api.replicate.com/v1',
+    models: [
+      'meta/llama-2-70b-chat',
+      'mistralai/mixtral-8x7b-instruct-v0.1',
+      'stability-ai/stable-diffusion'
+    ],
+    headers: (apiKey) => ({
+      'Authorization': `Token ${apiKey}`,
+      'Content-Type': 'application/json'
+    }),
+    streaming: false, // Replicate uses prediction API
+    authType: 'api_key',
+    costPerMillion: { input: 0.65, output: 2.75 }, // Per-prediction pricing
+    features: ['community_models', 'version_control', 'custom_deployment']
+  },
+
+  // Phase 3: Specialized & Multi-Modal
+  cohere: {
+    baseURL: 'https://api.cohere.ai/v1',
+    models: [
+      'command',
+      'command-r',
+      'command-r-plus',
+      'command-light',
+      'embed-english-v3.0',
+      'rerank-english-v3.0'
+    ],
+    headers: (apiKey) => ({
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    }),
+    streaming: true,
+    authType: 'api_key',
+    costPerMillion: { input: 1.5, output: 2.0 },
+    features: ['enterprise', 'embeddings', 'rerank', 'multilingual']
+  },
+  perplexity: {
+    baseURL: 'https://api.perplexity.ai',
+    models: [
+      'llama-3.1-sonar-small-128k-online',
+      'llama-3.1-sonar-large-128k-online',
+      'llama-3.1-sonar-huge-128k-online'
+    ],
+    headers: (apiKey) => ({
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    }),
+    streaming: true,
+    authType: 'api_key',
+    costPerMillion: { input: 1.0, output: 1.0 },
+    features: ['web_search', 'real_time', 'citations']
+  },
+  deepseek: {
+    baseURL: 'https://api.deepseek.com/v1',
+    models: [
+      'deepseek-chat',
+      'deepseek-coder',
+      'deepseek-r1'
+    ],
+    headers: (apiKey) => ({
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    }),
+    streaming: true,
+    authType: 'api_key',
+    costPerMillion: { input: 0.14, output: 0.28 }, // Very cost effective
+    features: ['cost_effective', 'reasoning', 'coding']
+  },
+  novita: {
+    baseURL: 'https://api.novita.ai/v3/openai',
+    models: [
+      'meta-llama/llama-3.1-8b-instruct',
+      'meta-llama/llama-3.1-70b-instruct',
+      'mistralai/mixtral-8x7b-instruct-v0.1'
+    ],
+    headers: (apiKey) => ({
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    }),
+    streaming: true,
+    authType: 'api_key',
+    costPerMillion: { input: 0.2, output: 0.2 },
+    features: ['multimodal', 'image_generation', 'video', 'speech']
   }
 };
 

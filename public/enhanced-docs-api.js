@@ -40,6 +40,9 @@ class EnhancedDocsAPI {
             'api-anthropic': 'api/providers/anthropic.md',
             'api-openrouter': 'api/providers/openrouter.md',
             'api-groq': 'api/providers/groq.md',
+            'api-huggingface': 'api/providers/huggingface.md',
+            'api-local': 'api/providers/local.md',
+            'api-azure': 'api/providers/azure.md',
             
             // API Provider Documentation - Features
             'api-streaming': 'api/features/streaming.md',
@@ -53,10 +56,11 @@ class EnhancedDocsAPI {
             
             // API Provider Documentation - Reference
             'api-loader-reference': 'api/reference/apiloader.md',
-            'api-openai-adapter': 'api/reference/openai-adapter.md',
-            'api-anthropic-adapter': 'api/reference/anthropic-adapter.md',
-            'api-openrouter-adapter': 'api/reference/openrouter-adapter.md',
-            'api-groq-adapter': 'api/reference/groq-adapter.md',
+            'api-adapters-openai': 'api/reference/adapters/openai.md',
+            'api-adapters-anthropic': 'api/reference/adapters/anthropic.md',
+            'api-adapters-groq': 'api/reference/adapters/groq.md',
+            'api-adapters-openrouter': 'api/reference/adapters/openrouter.md',
+            'api-adapters-custom': 'api/reference/adapters/custom.md',
             
             // API Provider Documentation - Advanced
             'api-routing': 'api/advanced/routing.md',
