@@ -206,38 +206,45 @@ const PROVIDER_CONFIGS = {
       'Authorization': `Token ${apiKey}`,
       'Content-Type': 'application/json'
     }),
-    streaming: false, // Replicate uses prediction API
+    streaming: false, // Replicate uses prediction polling
     authType: 'api_key',
-    costPerMillion: { input: 0.65, output: 2.75 }, // Per-prediction pricing
-    features: ['community_models', 'version_control', 'custom_deployment']
+    costPerMillion: { input: 0.65, output: 2.75 },
+    features: ['community_models', 'version_control', 'async_predictions']
   },
 
   // Phase 3: Specialized & Multi-Modal
   cohere: {
     baseURL: 'https://api.cohere.ai/v1',
     models: [
-      'command',
-      'command-r',
       'command-r-plus',
+      'command-r',
+      'command',
       'command-light',
       'embed-english-v3.0',
-      'rerank-english-v3.0'
+      'embed-multilingual-v3.0',
+      'rerank-english-v3.0',
+      'rerank-multilingual-v3.0'
     ],
     headers: (apiKey) => ({
       'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Cohere-Version': '2022-12-06'
     }),
     streaming: true,
     authType: 'api_key',
-    costPerMillion: { input: 1.5, output: 2.0 },
-    features: ['enterprise', 'embeddings', 'rerank', 'multilingual']
+    costPerMillion: { input: 3.0, output: 15.0 }, // Command R+ pricing
+    features: ['embeddings', 'reranking', 'tool_use', 'retrieval', 'multilingual', 'enterprise']
   },
   perplexity: {
     baseURL: 'https://api.perplexity.ai',
     models: [
-      'llama-3.1-sonar-small-128k-online',
       'llama-3.1-sonar-large-128k-online',
-      'llama-3.1-sonar-huge-128k-online'
+      'llama-3.1-sonar-small-128k-online',
+      'llama-3.1-sonar-huge-128k-online',
+      'llama-3.1-sonar-large-128k-chat',
+      'llama-3.1-sonar-small-128k-chat',
+      'llama-3.1-8b-instruct',
+      'llama-3.1-70b-instruct'
     ],
     headers: (apiKey) => ({
       'Authorization': `Bearer ${apiKey}`,
@@ -245,15 +252,16 @@ const PROVIDER_CONFIGS = {
     }),
     streaming: true,
     authType: 'api_key',
-    costPerMillion: { input: 1.0, output: 1.0 },
-    features: ['web_search', 'real_time', 'citations']
+    costPerMillion: { input: 1.0, output: 1.0 }, // Sonar Large pricing
+    features: ['web_search', 'real_time_info', 'citations', 'factual_accuracy']
   },
   deepseek: {
     baseURL: 'https://api.deepseek.com/v1',
     models: [
       'deepseek-chat',
       'deepseek-coder',
-      'deepseek-r1'
+      'deepseek-reasoner',
+      'deepseek-math'
     ],
     headers: (apiKey) => ({
       'Authorization': `Bearer ${apiKey}`,
@@ -261,24 +269,31 @@ const PROVIDER_CONFIGS = {
     }),
     streaming: true,
     authType: 'api_key',
-    costPerMillion: { input: 0.14, output: 0.28 }, // Very cost effective
-    features: ['cost_effective', 'reasoning', 'coding']
+    costPerMillion: { input: 0.14, output: 0.28 }, // Ultra cost-effective
+    features: ['cost_optimization', 'reasoning', 'coding', 'mathematics', 'chain_of_thought']
   },
   novita: {
-    baseURL: 'https://api.novita.ai/v3/openai',
+    baseURL: 'https://api.novita.ai/v3',
     models: [
-      'meta-llama/llama-3.1-8b-instruct',
-      'meta-llama/llama-3.1-70b-instruct',
-      'mistralai/mixtral-8x7b-instruct-v0.1'
+      'llama-3.1-8b-instruct',
+      'llama-3.1-70b-instruct',
+      'llama-3.1-405b-instruct',
+      'flux-dev',
+      'flux-schnell',
+      'sdxl-turbo',
+      'kling-video',
+      'runway-gen3',
+      'elevenlabs-tts',
+      'openai-tts'
     ],
     headers: (apiKey) => ({
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     }),
-    streaming: true,
+    streaming: true, // For text models
     authType: 'api_key',
-    costPerMillion: { input: 0.2, output: 0.2 },
-    features: ['multimodal', 'image_generation', 'video', 'speech']
+    costPerMillion: { input: 0.59, output: 0.79 }, // Llama 3.1 70B pricing
+    features: ['multimodal', 'text_to_image', 'image_to_video', 'text_to_speech', 'high_quality_media']
   }
 };
 

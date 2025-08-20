@@ -57,15 +57,17 @@ const PROVIDER_AUTH_CONFIG = {
   
   // Direct API providers
   mistral: { type: AUTH_TYPES.API_KEY, headerType: 'Bearer' },
-  cohere: { type: AUTH_TYPES.API_KEY, headerType: 'Bearer' },
-  perplexity: { type: AUTH_TYPES.API_KEY, headerType: 'Bearer' },
-  deepseek: { type: AUTH_TYPES.API_KEY, headerType: 'Bearer' },
   
   // High-performance providers
   together: { type: AUTH_TYPES.API_KEY, headerType: 'Bearer' },
   fireworks: { type: AUTH_TYPES.API_KEY, headerType: 'Bearer' },
   deepinfra: { type: AUTH_TYPES.API_KEY, headerType: 'Bearer' },
   replicate: { type: AUTH_TYPES.API_KEY, headerType: 'Token' },
+  
+  // Specialized & Multi-Modal providers
+  cohere: { type: AUTH_TYPES.API_KEY, headerType: 'Bearer' },
+  perplexity: { type: AUTH_TYPES.API_KEY, headerType: 'Bearer' },
+  deepseek: { type: AUTH_TYPES.API_KEY, headerType: 'Bearer' },
   novita: { type: AUTH_TYPES.API_KEY, headerType: 'Bearer' }
 };
 

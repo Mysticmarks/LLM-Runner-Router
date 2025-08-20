@@ -42,7 +42,15 @@ class EnhancedDocsAPI {
             'api-groq': 'api/providers/groq.md',
             'api-huggingface': 'api/providers/huggingface.md',
             'api-local': 'api/providers/local.md',
-            'api-azure': 'api/providers/azure.md',
+            'api-azure-openai': 'api/providers/azure-openai.md',
+            'api-bedrock': 'api/providers/bedrock.md',
+            'api-vertex-ai': 'api/providers/vertex-ai.md',
+            'api-mistral': 'api/providers/mistral.md',
+            'api-together-ai': 'api/providers/together-ai.md',
+            'api-fireworks': 'api/providers/fireworks.md',
+            'api-deepinfra': 'api/providers/deepinfra.md',
+            'api-cohere': 'api/providers/cohere.md',
+            'api-perplexity': 'api/providers/perplexity.md',
             
             // API Provider Documentation - Features
             'api-streaming': 'api/features/streaming.md',

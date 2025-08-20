@@ -20,6 +20,12 @@ import MistralAdapter from './MistralAdapter.js';
 import TogetherAdapter from './TogetherAdapter.js';
 import FireworksAdapter from './FireworksAdapter.js';
 
+// Phase 3: Specialized & Multi-Modal
+import CohereAdapter from './CohereAdapter.js';
+import PerplexityAdapter from './PerplexityAdapter.js';
+import DeepSeekAdapter from './DeepSeekAdapter.js';
+import NovitaAdapter from './NovitaAdapter.js';
+
 /**
  * Adapter registry mapping provider names to adapter classes
  */
@@ -47,15 +53,14 @@ export const ADAPTER_REGISTRY = {
   'fireworks': FireworksAdapter,
   'fireworks-ai': FireworksAdapter, // Alias
 
-  // Phase 3: Specialized & Multi-Modal (placeholders for future implementation)
-  // 'cohere': CohereAdapter,
-  // 'perplexity': PerplexityAdapter,
-  // 'deepseek': DeepSeekAdapter,
-  // 'novita': NovitaAdapter,
-
-  // Additional providers (placeholders)
-  // 'deepinfra': DeepInfraAdapter,
-  // 'replicate': ReplicateAdapter,
+  // Phase 3: Specialized & Multi-Modal
+  'cohere': CohereAdapter,
+  'perplexity': PerplexityAdapter,
+  'perplexity-ai': PerplexityAdapter, // Alias
+  'deepseek': DeepSeekAdapter,
+  'deepseek-ai': DeepSeekAdapter, // Alias
+  'novita': NovitaAdapter,
+  'novita-ai': NovitaAdapter, // Alias
 };
 
 /**
@@ -67,7 +72,8 @@ export const PROVIDER_CATEGORIES = {
   'european_compliance': ['mistral'],
   'high_performance': ['together', 'fireworks', 'groq'],
   'multi_provider': ['openrouter'],
-  'specialized': [], // Will be populated in Phase 3
+  'specialized': ['cohere', 'perplexity', 'deepseek'],
+  'multimodal': ['novita'],
   'open_source': ['together', 'fireworks']
 };
 
@@ -75,7 +81,7 @@ export const PROVIDER_CATEGORIES = {
  * Authentication types supported by providers
  */
 export const AUTH_TYPES = {
-  'api_key': ['openai', 'anthropic', 'openrouter', 'groq', 'mistral', 'together', 'fireworks'],
+  'api_key': ['openai', 'anthropic', 'openrouter', 'groq', 'mistral', 'together', 'fireworks', 'cohere', 'perplexity', 'deepseek', 'novita'],
   'cloud_sdk': ['bedrock', 'vertex-ai'],
   'hybrid': ['azure-openai'], // Supports both API key and Azure AD
   'oauth2': [], // Will be populated as needed
@@ -86,17 +92,23 @@ export const AUTH_TYPES = {
  * Feature matrix for providers
  */
 export const PROVIDER_FEATURES = {
-  'streaming': ['openai', 'anthropic', 'openrouter', 'groq', 'mistral', 'together', 'fireworks', 'bedrock', 'azure-openai', 'vertex-ai'],
-  'function_calling': ['openai', 'azure-openai', 'mistral', 'fireworks'],
-  'vision': ['openai', 'azure-openai', 'vertex-ai'],
-  'embeddings': ['openai', 'azure-openai', 'vertex-ai', 'mistral'],
-  'multimodal': ['vertex-ai'],
-  'enterprise': ['bedrock', 'azure-openai', 'vertex-ai', 'fireworks'],
+  'streaming': ['openai', 'anthropic', 'openrouter', 'groq', 'mistral', 'together', 'fireworks', 'bedrock', 'azure-openai', 'vertex-ai', 'cohere', 'perplexity', 'deepseek', 'novita'],
+  'function_calling': ['openai', 'azure-openai', 'mistral', 'fireworks', 'cohere'],
+  'vision': ['openai', 'azure-openai', 'vertex-ai', 'novita'],
+  'embeddings': ['openai', 'azure-openai', 'vertex-ai', 'mistral', 'cohere'],
+  'multimodal': ['vertex-ai', 'novita'],
+  'enterprise': ['bedrock', 'azure-openai', 'vertex-ai', 'fireworks', 'cohere'],
   'compliance': ['azure-openai', 'fireworks'], // HIPAA, SOC2
   'european': ['mistral'],
   'open_source': ['together', 'fireworks'],
-  'batch_processing': ['together', 'fireworks'],
-  'fine_tuning': ['together', 'fireworks']
+  'batch_processing': ['together', 'fireworks', 'cohere'],
+  'fine_tuning': ['together', 'fireworks'],
+  'web_search': ['perplexity'],
+  'cost_optimized': ['deepseek'],
+  'reranking': ['cohere'],
+  'text_to_image': ['novita'],
+  'text_to_video': ['novita'],
+  'text_to_speech': ['novita']
 };
 
 /**
@@ -210,7 +222,13 @@ export {
   
   // Phase 2: High-Performance Inference
   TogetherAdapter,
-  FireworksAdapter
+  FireworksAdapter,
+  
+  // Phase 3: Specialized & Multi-Modal
+  CohereAdapter,
+  PerplexityAdapter,
+  DeepSeekAdapter,
+  NovitaAdapter
 };
 
 // Default export for convenience
