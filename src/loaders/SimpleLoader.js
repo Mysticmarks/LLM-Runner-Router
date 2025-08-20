@@ -4,6 +4,7 @@
  */
 
 import { ModelInterface } from '../core/ModelInterface.js';
+import { BaseLoader } from './BaseLoader.js';
 import { Logger } from '../utils/Logger.js';
 
 const logger = new Logger('SimpleLoader');
@@ -217,11 +218,16 @@ class SimpleModel extends ModelInterface {
 /**
  * Simple Loader - Lightweight fallback for VPS environments
  */
-class SimpleLoader {
+class SimpleLoader extends BaseLoader {
   constructor(config = {}) {
+    super();
     this.name = 'SimpleLoader';
     this.config = config;
     this.models = new Map();
+  }
+
+  supportsFormat(format) {
+    return format === 'simple' || format === 'fallback';
   }
 
   canHandle(source) {

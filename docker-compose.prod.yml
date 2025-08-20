@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  llm-router:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: llm-router-prod
+    restart: unless-stopped
+    
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+      - API_PORT=3000
+      - DEFAULT_STRATEGY=balanced
+      - MAX_MODELS=10
+      - MODEL_CACHE_DIR=/app/models/cache
+      - AUTO_INIT=true
+    
+    ports:
+      - "3000:3000"
+    
+    volumes:
+      - ./models:/app/models:ro
+      - ./logs:/app/logs
+      - ./temp:/app/temp
+      - model_cache:/app/models/cache
+    
+    networks:
+      - llm-network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  model_cache:
+    driver: local
+
+networks:
+  llm-network:
+    driver: bridge

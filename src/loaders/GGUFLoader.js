@@ -4,6 +4,7 @@
  */
 
 import { ModelInterface } from '../core/ModelInterface.js';
+import { BaseLoader } from './BaseLoader.js';
 import { Logger } from '../utils/Logger.js';
 import path from 'path';
 import fs from 'fs/promises';
@@ -370,9 +371,17 @@ class GGUFModel extends ModelInterface {
 /**
  * GGUF Loader - The quantum gateway to quantized models
  */
-class GGUFLoader {
+class GGUFLoader extends BaseLoader {
   static format = 'gguf';
   static extensions = ['.gguf', '.ggml', '.bin'];
+
+  constructor() {
+    super();
+  }
+
+  supportsFormat(format) {
+    return format === 'gguf' || format === 'ggml';
+  }
 
   /**
    * Check if a file path can be loaded by the GGUF loader
@@ -621,4 +630,5 @@ class GGUFLoader {
 }
 
 export default GGUFLoader;
+export { GGUFLoader };
 

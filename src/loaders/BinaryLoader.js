@@ -4,6 +4,7 @@
  */
 
 import { ModelInterface } from '../core/ModelInterface.js';
+import { BaseLoader } from './BaseLoader.js';
 import { Logger } from '../utils/Logger.js';
 import path from 'path';
 import fs from 'fs/promises';
@@ -278,10 +279,15 @@ class BinaryModel extends ModelInterface {
 /**
  * Binary Loader - Handles generic .bin files
  */
-class BinaryLoader {
+class BinaryLoader extends BaseLoader {
   constructor(config = {}) {
+    super();
     this.config = config;
     this.models = new Map();
+  }
+
+  supportsFormat(format) {
+    return format === 'binary' || format === 'bin';
   }
 
   /**
@@ -361,3 +367,4 @@ class BinaryLoader {
 }
 
 export default BinaryLoader;
+export { BinaryLoader };

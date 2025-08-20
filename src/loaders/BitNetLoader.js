@@ -7,7 +7,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
-import BaseLoader from './BaseLoader.js';
+import { BaseLoader } from './BaseLoader.js';
 import ModelError from '../utils/ModelError.js';
 import Logger from '../utils/Logger.js';
 
@@ -403,3 +403,4 @@ class BitNetLoader extends BaseLoader {
 }
 
 export default BitNetLoader;
+export { BitNetLoader };

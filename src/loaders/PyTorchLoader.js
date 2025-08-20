@@ -4,6 +4,7 @@
  */
 
 import { ModelInterface } from '../core/ModelInterface.js';
+import { BaseLoader } from './BaseLoader.js';
 import { Logger } from '../utils/Logger.js';
 import path from 'path';
 import fs from 'fs/promises';
@@ -180,10 +181,15 @@ class PyTorchModel extends ModelInterface {
 /**
  * PyTorch Loader - Handles .pth, .pt, and .bin files
  */
-class PyTorchLoader {
+class PyTorchLoader extends BaseLoader {
   constructor(config = {}) {
+    super();
     this.config = config;
     this.models = new Map();
+  }
+
+  supportsFormat(format) {
+    return format === 'pytorch' || format === 'pth' || format === 'pt';
   }
 
   /**
@@ -257,3 +263,4 @@ class PyTorchLoader {
 }
 
 export default PyTorchLoader;
+export { PyTorchLoader };

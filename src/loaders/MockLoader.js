@@ -3,6 +3,7 @@
  */
 
 import { ModelInterface } from '../core/ModelInterface.js';
+import { BaseLoader } from './BaseLoader.js';
 import { Logger } from '../utils/Logger.js';
 
 const logger = new Logger('MockLoader');
@@ -112,13 +113,18 @@ class MockModel extends ModelInterface {
 /**
  * Mock Loader - Creates mock models for testing
  */
-class MockLoader {
+class MockLoader extends BaseLoader {
   constructor() {
+    super();
     this.format = 'mock';
     this.models = new Map();
   }
 
   static extensions = ['.mock', '.test'];
+
+  supportsFormat(format) {
+    return format === 'mock' || format === 'test';
+  }
 
   canLoad(source) {
     return source.includes('mock') || source.includes('test');

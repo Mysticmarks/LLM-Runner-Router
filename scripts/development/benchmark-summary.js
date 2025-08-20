@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { LLMRouter } from './src/index.js';
+import { LLMRouter } from '../../src/index.js';
 import { performance } from 'perf_hooks';
 
 console.log('📊 LLM Router Performance Summary\n');

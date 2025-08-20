@@ -4,7 +4,7 @@
  * Echo AI Systems - Bringing cloud AI to your local orchestration
  */
 
-import BaseLoader from './BaseLoader.js';
+import { BaseLoader } from './BaseLoader.js';
 import { Logger } from '../utils/Logger.js';
 import { StreamProcessor } from '../runtime/StreamProcessor.js';
 
@@ -771,3 +771,4 @@ class APILoader extends BaseLoader {
 }
 
 export default APILoader;
+export { APILoader };
