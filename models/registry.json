@@ -17,7 +17,7 @@
         "completion": true
       },
       "metrics": {
-        "loadTime": 1755722068441,
+        "loadTime": 1755744177578,
         "inferenceCount": 0,
         "totalTokens": 0,
         "avgLatency": 0,

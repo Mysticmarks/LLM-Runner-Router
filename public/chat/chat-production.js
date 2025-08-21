@@ -27,12 +27,9 @@ class LLMRouterChat {
     }
 
     getApiUrl() {
-        // If running locally, use localhost
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            return 'http://localhost:3000';
-        }
-        // Otherwise, use the same hostname with port 3000
-        return `http://${window.location.hostname}:3000`;
+        // Use the current origin (protocol + hostname + port)
+        // This ensures we go through the Nginx proxy for HTTPS
+        return window.location.origin;
     }
 
     async checkServerStatus() {

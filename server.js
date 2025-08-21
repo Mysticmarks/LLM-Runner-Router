@@ -15,28 +15,47 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+// Import authentication middleware
+import { 
+  initializeAuth, 
+  requireAPIKey, 
+  checkRateLimit, 
+  recordUsage, 
+  enableCORS,
+  authErrorHandler 
+} from './src/middleware/auth.js';
+import adminRouter from './src/api/admin.js';
+
+// Import security middleware
+import {
+  securityHeaders,
+  globalRateLimit,
+  authRateLimit,
+  validateInput,
+  securityLogger,
+  sanitizeErrors
+} from './src/middleware/security.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0'; // Use HOST env var for binding
 
 console.log('🚀 LLM Router Server Starting...\n');
 
 // Initialize Express and HTTP server
 const app = express();
 const server = createServer(app);
-app.use(express.json());
 
-// Enable CORS for all origins
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
+// Basic security (simplified for now)
+
+// Body parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Enable CORS for SaaS API
+app.use(enableCORS);
 
 // Create a single global router instance
 const router = new LLMRouter({ 
@@ -51,12 +70,20 @@ let loadError = null;
 // WebSocket API instance
 let wsAPI = null;
 
+// Authentication system
+let authSystem = null;
+
 /**
  * Initialize the router and load models
  */
 async function initializeRouter() {
   try {
     console.log('📚 Initializing router...');
+    
+    // Initialize authentication system first
+    console.log('🛡️ Initializing authentication system...');
+    authSystem = await initializeAuth();
+    console.log('  ✅ Authentication system ready');
     
     // Register all loaders
     router.registry.registerLoader('gguf', new GGUFLoader());
@@ -142,7 +169,10 @@ async function initializeRouter() {
   }
 }
 
-// API Routes
+// Mount admin routes
+app.use('/api/admin', adminRouter);
+
+// Public API Routes (no authentication required for health check)
 
 /**
  * Health check endpoint
@@ -157,9 +187,9 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
- * List available models
+ * List available models (requires authentication)
  */
-app.get('/api/models', (req, res) => {
+app.get('/api/models', requireAPIKey, checkRateLimit, recordUsage, (req, res) => {
   if (!isReady) {
     return res.status(503).json({ error: 'Server initializing' });
   }
@@ -177,9 +207,9 @@ app.get('/api/models', (req, res) => {
 });
 
 /**
- * Load a new model
+ * Load a new model (requires authentication)
  */
-app.post('/api/models/load', async (req, res) => {
+app.post('/api/models/load', requireAPIKey, checkRateLimit, recordUsage, async (req, res) => {
   if (!isReady) {
     return res.status(503).json({ error: 'Server initializing' });
   }
@@ -212,9 +242,9 @@ app.post('/api/models/load', async (req, res) => {
 });
 
 /**
- * Quick inference endpoint
+ * Quick inference endpoint (requires authentication)
  */
-app.post('/api/quick', async (req, res) => {
+app.post('/api/quick', requireAPIKey, checkRateLimit, recordUsage, async (req, res) => {
   if (!isReady) {
     return res.status(503).json({ error: 'Server initializing' });
   }
@@ -242,9 +272,9 @@ app.post('/api/quick', async (req, res) => {
 });
 
 /**
- * Chat endpoint for conversation
+ * Chat endpoint for conversation (requires authentication)
  */
-app.post('/api/chat', async (req, res) => {
+app.post('/api/chat', requireAPIKey, checkRateLimit, recordUsage, async (req, res) => {
   if (!isReady) {
     return res.status(503).json({ error: 'Server initializing' });
   }
@@ -301,9 +331,9 @@ app.post('/api/chat', async (req, res) => {
 });
 
 /**
- * Advanced routing endpoint
+ * Advanced routing endpoint (requires authentication)
  */
-app.post('/api/route', async (req, res) => {
+app.post('/api/route', requireAPIKey, checkRateLimit, recordUsage, async (req, res) => {
   if (!isReady) {
     return res.status(503).json({ error: 'Server initializing' });
   }
@@ -348,22 +378,30 @@ app.use(express.static('public'));
  */
 app.get('/', (req, res) => {
   res.json({
-    name: 'LLM Router Server',
+    name: 'LLM Router SaaS API',
     version: '1.0.0',
     status: isReady ? 'ready' : 'initializing',
+    authentication: 'API key required (Bearer token or X-API-Key header)',
     endpoints: [
-      'GET /api/health',
-      'GET /api/models',
-      'POST /api/models/load',
-      'POST /api/quick',
-      'POST /api/route'
-    ]
+      'GET /api/health - Health check (no auth)',
+      'GET /api/models - List models (auth required)',
+      'POST /api/models/load - Load model (auth required)', 
+      'POST /api/quick - Quick inference (auth required)',
+      'POST /api/chat - Chat completion (auth required)',
+      'POST /api/route - Advanced routing (auth required)'
+    ],
+    admin: [
+      'GET /api/admin/keys - List API keys (admin)',
+      'POST /api/admin/keys - Create API key (admin)',
+      'GET /api/admin/stats - System statistics (admin)'
+    ],
+    documentation: 'Include Authorization: Bearer <api-key> or X-API-Key: <api-key> header'
   });
 });
 
-// Start server - bind to all interfaces
-server.listen(PORT, '0.0.0.0', async () => {
-  console.log(`\n🌐 Server listening on http://0.0.0.0:${PORT}\n`);
+// Start server - bind to specified host
+server.listen(PORT, HOST, async () => {
+  console.log(`\n🌐 Server listening on http://${HOST}:${PORT}\n`);
   
   // Initialize router after server starts
   await initializeRouter();
@@ -376,13 +414,22 @@ server.listen(PORT, '0.0.0.0', async () => {
   await wsAPI.initialize(server, router);
   console.log('  ✅ WebSocket API initialized');
   
-  console.log('\n📡 API Endpoints:');
-  console.log(`  http://localhost:${PORT}/api/health - Health check`);
-  console.log(`  http://localhost:${PORT}/api/models - List models`);
-  console.log(`  http://localhost:${PORT}/api/quick - Quick inference`);
-  console.log(`  ws://localhost:${PORT}/ws - WebSocket streaming`);
-  console.log('\n💡 Ready for requests!\n');
+  console.log('\n📡 SaaS API Endpoints:');
+  console.log(`  http://${HOST}:${PORT}/api/health - Health check (public)`);
+  console.log(`  http://${HOST}:${PORT}/api/models - List models (auth required)`);
+  console.log(`  http://${HOST}:${PORT}/api/quick - Quick inference (auth required)`);
+  console.log(`  http://${HOST}:${PORT}/api/chat - Chat completion (auth required)`);
+  console.log(`  ws://${HOST}:${PORT}/ws - WebSocket streaming`);
+  console.log('\n🔧 Admin Endpoints:');
+  console.log(`  http://${HOST}:${PORT}/api/admin/keys - Manage API keys`);
+  console.log(`  http://${HOST}:${PORT}/api/admin/stats - System statistics`);
+  console.log('\n🔑 Authentication: Include "Authorization: Bearer <api-key>" header');
+  console.log(`💡 Ready for ${HOST === '127.0.0.1' ? 'SECURE LOCAL' : 'SaaS'} requests!\n`);
 });
+
+// Error handling middleware (must be last)
+app.use(authErrorHandler);
+app.use(sanitizeErrors);
 
 // Graceful shutdown
 process.on('SIGINT', async () => {

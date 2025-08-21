@@ -23,15 +23,16 @@ class ConfigManager {
             this.config = this.getDefaultConfig();
         }
         
-        // Try to sync with server
+        // Server config sync temporarily disabled
+        // TODO: Add /api/config endpoint if needed
         try {
-            const response = await fetch(`${this.apiUrl}/api/config`);
-            if (response.ok) {
-                const serverConfig = await response.json();
-                // Merge with local config
-                this.config = { ...this.config, ...serverConfig };
-                this.saveConfig();
-            }
+            // const response = await fetch(`${this.apiUrl}/api/config`);
+            // if (response.ok) {
+            //     const serverConfig = await response.json();
+            //     // Merge with local config
+            //     this.config = { ...this.config, ...serverConfig };
+            //     this.saveConfig();
+            // }
         } catch (error) {
             console.debug('Could not fetch server config, using local:', error);
         }

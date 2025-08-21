@@ -3,7 +3,7 @@
  * Production deployment with 24/7 uptime
  */
 
-module.exports = {
+export default {
   apps: [
     {
       // Application Configuration
@@ -25,11 +25,12 @@ module.exports = {
       max_memory_restart: '2G', // Restart if memory exceeds 2GB
       
       // Environment Variables
-      env_file: '.env.production',
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
-        AUTO_INIT: 'true'
+        AUTO_INIT: 'true',
+        ROUTING_STRATEGY: 'balanced',
+        // API keys will be loaded from .env.global
       },
       
       // Logging Configuration
@@ -61,8 +62,23 @@ module.exports = {
       env_production: {
         NODE_ENV: 'production',
         PORT: 3000,
-        LOG_LEVEL: 'warn'
+        ROUTING_STRATEGY: 'balanced',
+        LOG_LEVEL: 'info'
       }
     }
-  ]
+  ],
+
+  // Deployment Configuration
+  deploy: {
+    production: {
+      user: 'mikecerqua',
+      host: 'localhost',
+      ref: 'origin/main',
+      repo: 'git@github.com:MCERQUA/LLM-Runner-Router.git',
+      path: '/home/mikecerqua/projects/LLM-Runner-Router',
+      'pre-deploy-local': '',
+      'post-deploy': 'npm install && pm2 reload ecosystem.config.js --env production',
+      'pre-setup': ''
+    }
+  }
 };

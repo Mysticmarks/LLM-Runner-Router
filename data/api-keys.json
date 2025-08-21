@@ -1,0 +1,115 @@
+{
+  "keys": {
+    "llm_699c228817422254c14a4e51f570ad2e": {
+      "id": "llm_699c228817422254c14a4e51f570ad2e",
+      "hash": "$2b$12$acBbizVHjxZsl6D4tudkqu.Jj5atP.cyNgN4YQvp3Vn9idwYPiVee",
+      "customer": "test-customer",
+      "email": "test@example.com",
+      "tier": "basic",
+      "createdAt": "2025-08-21T00:55:15.652Z",
+      "lastUsed": "2025-08-21T00:55:35.372Z",
+      "active": true,
+      "rateLimit": {
+        "requestsPerMinute": 60,
+        "requestsPerHour": 1000
+      },
+      "quotas": {
+        "dailyRequests": 1000,
+        "dailyTokens": 100000,
+        "monthlyRequests": 25000
+      }
+    },
+    "llm_7e55431e0dcb055f68dbe9f52fd0e039": {
+      "id": "llm_7e55431e0dcb055f68dbe9f52fd0e039",
+      "hash": "$2b$12$CV1mAqhcqJ4kt51Wx2foguHuf8gs/6NyJvtPyiWLZ/nGT1hYw.5MC",
+      "customer": "production-customer",
+      "email": "prod@example.com",
+      "tier": "pro",
+      "createdAt": "2025-08-21T00:59:59.025Z",
+      "lastUsed": "2025-08-21T02:28:06.342Z",
+      "active": true,
+      "rateLimit": {
+        "requestsPerMinute": 300,
+        "requestsPerHour": 10000
+      },
+      "quotas": {
+        "dailyRequests": 10000,
+        "dailyTokens": 1000000,
+        "monthlyRequests": 250000
+      }
+    },
+    "llm_a21c6f2f14fb3db67dd23fcf34534d73": {
+      "id": "llm_a21c6f2f14fb3db67dd23fcf34534d73",
+      "hash": "$2b$12$royR207QMs2XEQ5EP/3Sj.wJ3BVS7nbUwPqBpdyKHzCK1p0P3eoDC",
+      "customer": "test-production",
+      "email": null,
+      "tier": "premium",
+      "createdAt": "2025-08-21T03:20:42.739Z",
+      "lastUsed": "2025-08-21T04:05:19.867Z",
+      "active": true,
+      "rateLimit": {
+        "requestsPerMinute": 60,
+        "requestsPerHour": 1000
+      },
+      "quotas": {
+        "dailyRequests": 1000,
+        "dailyTokens": 100000,
+        "monthlyRequests": 25000
+      }
+    }
+  },
+  "usage": {
+    "llm_699c228817422254c14a4e51f570ad2e": {
+      "requestCount": 2,
+      "tokenCount": 79,
+      "lastReset": "2025-08-21T00:55:15.652Z",
+      "dailyUsage": {
+        "Thu Aug 21 2025": {
+          "requests": 2,
+          "tokens": 79
+        }
+      },
+      "monthlyUsage": {
+        "2025-8": {
+          "requests": 2,
+          "tokens": 79
+        }
+      }
+    },
+    "llm_7e55431e0dcb055f68dbe9f52fd0e039": {
+      "requestCount": 2,
+      "tokenCount": 86,
+      "lastReset": "2025-08-21T00:59:59.025Z",
+      "dailyUsage": {
+        "Thu Aug 21 2025": {
+          "requests": 2,
+          "tokens": 86
+        }
+      },
+      "monthlyUsage": {
+        "2025-8": {
+          "requests": 2,
+          "tokens": 86
+        }
+      }
+    },
+    "llm_a21c6f2f14fb3db67dd23fcf34534d73": {
+      "requestCount": 4,
+      "tokenCount": 215,
+      "lastReset": "2025-08-21T03:20:42.739Z",
+      "dailyUsage": {
+        "Thu Aug 21 2025": {
+          "requests": 4,
+          "tokens": 215
+        }
+      },
+      "monthlyUsage": {
+        "2025-8": {
+          "requests": 4,
+          "tokens": 215
+        }
+      }
+    }
+  },
+  "lastUpdated": "2025-08-21T04:05:19.869Z"
+}
