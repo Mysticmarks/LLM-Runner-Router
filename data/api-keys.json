@@ -45,7 +45,45 @@
       "email": null,
       "tier": "premium",
       "createdAt": "2025-08-21T03:20:42.739Z",
-      "lastUsed": "2025-08-21T04:05:19.867Z",
+      "lastUsed": "2025-08-21T04:44:35.022Z",
+      "active": true,
+      "rateLimit": {
+        "requestsPerMinute": 60,
+        "requestsPerHour": 1000
+      },
+      "quotas": {
+        "dailyRequests": 1000,
+        "dailyTokens": 100000,
+        "monthlyRequests": 25000
+      }
+    },
+    "llm_baf8797fc1bf33b956fd7c0ffc4e9422": {
+      "id": "llm_baf8797fc1bf33b956fd7c0ffc4e9422",
+      "hash": "$2b$12$bogsA9m6xadJNEwvTKheHOEr2h0mR1cNZQlWAve7zIdQDbwQLdFB6",
+      "customer": "Test User",
+      "email": "test@example.com",
+      "tier": "basic",
+      "createdAt": "2025-08-22T19:26:51.772Z",
+      "lastUsed": null,
+      "active": true,
+      "rateLimit": {
+        "requestsPerMinute": 60,
+        "requestsPerHour": 1000
+      },
+      "quotas": {
+        "dailyRequests": 1000,
+        "dailyTokens": 100000,
+        "monthlyRequests": 25000
+      }
+    },
+    "llm_6bc760f8772f1b80e3fa7b632e48ed98": {
+      "id": "llm_6bc760f8772f1b80e3fa7b632e48ed98",
+      "hash": "$2b$12$UYfurQxDVv0x4ps/o9Mgs.i7MjoNZnnMwW7euXAu2OFUuh6ZCvzHi",
+      "customer": "Test User",
+      "email": "test@example.com",
+      "tier": "basic",
+      "createdAt": "2025-08-22T19:35:02.231Z",
+      "lastUsed": null,
       "active": true,
       "rateLimit": {
         "requestsPerMinute": 60,
@@ -94,22 +132,36 @@
       }
     },
     "llm_a21c6f2f14fb3db67dd23fcf34534d73": {
-      "requestCount": 4,
-      "tokenCount": 215,
+      "requestCount": 5,
+      "tokenCount": 243,
       "lastReset": "2025-08-21T03:20:42.739Z",
       "dailyUsage": {
         "Thu Aug 21 2025": {
-          "requests": 4,
-          "tokens": 215
+          "requests": 5,
+          "tokens": 243
         }
       },
       "monthlyUsage": {
         "2025-8": {
-          "requests": 4,
-          "tokens": 215
+          "requests": 5,
+          "tokens": 243
         }
       }
+    },
+    "llm_baf8797fc1bf33b956fd7c0ffc4e9422": {
+      "requestCount": 0,
+      "tokenCount": 0,
+      "lastReset": "2025-08-22T19:26:51.772Z",
+      "dailyUsage": {},
+      "monthlyUsage": {}
+    },
+    "llm_6bc760f8772f1b80e3fa7b632e48ed98": {
+      "requestCount": 0,
+      "tokenCount": 0,
+      "lastReset": "2025-08-22T19:35:02.231Z",
+      "dailyUsage": {},
+      "monthlyUsage": {}
     }
   },
-  "lastUpdated": "2025-08-21T04:05:19.869Z"
+  "lastUpdated": "2025-08-22T19:35:02.231Z"
 }
