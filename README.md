@@ -330,6 +330,7 @@ Experience LLM Runner Router in action:
 - 🔧 **[Configuration](docs/CONFIG_REFERENCE.md)** - Configuration options and examples
 - ⚡ **[Performance Guide](docs/PERFORMANCE.md)** - Optimization and benchmarking
 - 🧪 **[Testing Suite](#-comprehensive-testing-suite)** - High-value test suites with real models and results
+- 🔗 **[External Test Suite](https://github.com/MCERQUA/LLM-Runner-Test-Suite)** - 69+ comprehensive AI/ML validation tests
 - ❌ **[Error Codes](docs/ERROR_CODES.md)** - Complete error reference and recovery strategies
 
 ### Development & Extension
@@ -539,6 +540,27 @@ Choose your destiny:
 ## 🧪 Comprehensive Testing Suite
 
 LLM Runner Router includes a state-of-the-art testing framework with high-value test suites covering all critical aspects of production AI orchestration systems.
+
+### 🔗 **External Functional Test Suite**
+
+**[LLM Router Functional Test Suite](https://github.com/MCERQUA/LLM-Runner-Test-Suite)** - Comprehensive external testing framework for AI/ML capability validation
+
+- **🧠 69+ Total Tests**: 21 AI/ML functional tests + 48 infrastructure tests
+- **⚡ Real AI Validation**: Genuine model loading, routing strategies, chat functionality  
+- **🔐 Production Ready**: Security, performance, and reliability testing
+- **📊 Complete Coverage**: Model lifecycle, routing intelligence, streaming, error handling
+- **🚀 Easy Setup**: Persistent API keys, comprehensive documentation, troubleshooting guides
+
+```bash
+# Quick start with external test suite
+git clone https://github.com/MCERQUA/LLM-Runner-Test-Suite.git
+cd LLM-Runner-Test-Suite
+cp example.env .env  # Configure your API endpoint
+./functional-llm-router-tests.sh  # Run AI/ML tests
+./comprehensive-test-suite.sh     # Run all infrastructure tests
+```
+
+This external test suite provides end-to-end validation of your deployed LLM Router instance, testing real AI capabilities rather than just infrastructure.
 
 ### 🎯 **High-Value Test Suites**
 
