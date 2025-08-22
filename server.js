@@ -24,6 +24,7 @@ import {
   enableCORS,
   authErrorHandler 
 } from './src/middleware/auth.js';
+import { PersistentTestKey } from './src/auth/PersistentTestKey.js';
 import adminRouter from './src/api/admin.js';
 
 // Import security middleware
@@ -84,6 +85,12 @@ async function initializeRouter() {
     console.log('🛡️ Initializing authentication system...');
     authSystem = await initializeAuth();
     console.log('  ✅ Authentication system ready');
+    
+    // Ensure persistent test key exists
+    console.log('🔑 Ensuring persistent test key...');
+    const persistentKey = new PersistentTestKey();
+    const testKey = await persistentKey.ensurePersistentTestKey();
+    console.log('  ✅ Persistent test key ready for testing');
     
     // Register all loaders
     router.registry.registerLoader('gguf', new GGUFLoader());

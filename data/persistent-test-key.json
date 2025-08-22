@@ -1,0 +1,13 @@
+{
+  "message": "This is the persistent test API key that never changes",
+  "keyId": "llm_test_persistent_key_fixed_2025",
+  "fullKey": "llm_test_persistent_key_fixed_2025.persistent_test_secret_never_changes_mikecerqua_2025_llm_router",
+  "tier": "pro",
+  "installedAt": "2025-08-22T21:44:13.005Z",
+  "instructions": [
+    "This key is designed for testing and will survive server restarts",
+    "Use this key in your test scripts and functional tests",
+    "The key will be automatically reinstalled if missing from api-keys.json",
+    "Key format: llm_test_persistent_key_fixed_2025.persistent_test_secret_never_changes_mikecerqua_2025_llm_router"
+  ]
+}

@@ -64,7 +64,7 @@
       "email": "test@example.com",
       "tier": "basic",
       "createdAt": "2025-08-22T19:26:51.772Z",
-      "lastUsed": null,
+      "lastUsed": "2025-08-22T21:26:16.700Z",
       "active": true,
       "rateLimit": {
         "requestsPerMinute": 60,
@@ -94,6 +94,83 @@
         "dailyTokens": 100000,
         "monthlyRequests": 25000
       }
+    },
+    "llm_8465544b564ef3191b5a373272124358": {
+      "id": "llm_8465544b564ef3191b5a373272124358",
+      "hash": "$2b$12$4mjyBDcreMgWrkYQ.KimI.4gklyXnDmRCDLZzRfnAW38K7y/J5Fdu",
+      "customer": "Functional Test User",
+      "email": "functional-test@example.com",
+      "tier": "basic",
+      "createdAt": "2025-08-22T20:53:03.898Z",
+      "lastUsed": "2025-08-22T20:55:51.236Z",
+      "active": true,
+      "rateLimit": {
+        "requestsPerMinute": 60,
+        "requestsPerHour": 1000
+      },
+      "quotas": {
+        "dailyRequests": 1000,
+        "dailyTokens": 100000,
+        "monthlyRequests": 25000
+      }
+    },
+    "llm_d044a6b36ad6a99a52fde640148bd0a1": {
+      "id": "llm_d044a6b36ad6a99a52fde640148bd0a1",
+      "hash": "$2b$12$vvXojnFQ4RaaaL9UvJE07uA2jcchVUyB4OkQNoRKye3pByJh3/nYq",
+      "customer": "Functional Test User",
+      "email": "functional-test@example.com",
+      "tier": "basic",
+      "createdAt": "2025-08-22T21:02:00.746Z",
+      "lastUsed": null,
+      "active": true,
+      "rateLimit": {
+        "requestsPerMinute": 60,
+        "requestsPerHour": 1000
+      },
+      "quotas": {
+        "dailyRequests": 1000,
+        "dailyTokens": 100000,
+        "monthlyRequests": 25000
+      }
+    },
+    "llm_9ef2bcc88e7223f3f318cace2cded02b": {
+      "id": "llm_9ef2bcc88e7223f3f318cace2cded02b",
+      "hash": "$2b$12$2BS2Y1TqA9n4nCUfmeF38uysJH83mk4zTHmqVvjUhR7HmQOEII5Fm",
+      "customer": "Test User",
+      "email": "test@example.com",
+      "tier": "basic",
+      "createdAt": "2025-08-22T21:39:29.777Z",
+      "lastUsed": "2025-08-22T21:40:13.558Z",
+      "active": true,
+      "rateLimit": {
+        "requestsPerMinute": 60,
+        "requestsPerHour": 1000
+      },
+      "quotas": {
+        "dailyRequests": 1000,
+        "dailyTokens": 100000,
+        "monthlyRequests": 25000
+      }
+    },
+    "llm_test_persistent_key_fixed_2025": {
+      "id": "llm_test_persistent_key_fixed_2025",
+      "hash": "$2b$12$3BA8iLFP8nu/4XnQR2jar.SOl49.DQE9/Dhyq7gHw.kY0f0oEiUoS",
+      "customer": "Testing User (Persistent)",
+      "email": "test-persistent@llm-router.local",
+      "tier": "pro",
+      "createdAt": "2025-08-22T00:00:00.000Z",
+      "lastUsed": "2025-08-22T21:49:38.024Z",
+      "active": true,
+      "rateLimit": {
+        "requestsPerMinute": 300,
+        "requestsPerHour": 10000
+      },
+      "quotas": {
+        "dailyRequests": 10000,
+        "dailyTokens": 1000000,
+        "monthlyRequests": 250000
+      },
+      "isPersistentTestKey": true
     }
   },
   "usage": {
@@ -149,11 +226,21 @@
       }
     },
     "llm_baf8797fc1bf33b956fd7c0ffc4e9422": {
-      "requestCount": 0,
-      "tokenCount": 0,
+      "requestCount": 114,
+      "tokenCount": 1831,
       "lastReset": "2025-08-22T19:26:51.772Z",
-      "dailyUsage": {},
-      "monthlyUsage": {}
+      "dailyUsage": {
+        "Fri Aug 22 2025": {
+          "requests": 114,
+          "tokens": 1831
+        }
+      },
+      "monthlyUsage": {
+        "2025-8": {
+          "requests": 114,
+          "tokens": 1831
+        }
+      }
     },
     "llm_6bc760f8772f1b80e3fa7b632e48ed98": {
       "requestCount": 0,
@@ -161,7 +248,65 @@
       "lastReset": "2025-08-22T19:35:02.231Z",
       "dailyUsage": {},
       "monthlyUsage": {}
+    },
+    "llm_8465544b564ef3191b5a373272124358": {
+      "requestCount": 15,
+      "tokenCount": 361,
+      "lastReset": "2025-08-22T20:53:03.898Z",
+      "dailyUsage": {
+        "Fri Aug 22 2025": {
+          "requests": 15,
+          "tokens": 361
+        }
+      },
+      "monthlyUsage": {
+        "2025-8": {
+          "requests": 15,
+          "tokens": 361
+        }
+      }
+    },
+    "llm_d044a6b36ad6a99a52fde640148bd0a1": {
+      "requestCount": 0,
+      "tokenCount": 0,
+      "lastReset": "2025-08-22T21:02:00.747Z",
+      "dailyUsage": {},
+      "monthlyUsage": {}
+    },
+    "llm_9ef2bcc88e7223f3f318cace2cded02b": {
+      "requestCount": 1,
+      "tokenCount": 28,
+      "lastReset": "2025-08-22T21:39:29.778Z",
+      "dailyUsage": {
+        "Fri Aug 22 2025": {
+          "requests": 1,
+          "tokens": 28
+        }
+      },
+      "monthlyUsage": {
+        "2025-8": {
+          "requests": 1,
+          "tokens": 28
+        }
+      }
+    },
+    "llm_test_persistent_key_fixed_2025": {
+      "requestCount": 1,
+      "tokenCount": 28,
+      "lastReset": "2025-08-22T00:00:00.000Z",
+      "dailyUsage": {
+        "Fri Aug 22 2025": {
+          "requests": 1,
+          "tokens": 28
+        }
+      },
+      "monthlyUsage": {
+        "2025-8": {
+          "requests": 1,
+          "tokens": 28
+        }
+      }
     }
   },
-  "lastUpdated": "2025-08-22T19:35:02.231Z"
+  "lastUpdated": "2025-08-22T21:49:38.026Z"
 }
