@@ -152,4 +152,4 @@ Thumbs.db
 .claude/command-history.log
 
 # Netlify
-.netlify/
+.netlify/.env.test
