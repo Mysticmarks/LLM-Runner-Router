@@ -25,21 +25,42 @@ The BYOK system enables users to use their own API keys from various LLM provide
 - Automatic key rotation support
 
 ### 4. **Provider Support**
-The system supports 15+ providers including:
-- OpenAI
+The system supports 27+ providers including:
+
+**Major AI Providers:**
+- OpenAI (GPT-4, GPT-3.5)
 - Anthropic (Claude)
 - Google AI (Gemini)
 - Azure OpenAI
 - AWS Bedrock
+- xAI (Grok)
+
+**Specialized Providers:**
 - Cohere
 - Mistral AI
 - Perplexity
-- Groq
-- Together AI
+- Inflection AI
+- AI21 Labs
 - DeepSeek
+
+**Infrastructure Providers:**
+- Together AI
 - Fireworks AI
+- Groq
+- Replicate
+- Anyscale
+- Hyperbolic
+- SambaNova
+- Lepton AI
+- OctoAI
+
+**Cloud & Edge:**
+- Databricks
+- Cloudflare AI
 - Novita AI
-- OpenRouter
+
+**Meta & Routing:**
+- OpenRouter (400+ models)
 - Ollama (Local)
 
 ## Architecture
@@ -325,6 +346,32 @@ Or using Bedrock API key:
 {
   "base_url": "http://localhost:11434"
 }
+```
+
+#### Databricks
+```json
+{
+  "workspace_url": "https://your-workspace.databricks.com",
+  "api_token": "dapi..."
+}
+```
+
+#### Cloudflare AI
+```json
+{
+  "account_id": "your-account-id",
+  "api_token": "your-api-token"
+}
+```
+
+#### xAI (Grok)
+```json
+"xai-your-api-key-here"
+```
+
+#### Replicate
+```json
+"r8_your-api-key-here"
 ```
 
 ## Integration with Model Loaders

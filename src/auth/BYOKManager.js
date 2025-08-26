@@ -235,6 +235,111 @@ const PROVIDER_CONFIGS = {
         return false;
       }
     }
+  },
+  hyperbolic: {
+    name: 'Hyperbolic',
+    keyFormat: '[A-Za-z0-9-]{36}',
+    baseURL: 'https://api.hyperbolic.xyz',
+    headers: (key) => ({ 'Authorization': `Bearer ${key}` }),
+    validateKey: async (key) => {
+      return /^[A-Za-z0-9-]{36}$/.test(key);
+    }
+  },
+  inflection: {
+    name: 'Inflection AI',
+    keyFormat: '[A-Za-z0-9]{40}',
+    baseURL: 'https://api.inflection.ai',
+    headers: (key) => ({ 'Authorization': `Bearer ${key}` }),
+    validateKey: async (key) => {
+      return key.length === 40;
+    }
+  },
+  xai: {
+    name: 'xAI (Grok)',
+    keyFormat: 'xai-[A-Za-z0-9]{32}',
+    baseURL: 'https://api.x.ai',
+    headers: (key) => ({ 'Authorization': `Bearer ${key}` }),
+    validateKey: async (key) => {
+      return /^xai-[A-Za-z0-9]{32}$/.test(key);
+    }
+  },
+  databricks: {
+    name: 'Databricks',
+    keyFormat: 'dapi[A-Za-z0-9]{32}',
+    baseURL: 'https://adb-workspace.databricks.com',
+    requiresConfig: true,
+    configFields: ['workspace_url', 'api_token'],
+    headers: (config) => ({ 'Authorization': `Bearer ${config.api_token}` }),
+    validateKey: async (config) => {
+      if (typeof config === 'string') config = JSON.parse(config);
+      return config.api_token && config.workspace_url;
+    }
+  },
+  replicate: {
+    name: 'Replicate',
+    keyFormat: 'r8_[A-Za-z0-9]{40}',
+    baseURL: 'https://api.replicate.com',
+    headers: (key) => ({ 'Authorization': `Token ${key}` }),
+    validateKey: async (key) => {
+      return /^r8_[A-Za-z0-9]{40}$/.test(key);
+    }
+  },
+  ai21: {
+    name: 'AI21 Labs',
+    keyFormat: '[A-Za-z0-9]{32}',
+    baseURL: 'https://api.ai21.com/studio/v1',
+    headers: (key) => ({ 'Authorization': `Bearer ${key}` }),
+    validateKey: async (key) => {
+      return key.length === 32;
+    }
+  },
+  cloudflare: {
+    name: 'Cloudflare AI',
+    keyFormat: 'json',
+    requiresConfig: true,
+    configFields: ['account_id', 'api_token'],
+    baseURL: 'https://api.cloudflare.com/client/v4',
+    headers: (config) => ({ 'Authorization': `Bearer ${config.api_token}` }),
+    validateKey: async (config) => {
+      if (typeof config === 'string') config = JSON.parse(config);
+      return config.account_id && config.api_token;
+    }
+  },
+  sambanova: {
+    name: 'SambaNova',
+    keyFormat: '[A-Za-z0-9-]{36}',
+    baseURL: 'https://api.sambanova.ai',
+    headers: (key) => ({ 'Authorization': `Bearer ${key}` }),
+    validateKey: async (key) => {
+      return /^[A-Za-z0-9-]{36}$/.test(key);
+    }
+  },
+  lepton: {
+    name: 'Lepton AI',
+    keyFormat: 'lep_[A-Za-z0-9]{32}',
+    baseURL: 'https://api.lepton.ai',
+    headers: (key) => ({ 'X-Lepton-Api-Key': key }),
+    validateKey: async (key) => {
+      return /^lep_[A-Za-z0-9]{32}$/.test(key);
+    }
+  },
+  octoai: {
+    name: 'OctoAI',
+    keyFormat: '[A-Za-z0-9-]{36}',
+    baseURL: 'https://api.octoai.cloud',
+    headers: (key) => ({ 'Authorization': `Bearer ${key}` }),
+    validateKey: async (key) => {
+      return /^[A-Za-z0-9-]{36}$/.test(key);
+    }
+  },
+  anyscale: {
+    name: 'Anyscale',
+    keyFormat: 'esecret_[A-Za-z0-9]{24}',
+    baseURL: 'https://api.endpoints.anyscale.com',
+    headers: (key) => ({ 'Authorization': `Bearer ${key}` }),
+    validateKey: async (key) => {
+      return /^esecret_[A-Za-z0-9]{24}$/.test(key);
+    }
   }
 };
 

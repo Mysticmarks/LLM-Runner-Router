@@ -57,7 +57,7 @@
 - **🔮 Universal Format Support**: Seamlessly load GGUF, ONNX, Safetensors, HuggingFace, and emerging model formats
 - **⚡ Multi-Engine Architecture**: WebGPU for GPU acceleration, WASM for universal compatibility, Node.js for server deployment
 - **🧭 Intelligent Model Routing**: Automatically select optimal models based on quality, cost, speed, or custom strategies
-- **🔑 BYOK (Bring Your Own Key)**: Use your own API keys from 15+ providers while benefiting from unified interface
+- **🔑 BYOK (Bring Your Own Key)**: Use your own API keys from 27+ providers while benefiting from unified interface
 - **🚀 Real-Time Streaming**: Stream tokens in real-time with async generators and WebSocket support
 - **💰 Cost Optimization**: Minimize inference costs while maximizing performance and quality
 - **🎯 Zero-Configuration**: Works out of the box with intelligent defaults, customizable to enterprise needs
@@ -120,7 +120,7 @@ Perfect for developers building AI applications, researchers comparing models, a
 - **Load Balancing**: Distribute requests across multiple model instances
 
 ### 🔑 BYOK (Bring Your Own Key) System ✅
-- **Multi-Provider Support**: Use your own API keys from 15+ major LLM providers
+- **Multi-Provider Support**: Use your own API keys from 27+ major LLM providers
 - **Individual Keys**: Personal API key management with secure encryption (AES-256-CBC)
 - **Group/Organization Keys**: Share API keys within teams with access control
 - **Automatic Detection**: BYOK keys automatically used when available
@@ -128,6 +128,7 @@ Perfect for developers building AI applications, researchers comparing models, a
 - **Security First**: All keys encrypted at rest, validated before storage
 - **Usage Tracking**: Monitor API usage per key with detailed statistics
 - **Fallback Support**: Automatic fallback to system keys when BYOK unavailable
+- **Complete Coverage**: Supports OpenAI, Anthropic, Google, xAI, Databricks, Replicate, and more
 
 ### 🚀 Advanced Streaming & Real-Time Features ✅
 - **Token Streaming**: Real-time token generation with async generators via StreamProcessor ✅
