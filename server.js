@@ -27,6 +27,14 @@ import {
 import { PersistentTestKey } from './src/auth/PersistentTestKey.js';
 import adminRouter from './src/api/admin.js';
 
+// Import BYOK middleware
+import {
+  initializeBYOK,
+  injectBYOKKeys,
+  createBYOKRoutes,
+  loadWithBYOK
+} from './src/middleware/byok.js';
+
 // Import security middleware
 import {
   securityHeaders,
@@ -74,6 +82,9 @@ let wsAPI = null;
 // Authentication system
 let authSystem = null;
 
+// BYOK system
+let byokSystem = null;
+
 /**
  * Initialize the router and load models
  */
@@ -85,6 +96,11 @@ async function initializeRouter() {
     console.log('🛡️ Initializing authentication system...');
     authSystem = await initializeAuth();
     console.log('  ✅ Authentication system ready');
+    
+    // Initialize BYOK system
+    console.log('🔑 Initializing BYOK system...');
+    byokSystem = await initializeBYOK();
+    console.log('  ✅ BYOK system ready');
     
     // Ensure persistent test key exists
     console.log('🔑 Ensuring persistent test key...');
@@ -178,6 +194,11 @@ async function initializeRouter() {
 
 // Mount admin routes
 app.use('/api/admin', adminRouter);
+
+// Mount BYOK routes
+const byokRouter = express.Router();
+createBYOKRoutes(byokRouter);
+app.use('/api', byokRouter);
 
 // Public API Routes (no authentication required for health check)
 
@@ -340,7 +361,7 @@ app.post('/api/chat', requireAPIKey, checkRateLimit, recordUsage, async (req, re
 /**
  * Inference endpoint (what the chat interface expects)
  */
-app.post('/api/inference', requireAPIKey, checkRateLimit, recordUsage, async (req, res) => {
+app.post('/api/inference', requireAPIKey, checkRateLimit, injectBYOKKeys, loadWithBYOK, recordUsage, async (req, res) => {
   if (!isReady) {
     return res.status(503).json({ error: 'Server initializing' });
   }

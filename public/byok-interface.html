@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BYOK - Bring Your Own Keys | LLM Runner Router</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-dark: #4338CA;
+            --secondary: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --dark: #1F2937;
+            --gray: #6B7280;
+            --light: #F3F4F6;
+            --white: #FFFFFF;
+            --border: #E5E7EB;
+            --shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: var(--white);
+            box-shadow: var(--shadow);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: var(--dark);
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--gray);
+        }
+
+        .container {
+            flex: 1;
+            max-width: 1400px;
+            width: 100%;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 2rem;
+            height: fit-content;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--light);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .providers-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .provider-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .provider-item:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow);
+        }
+
+        .provider-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .provider-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--white);
+        }
+
+        .provider-details h3 {
+            font-size: 1rem;
+            color: var(--dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .provider-details p {
+            font-size: 0.875rem;
+            color: var(--gray);
+        }
+
+        .provider-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--secondary);
+            color: var(--white);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--gray);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-success {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .badge-warning {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .badge-info {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray);
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-help {
+            margin-top: 0.25rem;
+            font-size: 0.75rem;
+            color: var(--gray);
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .alert-info {
+            background: #EFF6FF;
+            color: #1E40AF;
+            border: 1px solid #BFDBFE;
+        }
+
+        .alert-success {
+            background: #F0FDF4;
+            color: #166534;
+            border: 1px solid #86EFAC;
+        }
+
+        .alert-warning {
+            background: #FFFBEB;
+            color: #92400E;
+            border: 1px solid #FDE68A;
+        }
+
+        .alert-danger {
+            background: #FEF2F2;
+            color: #991B1B;
+            border: 1px solid #FCA5A5;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--light);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--gray);
+            margin-top: 0.25rem;
+        }
+
+        .group-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid var(--light);
+        }
+
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .group-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--light);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            color: var(--gray);
+        }
+
+        .provider-config {
+            background: var(--light);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .header {
+                padding: 1rem;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading spinner */
+        .spinner {
+            border: 2px solid var(--light);
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>
+            🔑 BYOK Management
+        </h1>
+        <div class="user-info">
+            <span id="userEmail">Loading...</span>
+            <span class="badge badge-info" id="userTier">Basic</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Personal Keys Section -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">🔐 Your API Keys</h2>
+                <button class="btn btn-primary" onclick="openAddKeyModal()">
+                    + Add Key
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalKeys">0</div>
+                    <div class="stat-label">Total Keys</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="activeProviders">0</div>
+                    <div class="stat-label">Providers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalUsage">0</div>
+                    <div class="stat-label">API Calls</div>
+                </div>
+            </div>
+
+            <div id="personalKeys" class="providers-grid">
+                <!-- Personal keys will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Available Providers Section -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">🌐 Available Providers</h2>
+            </div>
+
+            <div class="alert alert-info">
+                <span>ℹ️</span>
+                <span>Add your own API keys to use models directly from providers</span>
+            </div>
+
+            <div id="availableProviders" class="providers-grid">
+                <!-- Available providers will be loaded here -->
+            </div>
+
+            <!-- Group Keys Section (if applicable) -->
+            <div class="group-section" id="groupSection" style="display: none;">
+                <div class="group-header">
+                    <h3>👥 Organization Keys</h3>
+                    <div class="group-badge">
+                        <span>Group:</span>
+                        <strong id="groupName">-</strong>
+                    </div>
+                </div>
+                <div id="groupKeys" class="providers-grid">
+                    <!-- Group keys will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Key Modal -->
+    <div id="keyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Add API Key</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+
+            <form id="keyForm">
+                <div class="form-group">
+                    <label class="form-label">Provider</label>
+                    <select id="providerSelect" class="form-select" onchange="updateProviderForm()">
+                        <option value="">Select a provider...</option>
+                    </select>
+                </div>
+
+                <div id="standardKeyInput" class="form-group">
+                    <label class="form-label">API Key</label>
+                    <input type="password" id="apiKeyInput" class="form-input" placeholder="Enter your API key">
+                    <p class="form-help" id="keyFormatHelp">Enter your API key from the provider's dashboard</p>
+                </div>
+
+                <div id="configFields" style="display: none;">
+                    <!-- Dynamic config fields will be added here -->
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Name (Optional)</label>
+                    <input type="text" id="keyName" class="form-input" placeholder="e.g., Production Key">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Description (Optional)</label>
+                    <textarea id="keyDescription" class="form-textarea" placeholder="Add notes about this key..."></textarea>
+                </div>
+
+                <div class="form-group" style="display: flex; gap: 1rem;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        Save Key
+                    </button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal()" style="flex: 1;">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentUser = null;
+        let providers = [];
+        let userKeys = [];
+        let groupKeys = [];
+        let apiKey = null;
+
+        // Provider logos/colors
+        const providerStyles = {
+            openai: { bg: '#10A37F', icon: '🤖' },
+            anthropic: { bg: '#D97757', icon: '🧠' },
+            google: { bg: '#4285F4', icon: '🔍' },
+            azure: { bg: '#0078D4', icon: '☁️' },
+            bedrock: { bg: '#FF9900', icon: '🪨' },
+            cohere: { bg: '#39A7A7', icon: '🌊' },
+            mistral: { bg: '#F7B93E', icon: '🌟' },
+            perplexity: { bg: '#1FB7CD', icon: '🔮' },
+            groq: { bg: '#F55036', icon: '⚡' },
+            together: { bg: '#6B46C1', icon: '🤝' },
+            deepseek: { bg: '#2563EB', icon: '🔬' },
+            fireworks: { bg: '#FF6B6B', icon: '🎆' },
+            novita: { bg: '#8B5CF6', icon: '✨' },
+            openrouter: { bg: '#6366F1', icon: '🌐' },
+            ollama: { bg: '#000000', icon: '🦙' }
+        };
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Get API key from URL or localStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            apiKey = urlParams.get('key') || localStorage.getItem('llm_api_key');
+            
+            if (!apiKey) {
+                alert('Please provide an API key to access BYOK management');
+                window.location.href = '/';
+                return;
+            }
+
+            await loadUserInfo();
+            await loadProviders();
+            await loadUserKeys();
+        });
+
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/keys/validate', {
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Invalid API key');
+
+                const data = await response.json();
+                currentUser = data;
+                
+                document.getElementById('userEmail').textContent = data.customer || 'User';
+                document.getElementById('userTier').textContent = data.tier || 'Basic';
+            } catch (error) {
+                console.error('Failed to load user info:', error);
+                alert('Authentication failed. Please check your API key.');
+            }
+        }
+
+        async function loadProviders() {
+            try {
+                const response = await fetch('/api/byok/providers', {
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    }
+                });
+
+                const data = await response.json();
+                providers = data.providers;
+
+                renderAvailableProviders();
+                populateProviderSelect();
+            } catch (error) {
+                console.error('Failed to load providers:', error);
+            }
+        }
+
+        async function loadUserKeys() {
+            try {
+                const response = await fetch('/api/byok/keys', {
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    }
+                });
+
+                const data = await response.json();
+                userKeys = data.providers || [];
+                
+                renderPersonalKeys();
+                updateStats();
+
+                // Check for group keys
+                if (data.groupId) {
+                    document.getElementById('groupSection').style.display = 'block';
+                    document.getElementById('groupName').textContent = data.groupId;
+                    renderGroupKeys();
+                }
+            } catch (error) {
+                console.error('Failed to load user keys:', error);
+            }
+        }
+
+        function renderAvailableProviders() {
+            const container = document.getElementById('availableProviders');
+            container.innerHTML = providers.map(provider => {
+                const style = providerStyles[provider.id] || { bg: '#6B7280', icon: '🔧' };
+                const hasKey = userKeys.some(k => k.provider === provider.id);
+                
+                return `
+                    <div class="provider-item">
+                        <div class="provider-info">
+                            <div class="provider-logo" style="background: ${style.bg};">
+                                ${style.icon}
+                            </div>
+                            <div class="provider-details">
+                                <h3>${provider.name}</h3>
+                                <p>${provider.requiresConfig ? 'Requires configuration' : 'API Key'}</p>
+                            </div>
+                        </div>
+                        <div class="provider-actions">
+                            ${hasKey 
+                                ? '<span class="badge badge-success">Connected</span>'
+                                : `<button class="btn btn-outline" onclick="addKeyForProvider('${provider.id}')">Connect</button>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderPersonalKeys() {
+            const container = document.getElementById('personalKeys');
+            const personalKeys = userKeys.filter(k => k.hasUserKey);
+            
+            if (personalKeys.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-warning">
+                        <span>⚠️</span>
+                        <span>No personal API keys added yet. Add your first key to get started!</span>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = personalKeys.map(key => {
+                const provider = providers.find(p => p.id === key.provider) || {};
+                const style = providerStyles[key.provider] || { bg: '#6B7280', icon: '🔧' };
+                
+                return `
+                    <div class="provider-item">
+                        <div class="provider-info">
+                            <div class="provider-logo" style="background: ${style.bg};">
+                                ${style.icon}
+                            </div>
+                            <div class="provider-details">
+                                <h3>${key.name || provider.name}</h3>
+                                <p>Personal Key</p>
+                            </div>
+                        </div>
+                        <div class="provider-actions">
+                            <button class="btn btn-outline" onclick="testKey('${key.provider}')">Test</button>
+                            <button class="btn btn-danger" onclick="removeKey('${key.provider}')">Remove</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderGroupKeys() {
+            const container = document.getElementById('groupKeys');
+            const sharedKeys = userKeys.filter(k => k.hasGroupKey);
+            
+            if (sharedKeys.length === 0) {
+                container.innerHTML = '<p class="form-help">No organization keys available</p>';
+                return;
+            }
+
+            container.innerHTML = sharedKeys.map(key => {
+                const provider = providers.find(p => p.id === key.provider) || {};
+                const style = providerStyles[key.provider] || { bg: '#6B7280', icon: '🔧' };
+                
+                return `
+                    <div class="provider-item">
+                        <div class="provider-info">
+                            <div class="provider-logo" style="background: ${style.bg};">
+                                ${style.icon}
+                            </div>
+                            <div class="provider-details">
+                                <h3>${provider.name}</h3>
+                                <p>Shared by organization</p>
+                            </div>
+                        </div>
+                        <div class="provider-actions">
+                            <span class="badge badge-info">Shared</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateStats() {
+            const totalKeys = userKeys.filter(k => k.hasUserKey).length;
+            const uniqueProviders = new Set(userKeys.filter(k => k.hasUserKey || k.hasGroupKey).map(k => k.provider)).size;
+            
+            document.getElementById('totalKeys').textContent = totalKeys;
+            document.getElementById('activeProviders').textContent = uniqueProviders;
+            // Total usage would come from stats API
+        }
+
+        function populateProviderSelect() {
+            const select = document.getElementById('providerSelect');
+            select.innerHTML = '<option value="">Select a provider...</option>' + 
+                providers.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        }
+
+        function openAddKeyModal() {
+            document.getElementById('keyModal').classList.add('active');
+            document.getElementById('modalTitle').textContent = 'Add API Key';
+            document.getElementById('keyForm').reset();
+        }
+
+        function addKeyForProvider(providerId) {
+            document.getElementById('providerSelect').value = providerId;
+            openAddKeyModal();
+            updateProviderForm();
+        }
+
+        function closeModal() {
+            document.getElementById('keyModal').classList.remove('active');
+        }
+
+        function updateProviderForm() {
+            const providerId = document.getElementById('providerSelect').value;
+            const provider = providers.find(p => p.id === providerId);
+            
+            if (!provider) {
+                document.getElementById('standardKeyInput').style.display = 'block';
+                document.getElementById('configFields').style.display = 'none';
+                return;
+            }
+
+            if (provider.requiresConfig) {
+                document.getElementById('standardKeyInput').style.display = 'none';
+                document.getElementById('configFields').style.display = 'block';
+                
+                // Build config fields
+                const configHTML = (provider.configFields || []).map(field => `
+                    <div class="form-group">
+                        <label class="form-label">${field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</label>
+                        <input type="text" class="form-input config-field" data-field="${field}" placeholder="Enter ${field}">
+                    </div>
+                `).join('');
+                
+                document.getElementById('configFields').innerHTML = configHTML;
+            } else {
+                document.getElementById('standardKeyInput').style.display = 'block';
+                document.getElementById('configFields').style.display = 'none';
+                
+                // Update help text based on provider
+                const helpText = {
+                    openai: 'Starts with sk-',
+                    anthropic: 'Starts with sk-ant-',
+                    google: 'Starts with AIza',
+                    groq: 'Starts with gsk_',
+                    perplexity: 'Starts with pplx-',
+                    openrouter: 'Starts with sk-or-v1-'
+                };
+                
+                document.getElementById('keyFormatHelp').textContent = 
+                    helpText[providerId] || 'Enter your API key from the provider&apos;s dashboard';
+            }
+        }
+
+        document.getElementById('keyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const providerId = document.getElementById('providerSelect').value;
+            if (!providerId) {
+                alert('Please select a provider');
+                return;
+            }
+
+            const provider = providers.find(p => p.id === providerId);
+            let apiKeyValue;
+
+            if (provider.requiresConfig) {
+                const config = {};
+                document.querySelectorAll('.config-field').forEach(field => {
+                    config[field.dataset.field] = field.value;
+                });
+                apiKeyValue = JSON.stringify(config);
+            } else {
+                apiKeyValue = document.getElementById('apiKeyInput').value;
+                if (!apiKeyValue) {
+                    alert('Please enter an API key');
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch(`/api/byok/keys/${providerId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        apiKey: apiKeyValue,
+                        name: document.getElementById('keyName').value,
+                        description: document.getElementById('keyDescription').value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('API key added successfully!');
+                    closeModal();
+                    await loadUserKeys();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Failed to add key:', error);
+                alert('Failed to add API key');
+            }
+        });
+
+        async function removeKey(providerId) {
+            if (!confirm('Are you sure you want to remove this API key?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/byok/keys/${providerId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('API key removed successfully');
+                    await loadUserKeys();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Failed to remove key:', error);
+                alert('Failed to remove API key');
+            }
+        }
+
+        async function testKey(providerId) {
+            alert(`Testing ${providerId} key... (This feature will validate the key with the provider)`);
+            // Implement key testing logic
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('keyModal').addEventListener('click', (e) => {
+            if (e.target.id === 'keyModal') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

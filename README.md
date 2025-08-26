@@ -41,13 +41,14 @@
 - ✅ **LLM Providers Phase 2**: High-Performance Inference (Together AI, Fireworks AI) ✅  
 - ✅ **LLM Providers Phase 3**: Specialized & Multi-Modal (Cohere, Perplexity, DeepSeek, Novita) ✅
 - ✅ **Universal Authentication**: API Key, OAuth2, Cloud SDK, Hybrid methods ✅
+- ✅ **BYOK System**: Bring Your Own Key support for all 15+ providers ✅
 - ✅ **Engines**: 100% complete (WebGPU, WASM, NodeNative, Worker, Edge, Selector)
 - ✅ **Runtime Features**: 100% complete (Memory, Cache, Streaming, Thread Pool)
 - ✅ **Enterprise Features**: Compliance (HIPAA, SOC2, GDPR), Data Residency, Enterprise Auth
 - ✅ **Security System**: Comprehensive security validation and threat detection ✅
 - ✅ **Performance System**: Advanced benchmarking and optimization features ✅
 - ✅ **Testing**: Comprehensive test suites for all implemented providers
-- ✅ **Documentation**: Updated with all new provider integrations
+- ✅ **Documentation**: Updated with all new provider integrations and BYOK system
 
 ## 🌌 What Is LLM Runner Router?
 
@@ -56,6 +57,7 @@
 - **🔮 Universal Format Support**: Seamlessly load GGUF, ONNX, Safetensors, HuggingFace, and emerging model formats
 - **⚡ Multi-Engine Architecture**: WebGPU for GPU acceleration, WASM for universal compatibility, Node.js for server deployment
 - **🧭 Intelligent Model Routing**: Automatically select optimal models based on quality, cost, speed, or custom strategies
+- **🔑 BYOK (Bring Your Own Key)**: Use your own API keys from 15+ providers while benefiting from unified interface
 - **🚀 Real-Time Streaming**: Stream tokens in real-time with async generators and WebSocket support
 - **💰 Cost Optimization**: Minimize inference costs while maximizing performance and quality
 - **🎯 Zero-Configuration**: Works out of the box with intelligent defaults, customizable to enterprise needs
@@ -68,6 +70,7 @@ Perfect for developers building AI applications, researchers comparing models, a
 
 #### Local Model Formats
 - **GGUF**: Complete support for GGML/GGUF quantized models with automatic detection ✅
+- **Ollama**: Local model orchestration with automatic discovery and no API costs ✅
 - **BitNet (1-bit LLMs)**: Revolutionary 1.58-bit quantization for 55-82% energy reduction ✅
 - **ONNX**: Full ONNX Runtime integration for cross-platform inference ✅
 - **Safetensors**: Secure tensor storage with lazy loading and float16 support ✅
@@ -115,6 +118,16 @@ Perfect for developers building AI applications, researchers comparing models, a
 - **Balanced**: Optimal balance of quality, cost, and performance
 - **Custom Strategies**: Define your own routing logic with JavaScript functions
 - **Load Balancing**: Distribute requests across multiple model instances
+
+### 🔑 BYOK (Bring Your Own Key) System ✅
+- **Multi-Provider Support**: Use your own API keys from 15+ major LLM providers
+- **Individual Keys**: Personal API key management with secure encryption (AES-256-CBC)
+- **Group/Organization Keys**: Share API keys within teams with access control
+- **Automatic Detection**: BYOK keys automatically used when available
+- **Web Interface**: User-friendly dashboard for key management at `/byok-interface.html`
+- **Security First**: All keys encrypted at rest, validated before storage
+- **Usage Tracking**: Monitor API usage per key with detailed statistics
+- **Fallback Support**: Automatic fallback to system keys when BYOK unavailable
 
 ### 🚀 Advanced Streaming & Real-Time Features ✅
 - **Token Streaming**: Real-time token generation with async generators via StreamProcessor ✅
@@ -211,6 +224,55 @@ for await (const chunk of router.stream("Write a story about AI:")) {
   process.stdout.write(chunk.text);
 }
 ```
+
+#### 🦙 Ollama Local Models (Zero API Costs!)
+```javascript
+import { LLMRouter, setupOllama, addOllamaModel } from 'llm-runner-router';
+
+// Quick setup - automatically discovers and registers all local Ollama models
+const router = new LLMRouter();
+const models = await setupOllama();
+console.log(`Found ${models.length} Ollama models`);
+
+// Use any discovered model immediately
+const response = await router.quick("Explain machine learning:", {
+  modelId: 'qwen2.5:3b-instruct-q4_K_M'
+});
+
+// Add specific models manually
+await addOllamaModel('phi3:mini', {
+  name: 'Phi-3 Mini 3.8B',
+  description: 'Microsoft\'s efficient small language model'
+});
+
+// Alternative: Direct router usage
+const router2 = new LLMRouter();
+const model = await router2.load({
+  provider: 'ollama',
+  modelId: 'qwen2.5:3b-instruct-q4_K_M'
+});
+
+const result = await model.generate("Write a haiku about programming:");
+console.log(result.text);
+
+// Streaming with Ollama
+for await (const token of model.stream("Tell me a story:")) {
+  process.stdout.write(token.text);
+}
+```
+
+**Ollama Setup Requirements:**
+1. Install Ollama: `curl -fsSL https://ollama.ai/install.sh | sh`
+2. Pull models: `ollama pull qwen2.5:3b-instruct-q4_K_M`
+3. Start Ollama: `ollama serve` (runs on http://localhost:11434)
+
+**Popular Ollama Models:**
+- `qwen2.5:3b-instruct-q4_K_M` - Fast 3B model, 32K context (1.9GB)
+- `phi3:mini` - Microsoft's 3.8B model, 128K context (2.2GB)
+- `llama3.1:8b` - Meta's 8B model with reasoning (4.7GB)
+- `mistral:7b` - Mistral's efficient 7B model (4.1GB)
+
+📖 **Complete Ollama Setup Guide**: [docs/OLLAMA_SETUP.md](docs/OLLAMA_SETUP.md)
 
 #### Cloud API Models (24+ Providers - Industry Leading!)
 ```javascript
