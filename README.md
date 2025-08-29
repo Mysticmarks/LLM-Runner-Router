@@ -793,7 +793,7 @@ MIT License - Because sharing is caring, and AI should be for everyone.
 ## 📞 Support
 
 - **Documentation**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- **Issues**: [GitHub Issues](https://github.com/echoaisystems/llm-runner-router/issues)
+- **Issues**: [GitHub Issues](https://github.com/MCERQUA/LLM-Runner-Router/issues)
 - **Email**: echoaisystems@gmail.com
 - **Telepathy**: Focus really hard on your question
 
