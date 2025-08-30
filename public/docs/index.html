@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - LLM Runner Router</title>
+    <meta name="description" content="Complete documentation for LLM Runner Router - Universal AI Model Orchestration System. API references, guides, examples, and tutorials.">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Documentation - LLM Runner Router">
+    <meta property="og:description" content="Complete documentation for LLM Runner Router with API references, guides, and examples">
+    <meta property="og:url" content="https://llmrouter.dev/docs/">
+    <meta property="og:type" content="website">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://llmrouter.dev/docs/">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 3rem;
+            margin-bottom: 3rem;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 1rem;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #64748b;
+            margin-bottom: 2rem;
+        }
+        
+        .docs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .doc-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .doc-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+        }
+        
+        .doc-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .doc-card h3 {
+            color: #1e293b;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .doc-card p {
+            color: #475569;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        
+        .doc-links {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        
+        .doc-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+        }
+        
+        .doc-link:hover {
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+            transform: translateY(-1px);
+        }
+        
+        .doc-link.secondary {
+            background: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            box-shadow: none;
+        }
+        
+        .doc-link.secondary:hover {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: rgba(34, 197, 94, 0.3);
+            box-shadow: none;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #e2e8f0;
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            transition: color 0.2s ease;
+        }
+        
+        .back-link:hover {
+            color: #22c55e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../" class="back-link">
+            ← Back to Home
+        </a>
+        
+        <div class="header">
+            <h1>📚 Documentation Hub</h1>
+            <p class="subtitle">Everything you need to master LLM Runner Router</p>
+        </div>
+        
+        <div class="docs-grid">
+            <div class="doc-card">
+                <h3>🚀 Getting Started</h3>
+                <p>Quick start guide, installation instructions, and your first model orchestration setup.</p>
+                <div class="doc-links">
+                    <a href="../enhanced-docs.html#quickstart" class="doc-link">Quick Start</a>
+                    <a href="../enhanced-docs.html#installation" class="doc-link secondary">Installation</a>
+                </div>
+            </div>
+            
+            <div class="doc-card">
+                <h3>📖 API Reference</h3>
+                <p>Complete API documentation with detailed method descriptions, parameters, and examples.</p>
+                <div class="doc-links">
+                    <a href="../enhanced-docs.html#api-reference" class="doc-link">API Docs</a>
+                    <a href="https://github.com/MCERQUA/LLM-Runner-Router#api" class="doc-link secondary">GitHub API</a>
+                </div>
+            </div>
+            
+            <div class="doc-card">
+                <h3>🧭 Routing Strategies</h3>
+                <p>Learn about intelligent model selection algorithms and routing configurations.</p>
+                <div class="doc-links">
+                    <a href="../enhanced-docs.html#routing-strategies" class="doc-link">Strategies</a>
+                    <a href="../enhanced-docs.html#routing" class="doc-link secondary">Configuration</a>
+                </div>
+            </div>
+            
+            <div class="doc-card">
+                <h3>💻 Code Examples</h3>
+                <p>Ready-to-use code examples for common use cases and advanced implementations.</p>
+                <div class="doc-links">
+                    <a href="../enhanced-docs.html#examples" class="doc-link">View Examples</a>
+                    <a href="https://github.com/MCERQUA/LLM-Runner-Router/tree/main/examples" class="doc-link secondary">GitHub Examples</a>
+                </div>
+            </div>
+            
+            <div class="doc-card">
+                <h3>🔧 Integration Guides</h3>
+                <p>Platform-specific integration guides for React, Node.js, Docker, and more.</p>
+                <div class="doc-links">
+                    <a href="../enhanced-docs.html#integration" class="doc-link">Integration</a>
+                    <a href="../enhanced-docs.html#deployment" class="doc-link secondary">Deployment</a>
+                </div>
+            </div>
+            
+            <div class="doc-card">
+                <h3>⚡ Performance</h3>
+                <p>Optimization strategies, benchmarking tools, and performance best practices.</p>
+                <div class="doc-links">
+                    <a href="../enhanced-docs.html#performance" class="doc-link">Optimize</a>
+                    <a href="../enhanced-docs.html#benchmarks" class="doc-link secondary">Benchmarks</a>
+                </div>
+            </div>
+            
+            <div class="doc-card">
+                <h3>🔮 Model Formats</h3>
+                <p>Support for GGUF, ONNX, HuggingFace, Safetensors, and other model formats.</p>
+                <div class="doc-links">
+                    <a href="../enhanced-docs.html#model-formats" class="doc-link">Formats</a>
+                    <a href="../enhanced-docs.html#loaders" class="doc-link secondary">Loaders</a>
+                </div>
+            </div>
+            
+            <div class="doc-card">
+                <h3>🎮 Interactive Demo</h3>
+                <p>Try the live chat interface to experience real-time model orchestration.</p>
+                <div class="doc-links">
+                    <a href="../chat/" class="doc-link">Try Demo</a>
+                    <a href="../chat/README.md" class="doc-link secondary">Demo Guide</a>
+                </div>
+            </div>
+            
+            <div class="doc-card">
+                <h3>🛠️ Development</h3>
+                <p>Architecture overview, contributing guidelines, and development setup.</p>
+                <div class="doc-links">
+                    <a href="https://github.com/MCERQUA/LLM-Runner-Router/blob/main/docs/ARCHITECTURE.md" class="doc-link">Architecture</a>
+                    <a href="https://github.com/MCERQUA/LLM-Runner-Router/blob/main/CONTRIBUTING.md" class="doc-link secondary">Contribute</a>
+                </div>
+            </div>
+            
+            <div class="doc-card">
+                <h3>❓ Help & Support</h3>
+                <p>Troubleshooting guides, FAQ, and community support resources.</p>
+                <div class="doc-links">
+                    <a href="https://github.com/MCERQUA/LLM-Runner-Router/issues" class="doc-link">Get Help</a>
+                    <a href="https://github.com/MCERQUA/LLM-Runner-Router/discussions" class="doc-link secondary">Discussions</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -33,7 +33,7 @@ Allow: /README.md
 Allow: /LICENSE
 
 # Sitemaps
-Sitemap: https://github.com/MCERQUA/LLM-Runner-Router/sitemap.xml
+Sitemap: https://llmrouter.dev/sitemap.xml
 
 # Crawl optimization
 Crawl-delay: 1

@@ -1,0 +1,72 @@
+{
+  "name": "LLM Runner Router - Universal AI Model Orchestration",
+  "short_name": "LLM Router",
+  "description": "Universal AI model orchestration system for intelligent routing between LLM models",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#22c55e",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["developer", "productivity", "ai", "machine-learning"],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshot-narrow.png", 
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512", 
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-apple-touch.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Try Live Demo",
+      "short_name": "Demo",
+      "description": "Test the LLM Router with interactive chat",
+      "url": "/chat/",
+      "icons": [
+        {
+          "src": "/icon-demo.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Documentation",
+      "short_name": "Docs",
+      "description": "Browse complete API documentation", 
+      "url": "/enhanced-docs.html",
+      "icons": [
+        {
+          "src": "/icon-docs.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}
