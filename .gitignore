@@ -149,7 +149,12 @@ ehthumbs.db
 Thumbs.db
 
 # Claude Code specific
-.claude/command-history.log
+.claude/
+CLAUDE.md
+
+# Environment files (all variants)
+.env.vps
+.env.production
 
 # Netlify
 .netlify/.env.test
