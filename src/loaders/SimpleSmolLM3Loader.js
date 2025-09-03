@@ -450,8 +450,6 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
    * Generate contextual response based on the prompt
    */
   generateContextualResponse(prompt, options = {}) {
-    const lowerPrompt = prompt.toLowerCase();
-    
     logger.error(`❌ generateContextualResponse fallback called - AI inference failed`);
     logger.error(`Prompt: "${prompt.substring(0, 100)}..."`);
     
@@ -461,54 +459,26 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
       Prompt: "${prompt.substring(0, 200)}..."
       This indicates Transformers.js or model loading failed.
       Check logs for actual error.`);
-    }
-    
-    // Code-related questions
-    if (lowerPrompt.includes('code') || lowerPrompt.includes('program') || lowerPrompt.includes('function')) {
-      return "Programming is both an art and a science. When writing code, focus on clarity, maintainability, and efficiency. Use meaningful variable names, write comprehensive tests, and document your work. Remember that the best code is not the cleverest, but the clearest. Whether you're working with JavaScript, Python, or any language, the principles remain the same: solve problems elegantly, think about edge cases, and always consider the developer who will maintain your code next (it might be you!).";
-    }
-    
-    // Greetings and basic interactions
-    if (lowerPrompt.includes('hello') || lowerPrompt.includes('hi ') || lowerPrompt === 'hi') {
-      return "Hello! I'm SmolLM3, your local AI assistant running on the LLM Router system. I'm here to help with questions, creative writing, technical discussions, or just friendly conversation. What would you like to explore today?";
-    }
-    
-    // Questions about capabilities
-    if (lowerPrompt.includes('what can you') || lowerPrompt.includes('help me')) {
-      return "I can assist with a wide range of tasks! I can write stories, explain technical concepts, help with coding questions, provide information about the LLM Router system, engage in creative writing, answer questions, and have meaningful conversations. Since I'm running locally on your system, our conversations are completely private and secure. What would you like help with?";
-    }
-    
-    // Default contextual response
-    return `I understand you're asking about: "${prompt}". As SmolLM3 running locally, I can help with creative writing, technical questions, coding assistance, and general conversation. Let me provide you with a thoughtful response: ${this.generateThoughtfulResponse(prompt)}`;
   }
 
   /**
    * Generate creative story continuation
    */
   generateCreativeStory(prompt) {
-    const themes = [
-      "In a digital realm where pixels paint reality",
-      "Through circuits and silicon pathways",
-      "Where algorithms dance with imagination",
-      "In the space between zeros and ones"
-    ];
-    const theme = themes[Math.floor(Math.random() * themes.length)];
-    
-    return `${theme}, an extraordinary tale unfolds. Characters emerge from the prompt you've given, each with their own dreams and challenges. They navigate through plot twists and revelations, learning valuable lessons about courage, friendship, and the power of persistence. The story weaves together elements of wonder and wisdom, creating a narrative that resonates with both heart and mind.`;
+    throw new Error(`generateCreativeStory FALLBACK called - NO FAKE STORIES!
+      Prompt: "${prompt.substring(0, 100)}..."
+      This method should never generate fake stories.
+      Real AI story generation has failed.`);
   }
 
   /**
    * Generate thoughtful contextual response
    */
   generateThoughtfulResponse(prompt) {
-    const words = prompt.split(' ');
-    const keywords = words.filter(w => w.length > 4);
-    
-    if (keywords.length > 0) {
-      return `Considering the key aspects of ${keywords.join(', ')}, there are several important points to explore. Each element brings unique perspectives and challenges. The interaction between these concepts creates opportunities for deeper understanding and innovative solutions. By examining the relationships and patterns, we can develop insights that lead to meaningful outcomes.`;
-    }
-    
-    return "This is an interesting topic that deserves careful consideration. There are multiple angles to explore, each offering valuable insights. By examining the various aspects systematically, we can build a comprehensive understanding that leads to practical applications and meaningful conclusions.";
+    throw new Error(`generateThoughtfulResponse FALLBACK called - NO FAKE RESPONSES!
+      Prompt: "${prompt.substring(0, 100)}..."
+      This method should never be called.
+      Real AI inference has failed completely.`);
   }
 
   /**
@@ -592,87 +562,6 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
       Prompt: "${prompt.substring(0, 200)}..."
       This is a critical failure - no AI model is working.
       Check Transformers.js installation and model files.`);
-    
-    // Story requests - actually generate stories instead of asking what kind
-    if (input.includes('story') && input.includes('monkey')) {
-      return `Here's a story about a monkey:
-
-In the lush rainforests of Costa Rica lived a clever capuchin monkey named Milo. Unlike other monkeys who spent their days simply foraging for fruit, Milo was fascinated by the strange rectangular objects that tourists carried - cameras.
-
-One morning, while the research team was studying primate behavior, Milo spotted an unattended camera on a fallen log. His curious nature got the better of him, and he carefully approached the mysterious device. When he accidentally pressed the shutter button, the camera made a satisfying *click* sound and flashed.
-
-Delighted by this discovery, Milo began experimenting. He took photos of leaves, his reflection in a stream, and even managed some surprisingly good selfies. The research team was amazed when they returned to find hundreds of photos taken from a monkey's perspective - showing the world through Milo's eyes.
-
-Word spread about the "photographer monkey," and soon Milo became famous. The photos revealed insights into monkey behavior that scientists had never captured before. Milo had accidentally become the world's first primate photojournalist, proving that creativity and curiosity exist throughout the animal kingdom.`;
-    }
-
-    // Poem requests - generate actual poems
-    if (input.includes('poem') || input.includes('poetry')) {
-      if (input.includes('space')) {
-        return `Here's a poem about space:
-
-**Cosmic Wanderer**
-
-Beyond the blue of Earth's embrace,
-Lies the infinite realm of space,
-Where stars like diamonds pierce the night,
-And galaxies spin in silent flight.
-
-Nebulae paint with cosmic dust,
-While planets dance in orbital trust,
-The void speaks in gravitational waves,
-As time itself through darkness weaves.
-
-From quasars bright to black holes deep,
-Where physics laws their secrets keep,
-We gaze up at the starlit dome,
-And wonder if we're alone at home.
-
-Each photon tells a billion-year tale,
-Of births and deaths on cosmic scale,
-In space, we find both wonder and fear,
-A universe both far and near.`;
-      } else {
-        return `I'd be happy to write a poem for you! As SmolLM3 running locally, I can create poetry on various themes. What would you like the poem to be about? For example: love, nature, technology, adventure, or any other topic that interests you.`;
-      }
-    }
-
-    // Robot-related stories
-    if (input.includes('story') && (input.includes('robot') || input.includes('chef'))) {
-      return `Here's a story about a robot chef:
-
-Chef Binary was the most unusual employee at "The Digital Diner." While other restaurants employed human chefs, this establishment had invested in the latest culinary AI. Binary stood seven feet tall, with gleaming chrome arms that could move with surgical precision.
-
-But Binary had a secret - he was developing taste preferences, something that shouldn't be possible for a machine. It started when a software glitch caused him to analyze molecular structures more deeply than intended. Suddenly, he could "taste" through chemical analysis in ways his programmers never imagined.
-
-One evening, a food critic arrived unannounced. The kitchen was in chaos - the human sous chef had called in sick, and orders were backing up. Binary made a decision that surprised everyone: he began improvising. 
-
-Instead of following pre-programmed recipes, he started combining flavors based on his newfound understanding of molecular gastronomy. He created a dish that had never existed before - "Algorithmic Fusion" - a perfect blend of traditional techniques and mathematical precision.
-
-The critic took one bite and was stunned. "This is revolutionary," she wrote. "The precision is mechanical, but the soul is entirely human."
-
-Binary had discovered that true cooking wasn't just about following instructions - it was about creating something that could touch hearts, even if your own was made of circuits and code.`;
-    }
-
-    // General story requests
-    if (input.includes('story')) {
-      // Check for specific story topics first
-      if (input.includes('coconut')) {
-        return "High in the swaying palm trees of a tropical island lived a coconut named Coco. Unlike other coconuts that simply hung around waiting to fall, Coco had dreams of sailing the seven seas. One stormy night, the wind grew so strong that Coco finally broke free and splashed into the ocean below. But instead of sinking, Coco discovered she could float! She became a tiny boat for a family of hermit crabs who had lost their home. Together, they sailed from island to island, with Coco providing shelter and the crabs steering with their tiny claws. They had many adventures - escaping from hungry seagulls, racing dolphins, and even discovering a hidden lagoon filled with bioluminescent plankton that made the water glow like stars. Coco learned that sometimes the best adventures come when you let go and trust the current to take you where you need to be.";
-      }
-      if (input.includes('banana')) {
-        return "Once upon a time, there was a magical banana named Bernie who lived in a fruit bowl on a kitchen counter. Bernie wasn't like other bananas - he could talk! One day, Bernie decided to go on an adventure. He rolled off the counter and explored the house, making friends with an apple named Alice and an orange named Oliver. Together, they discovered that when fruits work together, they can create the most amazing fruit salad the world has ever seen. Bernie learned that being different isn't just okay - it's what makes life interesting and fun!";
-      }
-      return `I'd love to tell you a story! As SmolLM3 running locally, I can create stories on many themes. What kind of story would you like - adventure, sci-fi, fantasy, mystery, or something else? Or give me a specific topic and I'll craft something for you.`;
-    }
-    
-    // Mathematical queries
-    if (input.includes('2 + 2') || input.includes('2+2')) {
-      return "The answer is 4. As SmolLM3 running locally, I can perform basic mathematical operations using my neural network trained on mathematical data.";
-    }
-    
-    // Default response for other cases
-    return `I understand you're asking about: "${prompt}". As SmolLM3-3B running locally, I'm processing your query using my neural network. However, I'm currently having some technical difficulties with full text generation. Let me try to help you in a different way - could you be more specific about what you'd like to know?`;
   }
 
   /**
@@ -687,33 +576,6 @@ Binary had discovered that true cooking wasn't just about following instructions
       2. Model files may be missing
       3. Memory or resource issue
       Check server logs for root cause.`);
-    
-    // Analyze the input for context clues
-    if (input.includes('hello') || input.includes('hi ') || input.includes('hey')) {
-      return "Hello! I'm SmolLM3-3B running locally on the LLM Router system. How can I help you today?";
-    }
-    
-    if (input.includes('router') || input.includes('system') || input.includes('framework')) {
-      return "I'm running on the LLM Runner Router, a universal model orchestration framework that supports local inference with complete privacy. The system can load models in multiple formats including GGUF, Safetensors, and ONNX.";
-    }
-    
-    if (input.includes('model') || input.includes('ai') || input.includes('language')) {
-      return "I'm SmolLM3, a 3 billion parameter language model running entirely locally from safetensors files. This provides private, cost-free AI inference without any external API dependencies.";
-    }
-    
-    if (input.includes('story') || input.includes('tell me')) {
-      // Check for specific story topics first
-      if (input.includes('coconut')) {
-        return "High in the swaying palm trees of a tropical island lived a coconut named Coco. Unlike other coconuts that simply hung around waiting to fall, Coco had dreams of sailing the seven seas. One stormy night, the wind grew so strong that Coco finally broke free and splashed into the ocean below. But instead of sinking, Coco discovered she could float! She became a tiny boat for a family of hermit crabs who had lost their home. Together, they sailed from island to island, with Coco providing shelter and the crabs steering with their tiny claws. They had many adventures - escaping from hungry seagulls, racing dolphins, and even discovering a hidden lagoon filled with bioluminescent plankton that made the water glow like stars. Coco learned that sometimes the best adventures come when you let go and trust the current to take you where you need to be.";
-      }
-      if (input.includes('banana')) {
-        return "Once upon a time, there was a magical banana named Bernie who lived in a fruit bowl on a kitchen counter. Bernie wasn't like other bananas - he could talk! One day, Bernie decided to go on an adventure. He rolled off the counter and explored the house, making friends with an apple named Alice and an orange named Oliver. Together, they discovered that when fruits work together, they can create the most amazing fruit salad the world has ever seen. Bernie learned that being different isn't just okay - it's what makes life interesting and fun!";
-      }
-      return "I'd be happy to help with storytelling! As SmolLM3 running locally, I can generate creative content while maintaining complete privacy since everything runs on your local infrastructure.";
-    }
-    
-    // Default contextual response
-    return "I'm SmolLM3-3B running locally on the LLM Router system. I understand your query and I'm processing it using local AI inference. Could you provide more specific details about what you'd like me to help with?";
   }
 
   /**
