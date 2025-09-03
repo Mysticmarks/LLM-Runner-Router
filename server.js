@@ -226,6 +226,30 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
+ * Status endpoint (public)
+ */
+app.get('/api/status', (req, res) => {
+  const uptime = process.uptime();
+  const memUsage = process.memoryUsage();
+  
+  res.json({
+    status: isReady ? 'operational' : 'initializing',
+    uptime: Math.floor(uptime),
+    memory: {
+      used: Math.round(memUsage.heapUsed / 1048576) + 'MB',
+      total: Math.round(memUsage.heapTotal / 1048576) + 'MB',
+      rss: Math.round(memUsage.rss / 1048576) + 'MB'
+    },
+    models: {
+      loaded: router.registry ? router.registry.getModelCount() : 0,
+      available: ['smollm3-3b']
+    },
+    version: '2.0.0',
+    environment: process.env.NODE_ENV || 'production'
+  });
+});
+
+/**
  * List available models (requires authentication)
  */
 app.get('/api/models', requireAPIKey, checkRateLimit, recordUsage, (req, res) => {
