@@ -64,7 +64,7 @@
       "email": "test@example.com",
       "tier": "basic",
       "createdAt": "2025-08-22T19:26:51.772Z",
-      "lastUsed": "2025-08-22T21:26:16.700Z",
+      "lastUsed": "2025-09-03T22:18:05.923Z",
       "active": true,
       "rateLimit": {
         "requestsPerMinute": 60,
@@ -159,7 +159,7 @@
       "email": "test-persistent@llm-router.local",
       "tier": "pro",
       "createdAt": "2025-08-22T00:00:00.000Z",
-      "lastUsed": "2025-08-22T21:49:38.024Z",
+      "lastUsed": "2025-09-03T22:17:59.930Z",
       "active": true,
       "rateLimit": {
         "requestsPerMinute": 300,
@@ -226,19 +226,27 @@
       }
     },
     "llm_baf8797fc1bf33b956fd7c0ffc4e9422": {
-      "requestCount": 114,
-      "tokenCount": 1831,
+      "requestCount": 135,
+      "tokenCount": 2073,
       "lastReset": "2025-08-22T19:26:51.772Z",
       "dailyUsage": {
         "Fri Aug 22 2025": {
           "requests": 114,
           "tokens": 1831
+        },
+        "Wed Sep 03 2025": {
+          "requests": 21,
+          "tokens": 242
         }
       },
       "monthlyUsage": {
         "2025-8": {
           "requests": 114,
           "tokens": 1831
+        },
+        "2025-9": {
+          "requests": 21,
+          "tokens": 242
         }
       }
     },
@@ -291,22 +299,34 @@
       }
     },
     "llm_test_persistent_key_fixed_2025": {
-      "requestCount": 1,
-      "tokenCount": 28,
+      "requestCount": 63,
+      "tokenCount": 18448,
       "lastReset": "2025-08-22T00:00:00.000Z",
       "dailyUsage": {
         "Fri Aug 22 2025": {
-          "requests": 1,
-          "tokens": 28
+          "requests": 57,
+          "tokens": 18006
+        },
+        "Sat Aug 30 2025": {
+          "requests": 4,
+          "tokens": 416
+        },
+        "Wed Sep 03 2025": {
+          "requests": 2,
+          "tokens": 26
         }
       },
       "monthlyUsage": {
         "2025-8": {
-          "requests": 1,
-          "tokens": 28
+          "requests": 61,
+          "tokens": 18422
+        },
+        "2025-9": {
+          "requests": 2,
+          "tokens": 26
         }
       }
     }
   },
-  "lastUpdated": "2025-08-22T21:49:38.026Z"
+  "lastUpdated": "2025-09-03T22:18:05.924Z"
 }

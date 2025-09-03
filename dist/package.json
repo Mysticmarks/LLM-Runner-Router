@@ -10,6 +10,9 @@
     "dev": "nodemon server.js",
     "demo": "node src/index.js",
     "build": "node scripts/build.js",
+    "prebuild": "node scripts/prebuild-automation.js",
+    "deploy": "node scripts/deploy.js",
+    "migrate": "node -e \"import('./src/db/DatabaseManager.js').then(({DatabaseManager}) => new DatabaseManager().initialize())\"",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "test:unit": "node --experimental-vm-modules node_modules/.bin/jest tests/basic.test.js",
     "test:integration": "node --experimental-vm-modules node_modules/.bin/jest tests/integration",
@@ -123,24 +126,6 @@
     "uuid": "^11.1.0",
     "ws": "^8.16.0"
   },
-  "devDependencies": {
-    "@babel/core": "^7.23.0",
-    "@babel/preset-env": "^7.23.0",
-    "@eslint/js": "^9.33.0",
-    "@types/node": "^20.11.0",
-    "dotenv": "^17.2.1",
-    "eslint": "^8.56.0",
-    "globals": "^16.3.0",
-    "jest": "^29.7.0",
-    "joi": "^18.0.0",
-    "jsdoc": "^4.0.0",
-    "nodemon": "^3.0.0",
-    "prettier": "^3.2.0",
-    "supertest": "^7.1.4",
-    "webpack": "^5.90.0",
-    "webpack-cli": "^5.1.0",
-    "winston": "^3.17.0"
-  },
   "engines": {
     "node": ">=18.0.0"
   },
@@ -164,5 +149,23 @@
     "README.md",
     "LICENSE",
     "package.json"
-  ]
+  ],
+  "buildInfo": {
+    "version": "2.0.0",
+    "buildTime": "2025-09-03T21:13:26.996Z",
+    "nodeVersion": "v20.19.4",
+    "platform": "linux",
+    "arch": "x64",
+    "gitCommit": "a23bb61a053b715cce908c247b3f0fc33a232f74",
+    "gitBranch": "main"
+  },
+  "distribution": {
+    "type": "prebuilt",
+    "buildDate": "2025-09-03T21:13:26.996Z",
+    "platform": "linux-x64",
+    "nodeVersion": "v20.19.4"
+  },
+  "bin": {
+    "llm-router": "./bin/llm-router.js"
+  }
 }

@@ -294,6 +294,19 @@ const PROVIDER_CONFIGS = {
     authType: 'api_key',
     costPerMillion: { input: 0.59, output: 0.79 }, // Llama 3.1 70B pricing
     features: ['multimodal', 'text_to_image', 'image_to_video', 'text_to_speech', 'high_quality_media']
+  },
+  
+  // Local Model Providers
+  ollama: {
+    baseURL: 'http://localhost:11434',
+    models: ['auto'], // Ollama supports any pulled model
+    headers: () => ({
+      'Content-Type': 'application/json'
+    }),
+    streaming: true,
+    authType: 'none', // No authentication required
+    costPerMillion: { input: 0, output: 0 }, // Local models are free
+    features: ['local_inference', 'no_api_cost', 'privacy', 'quantized_models']
   }
 };
 
@@ -345,12 +358,12 @@ class APILoader extends BaseLoader {
         throw new Error(`Unsupported provider: ${this.provider}`);
       }
       
-      if (!this.apiKey) {
+      if (!this.apiKey && providerConfig.authType !== 'none') {
         throw new Error(`API key required for ${this.provider}`);
       }
       
       // Validate model is supported
-      if (this.provider !== 'openrouter' && !providerConfig.models.includes(modelId)) {
+      if (this.provider !== 'openrouter' && this.provider !== 'ollama' && !providerConfig.models.includes(modelId)) {
         logger.warn(`Model ${modelId} may not be supported by ${this.provider}`);
       }
       

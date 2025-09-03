@@ -333,9 +333,9 @@ export class GRPCServer extends EventEmitter {
    * Single inference
    */
   async inference(call, callback) {
+    const request = call.request;
     try {
       this.incrementMetric('totalRequests');
-      const request = call.request;
       const startTime = Date.now();
 
       const result = await this.router.quick(request.prompt, {
@@ -642,9 +642,9 @@ export class GRPCServer extends EventEmitter {
    * Route model selection
    */
   async routeModel(call, callback) {
+    const request = call.request;
     try {
       this.incrementMetric('totalRequests');
-      const request = call.request;
 
       // Use the router's model selection logic
       const model = await this.router.router.selectModel(request.prompt, request.requirements);
@@ -727,7 +727,7 @@ export class GRPCServer extends EventEmitter {
    * Increment a metric
    */
   incrementMetric(name) {
-    if (this.metrics.hasOwnProperty(name)) {
+    if (Object.prototype.hasOwnProperty.call(this.metrics, name)) {
       this.metrics[name]++;
     }
   }
@@ -736,20 +736,11 @@ export class GRPCServer extends EventEmitter {
    * Decrement a metric
    */
   decrementMetric(name) {
-    if (this.metrics.hasOwnProperty(name) && this.metrics[name] > 0) {
+    if (Object.prototype.hasOwnProperty.call(this.metrics, name) && this.metrics[name] > 0) {
       this.metrics[name]--;
     }
   }
 
-  /**
-   * Get server metrics
-   */
-  getMetrics() {
-    return {
-      ...this.metrics,
-      uptime: Date.now() - this.metrics.startTime
-    };
-  }
 }
 
 /**

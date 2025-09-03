@@ -29,6 +29,7 @@ class EnhancedDocsAPI {
             'faq': 'FAQ.md',
             'glossary': 'GLOSSARY.md',
             'examples': 'EXAMPLES.md',
+            'ollama-setup': 'OLLAMA_SETUP.md',
             
             // API Provider Documentation - Main
             'api-providers': 'api/index.md',
@@ -756,6 +757,7 @@ Built with 💚 by Echo AI Systems`;
             'faq': 'FAQ',
             'glossary': 'Glossary',
             'examples': 'Examples',
+            'ollama-setup': 'Ollama Setup',
             'basic-examples': 'Basic Examples',
             'streaming-examples': 'Streaming Examples',
             'api-examples': 'API Examples',

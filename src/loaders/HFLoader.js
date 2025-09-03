@@ -641,8 +641,8 @@ class HFLoader extends BaseLoader {
       return result;
     }
     
-    // Fallback
-    return { generated_text: prompt + ' [Model output placeholder]' };
+    // Fallback - throw error instead of fake response
+    throw new Error('HuggingFace model inference failed. No working pipeline available. Consider using Ollama for reliable local AI.');
   }
 
   /**

@@ -82,7 +82,10 @@ class GGUFModel extends ModelInterface {
     try {
       // Check if node-llama-cpp is available
       if (!getLlama) {
-        throw new Error('node-llama-cpp is not installed. GGUF models require node-llama-cpp to function.');
+        // In VPS/test environments, gracefully handle missing dependency
+        const error = new Error('node-llama-cpp is not available. GGUF models disabled in VPS environment.');
+        error.code = 'GGUF_NOT_AVAILABLE';
+        throw error;
       }
       
       // Get llama instance

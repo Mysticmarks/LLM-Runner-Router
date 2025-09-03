@@ -389,8 +389,64 @@ class AuthManager {
    * Refresh OAuth2 access token
    */
   async refreshAccessToken(provider, credentials) {
-    // Implementation would depend on provider-specific OAuth2 endpoints
-    throw new Error('OAuth2 refresh not implemented yet');
+    try {
+      // Get provider configuration
+      const providerConfig = this.providers.get(provider);
+      if (!providerConfig || !providerConfig.oauth2) {
+        throw new Error(`OAuth2 not configured for provider: ${provider}`);
+      }
+
+      const { tokenEndpoint, clientId, clientSecret } = providerConfig.oauth2;
+      if (!tokenEndpoint) {
+        throw new Error(`No token endpoint configured for provider: ${provider}`);
+      }
+
+      // Prepare refresh token request
+      const refreshData = {
+        grant_type: 'refresh_token',
+        refresh_token: credentials.refreshToken,
+        client_id: clientId,
+        ...(clientSecret && { client_secret: clientSecret })
+      };
+
+      // Make refresh token request
+      const response = await fetch(tokenEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json'
+        },
+        body: new URLSearchParams(refreshData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`OAuth2 refresh failed: ${response.status} ${response.statusText}`);
+      }
+
+      const tokenData = await response.json();
+      
+      if (!tokenData.access_token) {
+        throw new Error('No access token in OAuth2 refresh response');
+      }
+
+      // Update credentials with new tokens
+      const updatedCredentials = {
+        ...credentials,
+        accessToken: tokenData.access_token,
+        ...(tokenData.refresh_token && { refreshToken: tokenData.refresh_token }),
+        expiresAt: tokenData.expires_in 
+          ? Date.now() + (tokenData.expires_in * 1000)
+          : credentials.expiresAt,
+        tokenType: tokenData.token_type || 'Bearer'
+      };
+
+      this.logger.info(`🔄 OAuth2 tokens refreshed for provider: ${provider}`);
+      return updatedCredentials;
+
+    } catch (error) {
+      this.logger.error(`❌ OAuth2 refresh failed for ${provider}:`, error.message);
+      throw new Error(`OAuth2 refresh failed for ${provider}: ${error.message}`);
+    }
   }
 
   /**

@@ -17,6 +17,7 @@ import PyTorchLoader from './loaders/PyTorchLoader.js';
 import BinaryLoader from './loaders/BinaryLoader.js';
 import SimpleLoader from './loaders/SimpleLoader.js';
 import SafetensorsLoader from './loaders/SafetensorsLoader.js';
+import SmolLM3Loader from './loaders/SmolLM3Loader.js';
 import OllamaAdapter from './loaders/adapters/OllamaAdapter.js';
 // import BitNetLoader from './loaders/BitNetLoader.js'; // Commented out - missing dependencies
 
@@ -35,6 +36,7 @@ class LLMRouter {
     this.pipeline = new Pipeline(this.config);
     this.engine = null;
     this.initialized = false;
+    this.loaders = new Map(); // Track registered loaders
     
     logger.info('🚀 LLM-Runner-Router initializing...', {
       version: '2.0.0',
@@ -67,25 +69,44 @@ class LLMRouter {
       logger.info(`✅ Selected engine: ${this.engine.name}`);
       
       // Register format loaders
-      this.registry.registerLoader('gguf', new GGUFLoader());
+      const ggufLoader = new GGUFLoader();
+      this.registry.registerLoader('gguf', ggufLoader);
+      this.loaders.set('gguf', ggufLoader);
       logger.info('📦 Registered GGUF loader');
       
-      this.registry.registerLoader('mock', new MockLoader());
+      const mockLoader = new MockLoader();
+      this.registry.registerLoader('mock', mockLoader);
+      this.loaders.set('mock', mockLoader);
       logger.info('📦 Registered Mock loader');
       
-      this.registry.registerLoader('pytorch', new PyTorchLoader());
+      const pytorchLoader = new PyTorchLoader();
+      this.registry.registerLoader('pytorch', pytorchLoader);
+      this.loaders.set('pytorch', pytorchLoader);
       logger.info('🔥 Registered PyTorch loader (.pth, .pt)');
       
-      this.registry.registerLoader('binary', new BinaryLoader());
+      const binaryLoader = new BinaryLoader();
+      this.registry.registerLoader('binary', binaryLoader);
+      this.loaders.set('binary', binaryLoader);
       logger.info('📦 Registered Binary loader (.bin)');
       
-      this.registry.registerLoader('safetensors', new SafetensorsLoader());
+      const safetensorsLoader = new SafetensorsLoader();
+      this.registry.registerLoader('safetensors', safetensorsLoader);
+      this.loaders.set('safetensors', safetensorsLoader);
       logger.info('🔒 Registered Safetensors loader (.safetensors)');
       
-      this.registry.registerLoader('ollama', new OllamaAdapter());
+      const smolLM3Loader = new SmolLM3Loader();
+      this.registry.registerLoader('smollm3', smolLM3Loader);
+      this.loaders.set('smollm3', smolLM3Loader);
+      logger.info('🧠 Registered SmolLM3 loader (Transformers.js)');
+      
+      const ollamaAdapter = new OllamaAdapter();
+      this.registry.registerLoader('ollama', ollamaAdapter);
+      this.loaders.set('ollama', ollamaAdapter);
       logger.info('🦙 Registered Ollama adapter (local models)');
       
-      this.registry.registerLoader('simple', new SimpleLoader());
+      const simpleLoader = new SimpleLoader();
+      this.registry.registerLoader('simple', simpleLoader);
+      this.loaders.set('simple', simpleLoader);
       logger.info('🤖 Registered Simple loader (VPS fallback)');
       
       // Register BitNet loader with graceful fallback
@@ -270,6 +291,15 @@ class LLMRouter {
     // For embeddings, average them
     // This needs more sophisticated implementation
     return results.sort((a, b) => b.weight - a.weight)[0].result;
+  }
+
+  /**
+   * Register a loader for a specific format
+   */
+  registerLoader(format, loader) {
+    this.registry.registerLoader(format, loader);
+    this.loaders.set(format, loader);
+    logger.info(`📦 Registered loader: ${format}`);
   }
 
   /**

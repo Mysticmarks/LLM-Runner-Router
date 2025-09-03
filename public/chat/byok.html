@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BYOK - Bring Your Own Key | LLM Router</title>
+    <link rel="stylesheet" href="/chat/admin-styles.css">
+    <style>
+        .byok-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .provider-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .provider-card {
+            background: var(--light-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .provider-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .provider-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .provider-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .provider-info h3 {
+            margin: 0 0 0.25rem 0;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+        }
+        
+        .provider-info p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .key-input-group {
+            margin-bottom: 1rem;
+        }
+        
+        .key-input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        .key-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--darker-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .key-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .key-input[type="password"] {
+            letter-spacing: 0.2em;
+        }
+        
+        .key-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.8rem;
+        }
+        
+        .key-status.valid {
+            background: rgba(72, 187, 120, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(72, 187, 120, 0.3);
+        }
+        
+        .key-status.invalid {
+            background: rgba(252, 129, 129, 0.1);
+            color: var(--danger-color);
+            border: 1px solid rgba(252, 129, 129, 0.3);
+        }
+        
+        .key-status.testing {
+            background: rgba(246, 173, 85, 0.1);
+            color: var(--warning-color);
+            border: 1px solid rgba(246, 173, 85, 0.3);
+        }
+        
+        .provider-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .key-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .usage-info {
+            background: var(--darker-bg);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .usage-info h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+        
+        .usage-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+        }
+        
+        .usage-stat {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+        }
+        
+        .security-notice {
+            background: rgba(99, 179, 237, 0.1);
+            border: 1px solid rgba(99, 179, 237, 0.3);
+            color: var(--info-color);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .security-notice h3 {
+            margin: 0 0 0.5rem 0;
+            color: var(--info-color);
+        }
+        
+        .bulk-actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .key-visibility {
+            position: relative;
+        }
+        
+        .toggle-visibility {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+        
+        .toggle-visibility:hover {
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="byok-container">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="header-content">
+                <h1>🔑 Bring Your Own Key (BYOK)</h1>
+                <div class="header-actions">
+                    <button id="testAllKeys" class="btn btn-primary">🧪 Test All Keys</button>
+                    <button id="exportKeys" class="btn btn-secondary">📤 Export Config</button>
+                    <button id="importKeys" class="btn btn-secondary">📥 Import Config</button>
+                    <a href="/chat/admin.html" class="btn btn-info">⚙️ Admin Panel</a>
+                    <a href="/chat/" class="btn btn-success">💬 Back to Chat</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Security Notice -->
+        <div class="security-notice">
+            <h3>🔒 Security & Privacy</h3>
+            <p>Your API keys are encrypted and stored locally. Keys are never transmitted to external servers except for direct API calls to your chosen providers. We recommend using environment variables or dedicated key management services for production deployments.</p>
+        </div>
+
+        <!-- Bulk Actions -->
+        <div class="bulk-actions">
+            <button id="clearAllKeys" class="btn btn-danger">🗑️ Clear All Keys</button>
+            <button id="saveAllKeys" class="btn btn-success">💾 Save All Keys</button>
+            <button id="loadDefaults" class="btn btn-secondary">🔄 Load Defaults</button>
+        </div>
+
+        <!-- Provider Grid -->
+        <div class="provider-grid">
+            <!-- OpenAI -->
+            <div class="provider-card" data-provider="openai">
+                <div class="provider-header">
+                    <div class="provider-logo">🤖</div>
+                    <div class="provider-info">
+                        <h3>OpenAI</h3>
+                        <p>GPT-4, GPT-3.5, DALL-E, Whisper</p>
+                    </div>
+                </div>
+                
+                <div class="key-input-group">
+                    <label for="openai-key">API Key:</label>
+                    <div class="key-visibility">
+                        <input type="password" id="openai-key" class="key-input" placeholder="sk-..." autocomplete="off">
+                        <button type="button" class="toggle-visibility" onclick="toggleVisibility('openai-key')">👁️</button>
+                    </div>
+                    <div class="key-status" id="openai-status" style="display: none;"></div>
+                </div>
+
+                <div class="key-input-group">
+                    <label for="openai-org">Organization ID (Optional):</label>
+                    <input type="text" id="openai-org" class="key-input" placeholder="org-...">
+                </div>
+
+                <div class="key-toggle">
+                    <input type="checkbox" id="openai-enabled">
+                    <label for="openai-enabled">Enable OpenAI Provider</label>
+                </div>
+
+                <div class="provider-actions">
+                    <button class="btn btn-sm btn-primary" onclick="testKey('openai')">🧪 Test Key</button>
+                    <button class="btn btn-sm btn-secondary" onclick="clearKey('openai')">🗑️ Clear</button>
+                </div>
+
+                <div class="usage-info" id="openai-usage" style="display: none;">
+                    <h4>Usage Statistics</h4>
+                    <div class="usage-stats">
+                        <div class="usage-stat"><span>Today:</span><span id="openai-today">0 requests</span></div>
+                        <div class="usage-stat"><span>This Month:</span><span id="openai-month">0 requests</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anthropic -->
+            <div class="provider-card" data-provider="anthropic">
+                <div class="provider-header">
+                    <div class="provider-logo">🧠</div>
+                    <div class="provider-info">
+                        <h3>Anthropic</h3>
+                        <p>Claude 3, Claude 2, Claude Instant</p>
+                    </div>
+                </div>
+                
+                <div class="key-input-group">
+                    <label for="anthropic-key">API Key:</label>
+                    <div class="key-visibility">
+                        <input type="password" id="anthropic-key" class="key-input" placeholder="sk-ant-..." autocomplete="off">
+                        <button type="button" class="toggle-visibility" onclick="toggleVisibility('anthropic-key')">👁️</button>
+                    </div>
+                    <div class="key-status" id="anthropic-status" style="display: none;"></div>
+                </div>
+
+                <div class="key-toggle">
+                    <input type="checkbox" id="anthropic-enabled">
+                    <label for="anthropic-enabled">Enable Anthropic Provider</label>
+                </div>
+
+                <div class="provider-actions">
+                    <button class="btn btn-sm btn-primary" onclick="testKey('anthropic')">🧪 Test Key</button>
+                    <button class="btn btn-sm btn-secondary" onclick="clearKey('anthropic')">🗑️ Clear</button>
+                </div>
+
+                <div class="usage-info" id="anthropic-usage" style="display: none;">
+                    <h4>Usage Statistics</h4>
+                    <div class="usage-stats">
+                        <div class="usage-stat"><span>Today:</span><span id="anthropic-today">0 requests</span></div>
+                        <div class="usage-stat"><span>This Month:</span><span id="anthropic-month">0 requests</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Google AI -->
+            <div class="provider-card" data-provider="google">
+                <div class="provider-header">
+                    <div class="provider-logo">🌟</div>
+                    <div class="provider-info">
+                        <h3>Google AI</h3>
+                        <p>Gemini Pro, Gemini Ultra, PaLM</p>
+                    </div>
+                </div>
+                
+                <div class="key-input-group">
+                    <label for="google-key">API Key:</label>
+                    <div class="key-visibility">
+                        <input type="password" id="google-key" class="key-input" placeholder="AIza..." autocomplete="off">
+                        <button type="button" class="toggle-visibility" onclick="toggleVisibility('google-key')">👁️</button>
+                    </div>
+                    <div class="key-status" id="google-status" style="display: none;"></div>
+                </div>
+
+                <div class="key-toggle">
+                    <input type="checkbox" id="google-enabled">
+                    <label for="google-enabled">Enable Google AI Provider</label>
+                </div>
+
+                <div class="provider-actions">
+                    <button class="btn btn-sm btn-primary" onclick="testKey('google')">🧪 Test Key</button>
+                    <button class="btn btn-sm btn-secondary" onclick="clearKey('google')">🗑️ Clear</button>
+                </div>
+
+                <div class="usage-info" id="google-usage" style="display: none;">
+                    <h4>Usage Statistics</h4>
+                    <div class="usage-stats">
+                        <div class="usage-stat"><span>Today:</span><span id="google-today">0 requests</span></div>
+                        <div class="usage-stat"><span>This Month:</span><span id="google-month">0 requests</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cohere -->
+            <div class="provider-card" data-provider="cohere">
+                <div class="provider-header">
+                    <div class="provider-logo">🔮</div>
+                    <div class="provider-info">
+                        <h3>Cohere</h3>
+                        <p>Command, Generate, Embed, Classify</p>
+                    </div>
+                </div>
+                
+                <div class="key-input-group">
+                    <label for="cohere-key">API Key:</label>
+                    <div class="key-visibility">
+                        <input type="password" id="cohere-key" class="key-input" placeholder="co-..." autocomplete="off">
+                        <button type="button" class="toggle-visibility" onclick="toggleVisibility('cohere-key')">👁️</button>
+                    </div>
+                    <div class="key-status" id="cohere-status" style="display: none;"></div>
+                </div>
+
+                <div class="key-toggle">
+                    <input type="checkbox" id="cohere-enabled">
+                    <label for="cohere-enabled">Enable Cohere Provider</label>
+                </div>
+
+                <div class="provider-actions">
+                    <button class="btn btn-sm btn-primary" onclick="testKey('cohere')">🧪 Test Key</button>
+                    <button class="btn btn-sm btn-secondary" onclick="clearKey('cohere')">🗑️ Clear</button>
+                </div>
+
+                <div class="usage-info" id="cohere-usage" style="display: none;">
+                    <h4>Usage Statistics</h4>
+                    <div class="usage-stats">
+                        <div class="usage-stat"><span>Today:</span><span id="cohere-today">0 requests</span></div>
+                        <div class="usage-stat"><span>This Month:</span><span id="cohere-month">0 requests</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hugging Face -->
+            <div class="provider-card" data-provider="huggingface">
+                <div class="provider-header">
+                    <div class="provider-logo">🤗</div>
+                    <div class="provider-info">
+                        <h3>Hugging Face</h3>
+                        <p>Open Source Models, Inference API</p>
+                    </div>
+                </div>
+                
+                <div class="key-input-group">
+                    <label for="huggingface-key">API Token:</label>
+                    <div class="key-visibility">
+                        <input type="password" id="huggingface-key" class="key-input" placeholder="hf_..." autocomplete="off">
+                        <button type="button" class="toggle-visibility" onclick="toggleVisibility('huggingface-key')">👁️</button>
+                    </div>
+                    <div class="key-status" id="huggingface-status" style="display: none;"></div>
+                </div>
+
+                <div class="key-toggle">
+                    <input type="checkbox" id="huggingface-enabled">
+                    <label for="huggingface-enabled">Enable Hugging Face Provider</label>
+                </div>
+
+                <div class="provider-actions">
+                    <button class="btn btn-sm btn-primary" onclick="testKey('huggingface')">🧪 Test Key</button>
+                    <button class="btn btn-sm btn-secondary" onclick="clearKey('huggingface')">🗑️ Clear</button>
+                </div>
+
+                <div class="usage-info" id="huggingface-usage" style="display: none;">
+                    <h4>Usage Statistics</h4>
+                    <div class="usage-stats">
+                        <div class="usage-stat"><span>Today:</span><span id="huggingface-today">0 requests</span></div>
+                        <div class="usage-stat"><span>This Month:</span><span id="huggingface-month">0 requests</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OpenRouter -->
+            <div class="provider-card" data-provider="openrouter">
+                <div class="provider-header">
+                    <div class="provider-logo">🚀</div>
+                    <div class="provider-info">
+                        <h3>OpenRouter</h3>
+                        <p>Multi-model API Gateway</p>
+                    </div>
+                </div>
+                
+                <div class="key-input-group">
+                    <label for="openrouter-key">API Key:</label>
+                    <div class="key-visibility">
+                        <input type="password" id="openrouter-key" class="key-input" placeholder="sk-or-..." autocomplete="off">
+                        <button type="button" class="toggle-visibility" onclick="toggleVisibility('openrouter-key')">👁️</button>
+                    </div>
+                    <div class="key-status" id="openrouter-status" style="display: none;"></div>
+                </div>
+
+                <div class="key-toggle">
+                    <input type="checkbox" id="openrouter-enabled">
+                    <label for="openrouter-enabled">Enable OpenRouter Provider</label>
+                </div>
+
+                <div class="provider-actions">
+                    <button class="btn btn-sm btn-primary" onclick="testKey('openrouter')">🧪 Test Key</button>
+                    <button class="btn btn-sm btn-secondary" onclick="clearKey('openrouter')">🗑️ Clear</button>
+                </div>
+
+                <div class="usage-info" id="openrouter-usage" style="display: none;">
+                    <h4>Usage Statistics</h4>
+                    <div class="usage-stats">
+                        <div class="usage-stat"><span>Today:</span><span id="openrouter-today">0 requests</span></div>
+                        <div class="usage-stat"><span>This Month:</span><span id="openrouter-month">0 requests</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Together AI -->
+            <div class="provider-card" data-provider="together">
+                <div class="provider-header">
+                    <div class="provider-logo">🤝</div>
+                    <div class="provider-info">
+                        <h3>Together AI</h3>
+                        <p>Fast Inference, Open Models</p>
+                    </div>
+                </div>
+                
+                <div class="key-input-group">
+                    <label for="together-key">API Key:</label>
+                    <div class="key-visibility">
+                        <input type="password" id="together-key" class="key-input" placeholder="..." autocomplete="off">
+                        <button type="button" class="toggle-visibility" onclick="toggleVisibility('together-key')">👁️</button>
+                    </div>
+                    <div class="key-status" id="together-status" style="display: none;"></div>
+                </div>
+
+                <div class="key-toggle">
+                    <input type="checkbox" id="together-enabled">
+                    <label for="together-enabled">Enable Together AI Provider</label>
+                </div>
+
+                <div class="provider-actions">
+                    <button class="btn btn-sm btn-primary" onclick="testKey('together')">🧪 Test Key</button>
+                    <button class="btn btn-sm btn-secondary" onclick="clearKey('together')">🗑️ Clear</button>
+                </div>
+
+                <div class="usage-info" id="together-usage" style="display: none;">
+                    <h4>Usage Statistics</h4>
+                    <div class="usage-stats">
+                        <div class="usage-stat"><span>Today:</span><span id="together-today">0 requests</span></div>
+                        <div class="usage-stat"><span>This Month:</span><span id="together-month">0 requests</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Groq -->
+            <div class="provider-card" data-provider="groq">
+                <div class="provider-header">
+                    <div class="provider-logo">⚡</div>
+                    <div class="provider-info">
+                        <h3>Groq</h3>
+                        <p>Ultra-fast Inference, Llama, Mixtral</p>
+                    </div>
+                </div>
+                
+                <div class="key-input-group">
+                    <label for="groq-key">API Key:</label>
+                    <div class="key-visibility">
+                        <input type="password" id="groq-key" class="key-input" placeholder="gsk_..." autocomplete="off">
+                        <button type="button" class="toggle-visibility" onclick="toggleVisibility('groq-key')">👁️</button>
+                    </div>
+                    <div class="key-status" id="groq-status" style="display: none;"></div>
+                </div>
+
+                <div class="key-toggle">
+                    <input type="checkbox" id="groq-enabled">
+                    <label for="groq-enabled">Enable Groq Provider</label>
+                </div>
+
+                <div class="provider-actions">
+                    <button class="btn btn-sm btn-primary" onclick="testKey('groq')">🧪 Test Key</button>
+                    <button class="btn btn-sm btn-secondary" onclick="clearKey('groq')">🗑️ Clear</button>
+                </div>
+
+                <div class="usage-info" id="groq-usage" style="display: none;">
+                    <h4>Usage Statistics</h4>
+                    <div class="usage-stats">
+                        <div class="usage-stat"><span>Today:</span><span id="groq-today">0 requests</span></div>
+                        <div class="usage-stat"><span>This Month:</span><span id="groq-month">0 requests</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="notification hidden">
+        <span id="notificationText"></span>
+    </div>
+
+    <!-- Import/Export Modal -->
+    <div id="configModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="modalTitle">Import/Export Configuration</h3>
+            <textarea id="configData" class="form-control large-textarea" rows="10" placeholder="Paste configuration JSON here..."></textarea>
+            <div class="modal-actions">
+                <button id="modalCancel" class="btn btn-secondary">Cancel</button>
+                <button id="modalConfirm" class="btn btn-primary">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/chat/byok.js"></script>
+</body>
+</html>

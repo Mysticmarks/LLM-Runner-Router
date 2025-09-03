@@ -646,4 +646,4 @@ class ModelRegistry extends EventEmitter {
 
 
 export default ModelRegistry;
-export { ModelRegistry };
+export { ModelRegistry, ModelRegistry as Registry };

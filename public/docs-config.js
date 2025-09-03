@@ -39,6 +39,13 @@ const DocsConfig = {
                     icon: 'fas fa-code',
                     file: 'EXAMPLES.md',
                     description: 'Get started quickly with code examples'
+                },
+                'ollama-setup': {
+                    title: 'Ollama Setup',
+                    icon: 'fas fa-home',
+                    file: 'OLLAMA_SETUP.md',
+                    description: 'Zero-cost local AI with Ollama integration',
+                    badge: 'NEW'
                 }
             }
         },

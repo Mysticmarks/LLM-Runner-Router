@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Test - No Fake Responses</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        button {
+            background: #333;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #444;
+        }
+        #output {
+            white-space: pre-wrap;
+            padding: 20px;
+            background: #000;
+            border: 1px solid #0f0;
+            min-height: 200px;
+            margin: 20px 0;
+        }
+        .test-prompt {
+            color: #ff0;
+        }
+        .response {
+            color: #0ff;
+        }
+        .error {
+            color: #f00;
+        }
+        .success {
+            color: #0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Chat Test - Verify NO Fake Responses</h1>
+    <p>Click buttons to test various prompts. Should only return errors or real AI, NO fake responses!</p>
+    
+    <div>
+        <button onclick="testPrompt('Tell me a story about a coconut')">Test: Coconut Story</button>
+        <button onclick="testPrompt('Why is the sky blue?')">Test: Sky Blue</button>
+        <button onclick="testPrompt('What is 2 + 2?')">Test: Math</button>
+        <button onclick="testPrompt('Hello, how are you?')">Test: Greeting</button>
+        <button onclick="testPrompt('Write a poem about space')">Test: Space Poem</button>
+        <button onclick="testPrompt('What can you help me with?')">Test: Capabilities</button>
+    </div>
+    
+    <div id="output">Ready to test...</div>
+
+    <script>
+        async function testPrompt(prompt) {
+            const output = document.getElementById('output');
+            output.innerHTML += `\n\n<span class="test-prompt">Testing: "${prompt}"</span>\n`;
+            output.innerHTML += '-'.repeat(60) + '\n';
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messages: [{role: 'user', content: prompt}],
+                        model: 'simple-smollm3'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const text = data.response || data.text || JSON.stringify(data);
+                    
+                    // Check for fake response patterns
+                    const fakePatterns = [
+                        "I understand you're asking",
+                        "As SmolLM3 running locally",
+                        "I'd be happy to",
+                        "I'm here to help",
+                        "What would you like",
+                        "I can assist with",
+                        "Hello! I'm SmolLM3",
+                        "Here's a story about",
+                        "Here's a poem about",
+                        "The answer is 4"
+                    ];
+                    
+                    const hasFake = fakePatterns.some(p => text.includes(p));
+                    
+                    if (hasFake) {
+                        output.innerHTML += `<span class="error">❌ FAKE RESPONSE DETECTED!</span>\n`;
+                        output.innerHTML += `<span class="response">${text}</span>\n`;
+                    } else {
+                        output.innerHTML += `<span class="success">✅ Real response (no fake patterns)</span>\n`;
+                        output.innerHTML += `<span class="response">${text.substring(0, 200)}...</span>\n`;
+                    }
+                } else {
+                    output.innerHTML += `<span class="error">Error: ${data.error || data.message}</span>\n`;
+                    if (data.error?.includes('API key')) {
+                        output.innerHTML += `<span class="success">✅ Correct - auth required, no fake response</span>\n`;
+                    } else if (data.error?.includes('failed') || data.error?.includes('FALLBACK')) {
+                        output.innerHTML += `<span class="success">✅ Correct - error thrown, no fake response</span>\n`;
+                    }
+                }
+            } catch (error) {
+                output.innerHTML += `<span class="error">Network error: ${error.message}</span>\n`;
+            }
+            
+            output.scrollTop = output.scrollHeight;
+        }
+    </script>
+</body>
+</html>

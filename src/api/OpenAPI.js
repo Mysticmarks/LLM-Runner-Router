@@ -12,7 +12,7 @@ export class OpenAPIManager extends EventEmitter {
   constructor(options = {}) {
     super();
     this.options = {
-      title: options.title || 'LLM Runner Router API',
+      title: (options.title && options.title.trim()) || 'LLM Runner Router API',
       description: options.description || 'Universal LLM model orchestration and intelligent routing system',
       version: options.version || '1.2.1',
       serverUrl: options.serverUrl || 'http://localhost:3000',

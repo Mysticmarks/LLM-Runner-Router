@@ -26,6 +26,9 @@ import PerplexityAdapter from './PerplexityAdapter.js';
 import DeepSeekAdapter from './DeepSeekAdapter.js';
 import NovitaAdapter from './NovitaAdapter.js';
 
+// Local & Self-Hosted
+import OllamaAdapter from './OllamaAdapter.js';
+
 /**
  * Adapter registry mapping provider names to adapter classes
  */
@@ -61,6 +64,9 @@ export const ADAPTER_REGISTRY = {
   'deepseek-ai': DeepSeekAdapter, // Alias
   'novita': NovitaAdapter,
   'novita-ai': NovitaAdapter, // Alias
+
+  // Local & Self-Hosted
+  'ollama': OllamaAdapter
 };
 
 /**
@@ -74,7 +80,8 @@ export const PROVIDER_CATEGORIES = {
   'multi_provider': ['openrouter'],
   'specialized': ['cohere', 'perplexity', 'deepseek'],
   'multimodal': ['novita'],
-  'open_source': ['together', 'fireworks']
+  'open_source': ['together', 'fireworks'],
+  'local_hosting': ['ollama']
 };
 
 /**
@@ -85,14 +92,15 @@ export const AUTH_TYPES = {
   'cloud_sdk': ['bedrock', 'vertex-ai'],
   'hybrid': ['azure-openai'], // Supports both API key and Azure AD
   'oauth2': [], // Will be populated as needed
-  'custom': [] // For providers with unique auth methods
+  'custom': [], // For providers with unique auth methods
+  'none': ['ollama'] // No authentication required
 };
 
 /**
  * Feature matrix for providers
  */
 export const PROVIDER_FEATURES = {
-  'streaming': ['openai', 'anthropic', 'openrouter', 'groq', 'mistral', 'together', 'fireworks', 'bedrock', 'azure-openai', 'vertex-ai', 'cohere', 'perplexity', 'deepseek', 'novita'],
+  'streaming': ['openai', 'anthropic', 'openrouter', 'groq', 'mistral', 'together', 'fireworks', 'bedrock', 'azure-openai', 'vertex-ai', 'cohere', 'perplexity', 'deepseek', 'novita', 'ollama'],
   'function_calling': ['openai', 'azure-openai', 'mistral', 'fireworks', 'cohere'],
   'vision': ['openai', 'azure-openai', 'vertex-ai', 'novita'],
   'embeddings': ['openai', 'azure-openai', 'vertex-ai', 'mistral', 'cohere'],
@@ -104,11 +112,13 @@ export const PROVIDER_FEATURES = {
   'batch_processing': ['together', 'fireworks', 'cohere'],
   'fine_tuning': ['together', 'fireworks'],
   'web_search': ['perplexity'],
-  'cost_optimized': ['deepseek'],
+  'cost_optimized': ['deepseek', 'ollama'],
   'reranking': ['cohere'],
   'text_to_image': ['novita'],
   'text_to_video': ['novita'],
-  'text_to_speech': ['novita']
+  'text_to_speech': ['novita'],
+  'local_inference': ['ollama'],
+  'privacy_first': ['ollama']
 };
 
 /**
@@ -228,7 +238,10 @@ export {
   CohereAdapter,
   PerplexityAdapter,
   DeepSeekAdapter,
-  NovitaAdapter
+  NovitaAdapter,
+  
+  // Local & Self-Hosted
+  OllamaAdapter
 };
 
 // Default export for convenience

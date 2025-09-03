@@ -463,4 +463,4 @@ class PrometheusManager {
 const prometheusManager = new PrometheusManager();
 
 export default prometheusManager;
-export { PrometheusManager };
+export { PrometheusManager, prometheusManager as PrometheusMetrics };

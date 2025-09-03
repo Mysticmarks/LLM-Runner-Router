@@ -2,27 +2,11 @@
   "version": "1.0.0",
   "models": [
     {
-      "id": "simple-fallback",
-      "name": "Simple Fallback Model",
-      "version": "1.0.0",
-      "format": "simple",
-      "architecture": {},
-      "parameters": {},
-      "metadata": {},
-      "capabilities": {
-        "streaming": false,
-        "batching": false,
-        "quantization": false,
-        "embedding": false,
-        "completion": true
-      },
-      "metrics": {
-        "loadTime": 1755899371259,
-        "inferenceCount": 0,
-        "totalTokens": 0,
-        "avgLatency": 0,
-        "lastUsed": null
-      }
+      "id": "simple-smollm3",
+      "name": "SmolLM3-3B Simple",
+      "format": "safetensors",
+      "source": "/home/mikecerqua/projects/LLM-Runner-Router/models/smollm3-3b",
+      "loaded": true
     }
   ]
 }

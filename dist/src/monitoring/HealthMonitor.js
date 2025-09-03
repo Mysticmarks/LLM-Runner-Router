@@ -472,6 +472,13 @@ class HealthMonitor extends EventEmitter {
   }
 
   /**
+   * Alias for getHealthStatus (for compatibility)
+   */
+  checkHealth() {
+    return this.getHealthStatus();
+  }
+
+  /**
    * Get health summary
    */
   getHealthSummary() {

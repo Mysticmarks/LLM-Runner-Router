@@ -88,6 +88,7 @@ class ModelInterface extends EventEmitter {
    * @param {object} options - Streaming options
    */
   async *stream(prompt, options = {}) {
+    yield; // Required yield for generator
     throw new Error('stream() must be implemented by subclass');
   }
 

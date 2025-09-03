@@ -59,6 +59,9 @@ class Router extends EventEmitter {
       avgLatency: 0
     };
     
+    // Expose strategy property for tests
+    this.strategy = this.config.strategy;
+    
     logger.info('🧭 Router initialized with strategy:', this.config.strategy);
   }
 

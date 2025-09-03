@@ -242,26 +242,27 @@ export class DatabaseManager extends EventEmitter {
     const tableData = this.memoryStore.get(table);
 
     switch (operation) {
-      case 'insert':
+      case 'insert': {
         const id = data.id || this.generateId();
         const record = { ...data, id, createdAt: new Date(), updatedAt: new Date() };
         tableData.set(id, record);
         return record;
+      }
         
       case 'findOne':
         if (options.filters?.id) {
           return tableData.get(options.filters.id) || null;
         }
-        for (const [_id, record] of tableData) {
+        for (const [, record] of tableData) {
           if (this.matchesFilters(record, options.filters)) {
             return record;
           }
         }
         return null;
         
-      case 'find':
+      case 'find': {
         const results = [];
-        for (const [_id, record] of tableData) {
+        for (const [, record] of tableData) {
           if (this.matchesFilters(record, options.filters)) {
             results.push(record);
           }
@@ -287,8 +288,9 @@ export class DatabaseManager extends EventEmitter {
         const paginatedResults = limit ? results.slice(offset || 0, (offset || 0) + limit) : results;
         
         return { data: paginatedResults, total, count: paginatedResults.length };
+      }
         
-      case 'update':
+      case 'update': {
         const existing = tableData.get(options.filters?.id);
         if (existing) {
           const updated = { ...existing, ...data, updatedAt: new Date() };
@@ -296,6 +298,7 @@ export class DatabaseManager extends EventEmitter {
           return updated;
         }
         return null;
+      }
         
       case 'delete':
         if (options.filters?.id) {

@@ -16,6 +16,7 @@
 
 ### Practical Guides
 - [Examples & Tutorials](./EXAMPLES.md) - Learn by doing
+- [Ollama Setup Guide](./OLLAMA_SETUP.md) - Zero-cost local AI with Ollama integration 🦙
 - [Troubleshooting](./TROUBLESHOOTING.md) - When reality doesn't cooperate
 - [Security Guide](./SECURITY.md) - Protecting your neural assets
 
@@ -33,6 +34,11 @@
 1. Read [Architecture Overview](./ARCHITECTURE.md) (5 min)
 2. Check [Examples](./EXAMPLES.md) (10 min)
 3. Deploy with [Deployment Guide](./DEPLOYMENT.md) (15 min)
+
+### For the Cost-Conscious Developer
+1. Start with [Ollama Setup Guide](./OLLAMA_SETUP.md) (15 min)
+2. Run local models with zero API costs
+3. Scale with [Performance Guide](./PERFORMANCE.md)
 
 ### For the System Architect
 1. Deep dive into [Architecture](./ARCHITECTURE.md)

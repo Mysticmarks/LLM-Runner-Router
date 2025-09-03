@@ -16,14 +16,14 @@ export class AuthenticationManager extends EventEmitter {
   constructor(options = {}) {
     super();
     this.options = {
-      jwtSecret: options.jwtSecret || process.env.JWT_SECRET || 'your-secret-key',
+      jwtSecret: options.jwtSecret || process.env.JWT_SECRET || this.generateSecureSecret(),
       jwtExpiresIn: options.jwtExpiresIn || '24h',
       refreshTokenExpiresIn: options.refreshTokenExpiresIn || '7d',
       bcryptRounds: options.bcryptRounds || 12,
       apiKeyLength: options.apiKeyLength || 32,
       maxLoginAttempts: options.maxLoginAttempts || 5,
       lockoutDuration: options.lockoutDuration || 15 * 60 * 1000, // 15 minutes
-      sessionSecret: options.sessionSecret || process.env.SESSION_SECRET || 'session-secret',
+      sessionSecret: options.sessionSecret || process.env.SESSION_SECRET || this.generateSecureSecret(),
       oauth: {
         clientID: options.oauth?.clientID || process.env.OAUTH_CLIENT_ID,
         clientSecret: options.oauth?.clientSecret || process.env.OAUTH_CLIENT_SECRET,
@@ -474,7 +474,7 @@ export class AuthenticationManager extends EventEmitter {
             return null;
           }
 
-          this.emit('apiKeyUsed', { apiKeyId: id, userId: apiKey.userId });
+          this.emit('apiKeyUsed', { apiKeyId: _id, userId: apiKey.userId });
 
           return {
             user: { ...user, password: undefined },
@@ -589,7 +589,7 @@ export class AuthenticationManager extends EventEmitter {
     }
 
     // Revoke all API keys for this user
-    for (const [_keyId, apiKey] of this.apiKeys) {
+    for (const [keyId, apiKey] of this.apiKeys) {
       if (apiKey.userId === userId) {
         this.revokeApiKey(keyId);
       }
@@ -647,7 +647,7 @@ export class AuthenticationManager extends EventEmitter {
   listApiKeys(userId) {
     const apiKeys = [];
     
-    for (const [_id, apiKey] of this.apiKeys) {
+    for (const [, apiKey] of this.apiKeys) {
       if (apiKey.userId === userId) {
         apiKeys.push({
           ...apiKey,
@@ -681,6 +681,16 @@ export class AuthenticationManager extends EventEmitter {
   }
 
   /**
+   * Generate secure random secret
+   */
+  generateSecureSecret() {
+    const crypto = require('crypto');
+    const secret = crypto.randomBytes(64).toString('hex');
+    console.warn('🚨 SECURITY WARNING: Using auto-generated secret. Set JWT_SECRET and SESSION_SECRET environment variables for production.');
+    return secret;
+  }
+
+  /**
    * Cleanup expired tokens and sessions
    */
   cleanup() {
@@ -694,7 +704,7 @@ export class AuthenticationManager extends EventEmitter {
     }
 
     // Remove expired API keys
-    for (const [_keyId, apiKey] of this.apiKeys) {
+    for (const [, apiKey] of this.apiKeys) {
       if (apiKey.expiresAt && apiKey.expiresAt < now) {
         apiKey.active = false;
       }
@@ -736,7 +746,7 @@ export class AuthMiddleware {
   /**
    * JWT authentication middleware
    */
-  authenticate(options = {}) {
+  authenticate() {
     return (req, res, next) => {
       passport.authenticate('jwt', { session: false }, (err, user, info) => {
         if (err) {

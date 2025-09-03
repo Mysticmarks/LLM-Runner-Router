@@ -169,6 +169,26 @@ section h2 {
     background: linear-gradient(135deg, var(--light-bg), rgba(72, 187, 120, 0.1));
 }
 
+.model-card.local {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--light-bg), rgba(102, 126, 234, 0.1));
+    position: relative;
+}
+
+.model-card.local::after {
+    content: 'LOCAL';
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.2rem;
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
 .model-header {
     display: flex;
     justify-content: space-between;
@@ -200,6 +220,29 @@ section h2 {
     color: white;
 }
 
+.status-badge.local {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.status-badge.local::before {
+    content: '🏠';
+    margin-right: 0.25rem;
+}
+
+.status-badge.ready {
+    background: var(--success-color);
+    color: white;
+    position: relative;
+}
+
+.status-badge.ready::before {
+    content: '✅';
+    margin-right: 0.25rem;
+}
+
 .model-info {
     display: flex;
     flex-wrap: wrap;
@@ -214,6 +257,60 @@ section h2 {
     font-size: 0.8rem;
     color: var(--text-secondary);
     margin: 0;
+}
+
+/* Provider Badge */
+.provider-badge {
+    padding: 0.25rem 0.5rem;
+    background: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.provider-badge.local {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.provider-badge.local::before {
+    content: '🏠';
+}
+
+/* Capability Badges */
+.capability-badge {
+    padding: 0.2rem 0.4rem;
+    background: var(--darker-bg);
+    border-radius: 0.2rem;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin: 0;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.capability-badge.inference {
+    background: rgba(72, 187, 120, 0.2);
+    color: var(--success-color);
+    border: 1px solid rgba(72, 187, 120, 0.3);
+}
+
+.capability-badge.chat {
+    background: rgba(99, 179, 237, 0.2);
+    color: var(--info-color);
+    border: 1px solid rgba(99, 179, 237, 0.3);
+}
+
+.capability-badge.streaming {
+    background: rgba(246, 173, 85, 0.2);
+    color: var(--warning-color);
+    border: 1px solid rgba(246, 173, 85, 0.3);
 }
 
 .model-description {

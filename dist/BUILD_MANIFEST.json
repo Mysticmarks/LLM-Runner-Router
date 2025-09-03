@@ -1,0 +1,632 @@
+{
+  "version": "2.0.0",
+  "buildTime": "2025-09-03T21:13:26.996Z",
+  "nodeVersion": "v20.19.4",
+  "platform": "linux",
+  "arch": "x64",
+  "gitCommit": "a23bb61a053b715cce908c247b3f0fc33a232f74",
+  "gitBranch": "main",
+  "files": [
+    {
+      "path": ".env.example",
+      "size": 800,
+      "modified": "2025-09-03T21:13:27.077Z"
+    },
+    {
+      "path": "LICENSE",
+      "size": 1071,
+      "modified": "2025-09-03T21:13:27.074Z"
+    },
+    {
+      "path": "README.md",
+      "size": 36800,
+      "modified": "2025-09-03T21:13:27.074Z"
+    },
+    {
+      "path": "bin/llm-router.js",
+      "size": 2202,
+      "modified": "2025-09-03T21:13:27.078Z"
+    },
+    {
+      "path": "migrations/001_initial_schema.sql",
+      "size": 4985,
+      "modified": "2025-09-03T21:13:27.075Z"
+    },
+    {
+      "path": "migrations/002_model_performance_tracking.sql",
+      "size": 3186,
+      "modified": "2025-09-03T21:13:27.075Z"
+    },
+    {
+      "path": "migrations/003_enterprise_features.sql",
+      "size": 4580,
+      "modified": "2025-09-03T21:13:27.075Z"
+    },
+    {
+      "path": "migrations/004_monitoring_alerting.sql",
+      "size": 5814,
+      "modified": "2025-09-03T21:13:27.075Z"
+    },
+    {
+      "path": "package.json",
+      "size": 6112,
+      "modified": "2025-09-03T21:13:27.077Z"
+    },
+    {
+      "path": "src/api/Auth.js",
+      "size": 23522,
+      "modified": "2025-09-03T21:13:27.040Z"
+    },
+    {
+      "path": "src/api/Gateway.js",
+      "size": 25754,
+      "modified": "2025-09-03T21:13:27.041Z"
+    },
+    {
+      "path": "src/api/GraphQL.js",
+      "size": 18295,
+      "modified": "2025-09-03T21:13:27.041Z"
+    },
+    {
+      "path": "src/api/OpenAPI.js",
+      "size": 39660,
+      "modified": "2025-09-03T21:13:27.041Z"
+    },
+    {
+      "path": "src/api/RateLimiter.js",
+      "size": 23795,
+      "modified": "2025-09-03T21:13:27.041Z"
+    },
+    {
+      "path": "src/api/WebSocket.js",
+      "size": 15338,
+      "modified": "2025-09-03T21:13:27.042Z"
+    },
+    {
+      "path": "src/api/admin.js",
+      "size": 6892,
+      "modified": "2025-09-03T21:13:27.042Z"
+    },
+    {
+      "path": "src/api/gRPC.js",
+      "size": 23900,
+      "modified": "2025-09-03T21:13:27.045Z"
+    },
+    {
+      "path": "src/auth/APIKeyManager.js",
+      "size": 9290,
+      "modified": "2025-09-03T21:13:27.045Z"
+    },
+    {
+      "path": "src/auth/BYOKManager.js",
+      "size": 25741,
+      "modified": "2025-09-03T21:13:27.045Z"
+    },
+    {
+      "path": "src/auth/PersistentTestKey.js",
+      "size": 6678,
+      "modified": "2025-09-03T21:13:27.046Z"
+    },
+    {
+      "path": "src/config/Config.js",
+      "size": 4595,
+      "modified": "2025-09-03T21:13:27.046Z"
+    },
+    {
+      "path": "src/config/ModelTemplates.js",
+      "size": 9463,
+      "modified": "2025-09-03T21:13:27.046Z"
+    },
+    {
+      "path": "src/core/CostOptimizer.js",
+      "size": 2536,
+      "modified": "2025-09-03T21:13:27.047Z"
+    },
+    {
+      "path": "src/core/ErrorHandler.js",
+      "size": 55179,
+      "modified": "2025-09-03T21:13:27.047Z"
+    },
+    {
+      "path": "src/core/LoadBalancer.js",
+      "size": 5408,
+      "modified": "2025-09-03T21:13:27.047Z"
+    },
+    {
+      "path": "src/core/ModelEnsemble.js",
+      "size": 17039,
+      "modified": "2025-09-03T21:13:27.047Z"
+    },
+    {
+      "path": "src/core/ModelInterface.js",
+      "size": 8001,
+      "modified": "2025-09-03T21:13:27.048Z"
+    },
+    {
+      "path": "src/core/Pipeline.js",
+      "size": 16425,
+      "modified": "2025-09-03T21:13:27.048Z"
+    },
+    {
+      "path": "src/core/QualityScorer.js",
+      "size": 3465,
+      "modified": "2025-09-03T21:13:27.048Z"
+    },
+    {
+      "path": "src/core/Registry.js",
+      "size": 19378,
+      "modified": "2025-09-03T21:13:27.048Z"
+    },
+    {
+      "path": "src/core/Router.js",
+      "size": 18909,
+      "modified": "2025-09-03T21:13:27.049Z"
+    },
+    {
+      "path": "src/core/SelfHealingMonitor.js",
+      "size": 13635,
+      "modified": "2025-09-03T21:13:27.049Z"
+    },
+    {
+      "path": "src/db/DatabaseManager.js",
+      "size": 14346,
+      "modified": "2025-09-03T21:13:27.051Z"
+    },
+    {
+      "path": "src/engines/EdgeEngine.js",
+      "size": 15245,
+      "modified": "2025-09-03T21:13:27.051Z"
+    },
+    {
+      "path": "src/engines/EngineSelector.js",
+      "size": 3789,
+      "modified": "2025-09-03T21:13:27.051Z"
+    },
+    {
+      "path": "src/engines/NodeNativeEngine.js",
+      "size": 14781,
+      "modified": "2025-09-03T21:13:27.052Z"
+    },
+    {
+      "path": "src/engines/WASMEngine.js",
+      "size": 4187,
+      "modified": "2025-09-03T21:13:27.052Z"
+    },
+    {
+      "path": "src/engines/WebGPUEngine.js",
+      "size": 4653,
+      "modified": "2025-09-03T21:13:27.052Z"
+    },
+    {
+      "path": "src/engines/WorkerEngine.js",
+      "size": 14540,
+      "modified": "2025-09-03T21:13:27.052Z"
+    },
+    {
+      "path": "src/enterprise/ABTesting.js",
+      "size": 24180,
+      "modified": "2025-09-03T21:13:27.053Z"
+    },
+    {
+      "path": "src/enterprise/APIIntegration.js",
+      "size": 21698,
+      "modified": "2025-09-03T21:13:27.053Z"
+    },
+    {
+      "path": "src/enterprise/AuditLogger.js",
+      "size": 27609,
+      "modified": "2025-09-03T21:13:27.053Z"
+    },
+    {
+      "path": "src/enterprise/EnterpriseAuth.js",
+      "size": 35254,
+      "modified": "2025-09-03T21:13:27.054Z"
+    },
+    {
+      "path": "src/enterprise/EnterpriseManager.js",
+      "size": 18547,
+      "modified": "2025-09-03T21:13:27.054Z"
+    },
+    {
+      "path": "src/enterprise/MultiTenancy.js",
+      "size": 20034,
+      "modified": "2025-09-03T21:13:27.055Z"
+    },
+    {
+      "path": "src/enterprise/RouterIntegration.js",
+      "size": 12842,
+      "modified": "2025-09-03T21:13:27.055Z"
+    },
+    {
+      "path": "src/enterprise/SLAMonitor.js",
+      "size": 27093,
+      "modified": "2025-09-03T21:13:27.055Z"
+    },
+    {
+      "path": "src/enterprise/index.js",
+      "size": 5701,
+      "modified": "2025-09-03T21:13:27.055Z"
+    },
+    {
+      "path": "src/index.js",
+      "size": 15273,
+      "modified": "2025-09-03T21:13:27.055Z"
+    },
+    {
+      "path": "src/loaders/APILoader.js",
+      "size": 22450,
+      "modified": "2025-09-03T21:13:27.056Z"
+    },
+    {
+      "path": "src/loaders/BYOKAwareLoader.js",
+      "size": 5360,
+      "modified": "2025-09-03T21:13:27.056Z"
+    },
+    {
+      "path": "src/loaders/BaseLoader.js",
+      "size": 7364,
+      "modified": "2025-09-03T21:13:27.057Z"
+    },
+    {
+      "path": "src/loaders/BinaryLoader.js",
+      "size": 10517,
+      "modified": "2025-09-03T21:13:27.057Z"
+    },
+    {
+      "path": "src/loaders/BitNetLoader.js",
+      "size": 12676,
+      "modified": "2025-09-03T21:13:27.057Z"
+    },
+    {
+      "path": "src/loaders/GGUFLoader.js",
+      "size": 19069,
+      "modified": "2025-09-03T21:13:27.057Z"
+    },
+    {
+      "path": "src/loaders/HFLoader.js",
+      "size": 29829,
+      "modified": "2025-09-03T21:13:27.058Z"
+    },
+    {
+      "path": "src/loaders/LocalSmolLM3Loader.js",
+      "size": 10465,
+      "modified": "2025-09-03T21:13:27.058Z"
+    },
+    {
+      "path": "src/loaders/MockLoader.js",
+      "size": 4342,
+      "modified": "2025-09-03T21:13:27.058Z"
+    },
+    {
+      "path": "src/loaders/ONNXLoader.js",
+      "size": 19480,
+      "modified": "2025-09-03T21:13:27.058Z"
+    },
+    {
+      "path": "src/loaders/PyTorchLoader.js",
+      "size": 9712,
+      "modified": "2025-09-03T21:13:27.058Z"
+    },
+    {
+      "path": "src/loaders/RealSmolLM3Loader.js",
+      "size": 5142,
+      "modified": "2025-09-03T21:13:27.059Z"
+    },
+    {
+      "path": "src/loaders/SafetensorsLoader.js",
+      "size": 15337,
+      "modified": "2025-09-03T21:13:27.059Z"
+    },
+    {
+      "path": "src/loaders/SimpleLoader.js",
+      "size": 9186,
+      "modified": "2025-09-03T21:13:27.059Z"
+    },
+    {
+      "path": "src/loaders/SimpleSmolLM3Loader.js",
+      "size": 24910,
+      "modified": "2025-09-03T21:13:27.059Z"
+    },
+    {
+      "path": "src/loaders/SmolLM3Loader.js",
+      "size": 7230,
+      "modified": "2025-09-03T21:13:27.059Z"
+    },
+    {
+      "path": "src/loaders/TFJSLoader.js",
+      "size": 11703,
+      "modified": "2025-09-03T21:13:27.060Z"
+    },
+    {
+      "path": "src/loaders/adapters/AnthropicAdapter.js",
+      "size": 10414,
+      "modified": "2025-09-03T21:13:27.060Z"
+    },
+    {
+      "path": "src/loaders/adapters/AzureOpenAIAdapter.js",
+      "size": 19852,
+      "modified": "2025-09-03T21:13:27.060Z"
+    },
+    {
+      "path": "src/loaders/adapters/BedrockAdapter.js",
+      "size": 17469,
+      "modified": "2025-09-03T21:13:27.060Z"
+    },
+    {
+      "path": "src/loaders/adapters/CohereAdapter.js",
+      "size": 18933,
+      "modified": "2025-09-03T21:13:27.061Z"
+    },
+    {
+      "path": "src/loaders/adapters/DeepSeekAdapter.js",
+      "size": 18112,
+      "modified": "2025-09-03T21:13:27.061Z"
+    },
+    {
+      "path": "src/loaders/adapters/FireworksAdapter.js",
+      "size": 22415,
+      "modified": "2025-09-03T21:13:27.061Z"
+    },
+    {
+      "path": "src/loaders/adapters/GroqAdapter.js",
+      "size": 13560,
+      "modified": "2025-09-03T21:13:27.061Z"
+    },
+    {
+      "path": "src/loaders/adapters/MistralAdapter.js",
+      "size": 16618,
+      "modified": "2025-09-03T21:13:27.061Z"
+    },
+    {
+      "path": "src/loaders/adapters/NovitaAdapter.js",
+      "size": 22267,
+      "modified": "2025-09-03T21:13:27.062Z"
+    },
+    {
+      "path": "src/loaders/adapters/OllamaAdapter.js",
+      "size": 10382,
+      "modified": "2025-09-03T21:13:27.062Z"
+    },
+    {
+      "path": "src/loaders/adapters/OpenAIAdapter.js",
+      "size": 9214,
+      "modified": "2025-09-03T21:13:27.062Z"
+    },
+    {
+      "path": "src/loaders/adapters/OpenRouterAdapter.js",
+      "size": 12089,
+      "modified": "2025-09-03T21:13:27.062Z"
+    },
+    {
+      "path": "src/loaders/adapters/PerplexityAdapter.js",
+      "size": 16790,
+      "modified": "2025-09-03T21:13:27.062Z"
+    },
+    {
+      "path": "src/loaders/adapters/TogetherAdapter.js",
+      "size": 20057,
+      "modified": "2025-09-03T21:13:27.063Z"
+    },
+    {
+      "path": "src/loaders/adapters/VertexAIAdapter.js",
+      "size": 23395,
+      "modified": "2025-09-03T21:13:27.063Z"
+    },
+    {
+      "path": "src/loaders/adapters/index.js",
+      "size": 7510,
+      "modified": "2025-09-03T21:13:27.063Z"
+    },
+    {
+      "path": "src/middleware/auth.js",
+      "size": 6814,
+      "modified": "2025-09-03T21:13:27.063Z"
+    },
+    {
+      "path": "src/middleware/byok.js",
+      "size": 8230,
+      "modified": "2025-09-03T21:13:27.064Z"
+    },
+    {
+      "path": "src/middleware/security.js",
+      "size": 5720,
+      "modified": "2025-09-03T21:13:27.064Z"
+    },
+    {
+      "path": "src/monitoring/Alerting.js",
+      "size": 22327,
+      "modified": "2025-09-03T21:13:27.064Z"
+    },
+    {
+      "path": "src/monitoring/HealthMonitor.js",
+      "size": 14560,
+      "modified": "2025-09-03T21:13:27.065Z"
+    },
+    {
+      "path": "src/monitoring/OpenTelemetry.js",
+      "size": 12450,
+      "modified": "2025-09-03T21:13:27.065Z"
+    },
+    {
+      "path": "src/monitoring/Profiler.js",
+      "size": 20670,
+      "modified": "2025-09-03T21:13:27.065Z"
+    },
+    {
+      "path": "src/monitoring/Prometheus.js",
+      "size": 13560,
+      "modified": "2025-09-03T21:13:27.065Z"
+    },
+    {
+      "path": "src/monitoring/config.example.js",
+      "size": 14038,
+      "modified": "2025-09-03T21:13:27.065Z"
+    },
+    {
+      "path": "src/monitoring/index.js",
+      "size": 16193,
+      "modified": "2025-09-03T21:13:27.066Z"
+    },
+    {
+      "path": "src/monitoring/middleware.js",
+      "size": 16178,
+      "modified": "2025-09-03T21:13:27.066Z"
+    },
+    {
+      "path": "src/native/Cargo.toml",
+      "size": 1637,
+      "modified": "2025-09-03T21:13:27.066Z"
+    },
+    {
+      "path": "src/native/build.rs",
+      "size": 2068,
+      "modified": "2025-09-03T21:13:27.067Z"
+    },
+    {
+      "path": "src/native/src/error.rs",
+      "size": 3003,
+      "modified": "2025-09-03T21:13:27.067Z"
+    },
+    {
+      "path": "src/native/src/lib.rs",
+      "size": 3754,
+      "modified": "2025-09-03T21:13:27.067Z"
+    },
+    {
+      "path": "src/native/src/memory.rs",
+      "size": 12767,
+      "modified": "2025-09-03T21:13:27.067Z"
+    },
+    {
+      "path": "src/native/src/quantization.rs",
+      "size": 15071,
+      "modified": "2025-09-03T21:13:27.068Z"
+    },
+    {
+      "path": "src/native/src/tensor_ops.rs",
+      "size": 15047,
+      "modified": "2025-09-03T21:13:27.068Z"
+    },
+    {
+      "path": "src/native/src/tokenizer.rs",
+      "size": 15334,
+      "modified": "2025-09-03T21:13:27.068Z"
+    },
+    {
+      "path": "src/proto/llm_router.proto",
+      "size": 6861,
+      "modified": "2025-09-03T21:13:27.069Z"
+    },
+    {
+      "path": "src/runtime/CacheManager.js",
+      "size": 15070,
+      "modified": "2025-09-03T21:13:27.069Z"
+    },
+    {
+      "path": "src/runtime/MemoryManager.js",
+      "size": 11903,
+      "modified": "2025-09-03T21:13:27.070Z"
+    },
+    {
+      "path": "src/runtime/StreamProcessor.js",
+      "size": 13694,
+      "modified": "2025-09-03T21:13:27.070Z"
+    },
+    {
+      "path": "src/runtime/ThreadPool.js",
+      "size": 18405,
+      "modified": "2025-09-03T21:13:27.070Z"
+    },
+    {
+      "path": "src/services/ModelDownloader.js",
+      "size": 8801,
+      "modified": "2025-09-03T21:13:27.070Z"
+    },
+    {
+      "path": "src/templates/ChatTemplateEngine.js",
+      "size": 19703,
+      "modified": "2025-09-03T21:13:27.071Z"
+    },
+    {
+      "path": "src/utils/AuthManager.js",
+      "size": 14683,
+      "modified": "2025-09-03T21:13:27.071Z"
+    },
+    {
+      "path": "src/utils/CircuitBreaker.js",
+      "size": 2410,
+      "modified": "2025-09-03T21:13:27.071Z"
+    },
+    {
+      "path": "src/utils/ErrorHandler.js",
+      "size": 11671,
+      "modified": "2025-09-03T21:13:27.071Z"
+    },
+    {
+      "path": "src/utils/FormatConverter.js",
+      "size": 29638,
+      "modified": "2025-09-03T21:13:27.072Z"
+    },
+    {
+      "path": "src/utils/Logger.js",
+      "size": 2091,
+      "modified": "2025-09-03T21:13:27.072Z"
+    },
+    {
+      "path": "src/utils/ModelError.js",
+      "size": 358,
+      "modified": "2025-09-03T21:13:27.072Z"
+    },
+    {
+      "path": "src/utils/ModelQuantizer.js",
+      "size": 25139,
+      "modified": "2025-09-03T21:13:27.072Z"
+    },
+    {
+      "path": "src/utils/PerformanceBenchmark.js",
+      "size": 18720,
+      "modified": "2025-09-03T21:13:27.072Z"
+    },
+    {
+      "path": "src/utils/SecurityValidator.js",
+      "size": 14165,
+      "modified": "2025-09-03T21:13:27.073Z"
+    },
+    {
+      "path": "src/utils/UniversalTokenizer.js",
+      "size": 22524,
+      "modified": "2025-09-03T21:13:27.073Z"
+    },
+    {
+      "path": "src/utils/ValidationSuite.js",
+      "size": 34554,
+      "modified": "2025-09-03T21:13:27.073Z"
+    },
+    {
+      "path": "src/utils/Validator.js",
+      "size": 4354,
+      "modified": "2025-09-03T21:13:27.073Z"
+    }
+  ],
+  "fileCount": 120,
+  "buildOptions": {
+    "outputDir": "dist",
+    "includeTests": false,
+    "includeDocs": true,
+    "minify": true,
+    "generateMaps": false,
+    "verbose": false
+  },
+  "checksums": {
+    "README.md": "b9fa06d3b16ddee45b298ab92e25adde67758242abbb199afae8e16bb0fdf890",
+    "bin/llm-router.js": "457c6caba3a84bc7b9ec41dc0a424a13db895e555ae6d9f92b2f1760d2753dbf",
+    "package.json": "3398ddfe154ee7ebf8c28e2da95a2a37eb2ac37543c43009c2acfb109544cdb4",
+    "src/api/Auth.js": "1f85e1b169eed852eea6b9aab018804738452e906d021592f9a463899d50c26d",
+    "src/api/Gateway.js": "91855813f3550c3ccc6d76c45d1f6f36937e33c92150c1612953d2d784dea990",
+    "src/api/GraphQL.js": "0262ecababfce9fa41de3a96abe782b8850b9149af8ba2ac9a9cf3f35a76e09d",
+    "src/api/OpenAPI.js": "00615380cf3a561bbfbcfff8728c4e0c3148a6a106de5c48a63d92b00c21a3b0",
+    "src/api/RateLimiter.js": "1e34d427eb44acd51dccd90d5bd6416db1ce08646404fa97fec8d9ac08b7c7e1",
+    "src/api/WebSocket.js": "722cce4af5fd758c42f383b3f3944b10367e9ec2264affb25496299a0037289e",
+    "src/api/admin.js": "9e8321ab45202106367bde3b145d49fb8f0658a8c27f0136efb9488a7ebc87e5"
+  }
+}

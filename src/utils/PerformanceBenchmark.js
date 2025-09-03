@@ -6,6 +6,7 @@
 
 import { Logger } from './Logger.js';
 import { performance } from 'perf_hooks';
+import { cpus } from 'os';
 
 const logger = new Logger('PerformanceBenchmark');
 
@@ -213,35 +214,61 @@ class PerformanceBenchmark {
     if (adapter.stream && typeof adapter.stream === 'function') {
       let fullResponse = '';
       
-      const stream = adapter.stream(prompt, {
-        maxTokens: 100, // Limit for benchmarking
-        temperature: 0.7
-      });
+      try {
+        const stream = adapter.stream(prompt, {
+          maxTokens: 100, // Limit for benchmarking
+          temperature: 0.7
+        });
 
-      for await (const chunk of stream) {
-        if (!firstToken && callbacks.onFirstToken) {
-          callbacks.onFirstToken();
-          firstToken = true;
+        // Check if stream is actually iterable
+        if (!stream || typeof stream[Symbol.asyncIterator] !== 'function') {
+          throw new Error('Stream is not properly configured for async iteration');
+        }
+
+        for await (const chunk of stream) {
+          if (!firstToken && callbacks.onFirstToken) {
+            callbacks.onFirstToken();
+            firstToken = true;
+          }
+          
+          if (chunk && chunk.text) {
+            fullResponse += chunk.text;
+            tokenCount++;
+            if (callbacks.onToken) callbacks.onToken();
+          }
         }
         
-        if (chunk.text) {
-          fullResponse += chunk.text;
-          tokenCount++;
-          if (callbacks.onToken) callbacks.onToken();
-        }
+        return fullResponse;
+      } catch (streamError) {
+        // Fall back to complete method if streaming fails
+        logger.warn('Streaming failed, falling back to complete method:', streamError.message);
       }
-      
-      return fullResponse;
-    } else {
-      // Fallback to complete method
+    }
+    
+    // Use complete method (either as fallback or primary)
+    if (adapter.complete && typeof adapter.complete === 'function') {
       const response = await adapter.complete(prompt, {
         maxTokens: 100,
         temperature: 0.7
       });
       
       if (callbacks.onFirstToken) callbacks.onFirstToken();
-      return response.text || response.content || String(response);
+      
+      // Extract text from various response formats
+      const text = response?.text || response?.content || response?.message || String(response || '');
+      
+      // Count tokens (rough approximation)
+      tokenCount = text.split(/\s+/).length;
+      if (callbacks.onToken) {
+        for (let i = 0; i < tokenCount; i++) {
+          callbacks.onToken();
+        }
+      }
+      
+      return text;
     }
+    
+    throw new Error('Adapter does not support streaming or complete methods');
   }
 
   /**
@@ -548,7 +575,7 @@ class PerformanceBenchmark {
       platform: process.platform,
       nodeVersion: process.version,
       memory: process.memoryUsage(),
-      cpus: require('os').cpus().length,
+      cpus: cpus().length,
       timestamp: new Date().toISOString()
     };
   }

@@ -7,10 +7,12 @@ import { jest } from '@jest/globals';
 import { PerformanceBenchmark } from '../../src/utils/PerformanceBenchmark.js';
 
 // Mock performance hooks
+const mockPerformance = {
+  now: jest.fn(() => Date.now())
+};
+
 jest.mock('perf_hooks', () => ({
-  performance: {
-    now: jest.fn(() => Date.now())
-  }
+  performance: mockPerformance
 }));
 
 describe('PerformanceBenchmark', () => {
@@ -23,12 +25,15 @@ describe('PerformanceBenchmark', () => {
     // Mock adapter
     mockAdapter = {
       provider: 'test-provider',
-      complete: jest.fn(),
-      stream: jest.fn()
+      complete: jest.fn().mockResolvedValue({ text: 'Test response', usage: { totalTokens: 5 } }),
+      stream: jest.fn().mockReturnValue({
+        // Mock a non-async iterable stream
+        [Symbol.asyncIterator]: undefined
+      })
     };
     
     // Reset performance mock
-    require('perf_hooks').performance.now.mockClear();
+    mockPerformance.now.mockClear();
   });
 
   describe('Initialization', () => {
@@ -144,9 +149,16 @@ describe('PerformanceBenchmark', () => {
     });
 
     test('should handle partial failures in runs', async () => {
-      mockAdapter.complete
-        .mockResolvedValueOnce({ text: 'Success', usage: { totalTokens: 10 } })
-        .mockRejectedValueOnce(new Error('Failure'));
+      // Mock responses: first succeeds, second fails
+      let callCount = 0;
+      mockAdapter.complete = jest.fn().mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve({ text: 'Success', usage: { totalTokens: 10 } });
+        } else {
+          return Promise.reject(new Error('API Error'));
+        }
+      });
 
       const result = await benchmark.runCategoryBenchmark(
         mockAdapter, 
@@ -158,6 +170,7 @@ describe('PerformanceBenchmark', () => {
       expect(result.runs).toHaveLength(2);
       expect(result.runs[0].success).toBe(true);
       expect(result.runs[1].success).toBe(false);
+      expect(result.runs[1].error).toBe('API Error');
     });
   });
 
@@ -184,8 +197,9 @@ describe('PerformanceBenchmark', () => {
     });
 
     test('should handle suite failures gracefully', async () => {
-      mockAdapter.complete.mockRejectedValue(new Error('Suite failure'));
-
+      // Reset and configure adapter to fail
+      mockAdapter.complete = jest.fn().mockRejectedValue(new Error('Suite failure'));
+      
       const result = await benchmark.runBenchmarkSuite(mockAdapter, {
         categories: ['simple'],
         iterations: 1,
@@ -194,6 +208,7 @@ describe('PerformanceBenchmark', () => {
       
       expect(result.error).toBeDefined();
       expect(result.suiteId).toBeDefined();
+      expect(result.provider).toBe('test-provider');
     });
 
     test('should include stress test when requested', async () => {

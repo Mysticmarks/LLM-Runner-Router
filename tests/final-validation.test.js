@@ -148,9 +148,9 @@ describe('Final Project Validation', () => {
     expect(model).toBeDefined();
     expect(model.id).toBeDefined();
     
-    // Test inference
-    const result = await testRouter.inference('Test prompt', {
-      modelId: model.id
+    // Test inference using quick method
+    const result = await testRouter.quick('Test prompt', {
+      model: model.id
     });
     
     expect(result).toBeDefined();

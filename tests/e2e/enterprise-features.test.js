@@ -6,14 +6,14 @@
 import { jest } from '@jest/globals';
 import { LLMRouter } from '../../src/index.js';
 import { EnterpriseManager } from '../../src/enterprise/EnterpriseManager.js';
-import { ABTesting } from '../../src/enterprise/ABTesting.js';
+import { ABTestingManager } from '../../src/enterprise/ABTesting.js';
 import { SLAMonitor } from '../../src/enterprise/SLAMonitor.js';
 import { DatabaseManager } from '../../src/db/DatabaseManager.js';
 
 describe('Enterprise Features End-to-End Tests', () => {
   let router;
   let enterpriseManager;
-  let abTesting;
+  let abTestingManagerManager;
   let slaMonitor;
   let database;
 
@@ -33,7 +33,7 @@ describe('Enterprise Features End-to-End Tests', () => {
       enableSLAMonitoring: true
     });
 
-    abTesting = new ABTesting({ database });
+    abTestingManagerManager = new ABTestingManager({ database });
     slaMonitor = new SLAMonitor({ database });
 
     // Initialize router with enterprise features
@@ -154,7 +154,7 @@ describe('Enterprise Features End-to-End Tests', () => {
 
   describe('A/B Testing', () => {
     test('should create and manage A/B experiments', async () => {
-      const experiment = await abTesting.createExperiment({
+      const experiment = await abTestingManager.createExperiment({
         name: 'Model Performance Test',
         description: 'Compare GPT-4 vs Claude performance',
         controlModel: 'gpt-4',
@@ -173,7 +173,7 @@ describe('Enterprise Features End-to-End Tests', () => {
 
     test('should route traffic according to experiment configuration', async () => {
       // Create experiment with 70/30 split
-      const experiment = await abTesting.createExperiment({
+      const experiment = await abTestingManager.createExperiment({
         name: 'Traffic Split Test',
         controlModel: 'model-a',
         variantModels: ['model-b'],
@@ -188,7 +188,7 @@ describe('Enterprise Features End-to-End Tests', () => {
 
       // Simulate 100 requests
       for (let i = 0; i < 100; i++) {
-        const selectedModel = await abTesting.getModelForUser(
+        const selectedModel = await abTestingManager.getModelForUser(
           experiment.id,
           `${userId}-${i}`,
           'test prompt'
@@ -206,7 +206,7 @@ describe('Enterprise Features End-to-End Tests', () => {
     });
 
     test('should collect experiment results', async () => {
-      const experiment = await abTesting.createExperiment({
+      const experiment = await abTestingManager.createExperiment({
         name: 'Results Collection Test',
         controlModel: 'control',
         variantModels: ['variant'],
@@ -214,19 +214,19 @@ describe('Enterprise Features End-to-End Tests', () => {
       });
 
       // Record some results
-      await abTesting.recordResult(experiment.id, 'control', {
+      await abTestingManager.recordResult(experiment.id, 'control', {
         latency: 250,
         quality: 0.85,
         cost: 0.002
       });
 
-      await abTesting.recordResult(experiment.id, 'variant', {
+      await abTestingManager.recordResult(experiment.id, 'variant', {
         latency: 180,
         quality: 0.82,
         cost: 0.003
       });
 
-      const results = await abTesting.getExperimentResults(experiment.id);
+      const results = await abTestingManager.getExperimentResults(experiment.id);
       
       expect(results).toHaveProperty('control');
       expect(results).toHaveProperty('variant');
@@ -417,7 +417,7 @@ describe('Enterprise Features End-to-End Tests', () => {
       });
 
       // 4. Create A/B experiment
-      const experiment = await abTesting.createExperiment({
+      const experiment = await abTestingManager.createExperiment({
         name: 'Enterprise Model Test',
         controlModel: 'enterprise-model-a',
         variantModels: ['enterprise-model-b'],
@@ -435,7 +435,7 @@ describe('Enterprise Features End-to-End Tests', () => {
       // 6. Perform inference requests
       const results = [];
       for (let i = 0; i < 10; i++) {
-        const selectedModel = await abTesting.getModelForUser(
+        const selectedModel = await abTestingManager.getModelForUser(
           experiment.id,
           `user-${i}`,
           'enterprise test prompt'
@@ -451,7 +451,7 @@ describe('Enterprise Features End-to-End Tests', () => {
       // 7. Check results
       expect(results).toHaveLength(10);
       
-      const experimentResults = await abTesting.getExperimentResults(experiment.id);
+      const experimentResults = await abTestingManager.getExperimentResults(experiment.id);
       expect(experimentResults).toBeDefined();
 
       const slaStatus = await slaMonitor.checkViolations(sla.id);

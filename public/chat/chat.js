@@ -29,58 +29,61 @@ class LLMRouterDemo {
 
     async initializeRouter() {
         try {
-            this.updateStatus('initializing', 'Loading LLM Router...');
+            this.updateStatus('initializing', 'Connecting to SmolLM3...');
             
-            // Try to dynamically import the LLM Router, fallback to demo mode if not available
-            if (!LLMRouter) {
-                try {
-                    const module = await import('../../src/index.js');
-                    LLMRouter = module.default || module.LLMRouter;
-                } catch (importError) {
-                    console.warn('Could not load LLM Router module, using demo mode:', importError);
-                    // Set flag to use demo mode only
-                    this.isInitialized = false;
-                    this.useDemoMode = true;
-                    this.updateStatus('online', 'Demo Mode Ready');
-                    this.showNotification('🎭 Running in Demo Mode - showcasing LLM Router capabilities', 'info');
-                    this.updateModelStatus();
-                    return;
+            // Test connection to the inference API endpoint
+            try {
+                const baseUrl = window.location.hostname === 'localhost' ? '' : 'http://llmrouter.dev:3006';
+                const response = await fetch(`${baseUrl}/api/health`);
+                const healthData = await response.json();
+                
+                if (healthData.status === 'healthy') {
+                    this.isInitialized = true;
+                    this.useDemoMode = false;
+                    this.updateStatus('online', 'SmolLM3 Ready');
+                    this.showNotification('🚀 Connected to SmolLM3 - Real AI inference ready!', 'success');
+                } else {
+                    throw new Error('Server not ready');
                 }
+            } catch (connectionError) {
+                console.warn('Could not connect to inference API, using demo mode:', connectionError);
+                this.isInitialized = false;
+                this.useDemoMode = true;
+                this.updateStatus('online', 'Demo Mode Ready');
+                this.showNotification('🎭 Running in Demo Mode - SmolLM3 inference temporarily unavailable', 'warning');
             }
             
-            // Create router instance with HuggingFace models configuration
+            // Create router instance with SmolLM3 and fallback models
             this.router = new LLMRouter({
-                engines: ['webgpu', 'wasm'], // Try WebGPU first, fallback to WASM
+                engines: ['node', 'webgpu', 'wasm'], // Try Node.js first for SmolLM3, fallback to WebGPU/WASM
                 models: {
-                    'microsoft/DialoGPT-small': {
-                        format: 'hf-transformers',
-                        priority: 'speed',
-                        maxTokens: 150
+                    'smollm3-3b': {
+                        format: 'smollm3',
+                        path: './models/smollm3-3b',
+                        priority: 'primary',
+                        maxTokens: 512,
+                        temperature: 0.7,
+                        capabilities: ['chat', 'completion', 'code']
                     },
-                    'microsoft/DialoGPT-medium': {
-                        format: 'hf-transformers', 
-                        priority: 'balanced',
-                        maxTokens: 200
-                    },
-                    'HuggingFaceH4/zephyr-7b-beta': {
-                        format: 'gguf',
-                        url: 'https://huggingface.co/HuggingFaceH4/zephyr-7b-beta-GGUF',
-                        priority: 'quality',
-                        maxTokens: 300
+                    'smollm3-fallback': {
+                        format: 'simple',
+                        priority: 'fallback',
+                        maxTokens: 300,
+                        temperature: 0.8
                     }
                 },
                 strategies: {
                     'speed-priority': {
-                        modelPreference: ['microsoft/DialoGPT-small'],
-                        maxLatency: 2000
+                        modelPreference: ['smollm3-fallback', 'smollm3-3b'],
+                        maxLatency: 1000
                     },
                     'balanced': {
-                        modelPreference: ['microsoft/DialoGPT-medium', 'microsoft/DialoGPT-small'],
-                        balanceFactors: { speed: 0.4, quality: 0.4, cost: 0.2 }
+                        modelPreference: ['smollm3-3b', 'smollm3-fallback'],
+                        balanceFactors: { speed: 0.3, quality: 0.5, cost: 0.2 }
                     },
                     'quality-first': {
-                        modelPreference: ['HuggingFaceH4/zephyr-7b-beta', 'microsoft/DialoGPT-medium'],
-                        maxLatency: 10000
+                        modelPreference: ['smollm3-3b'],
+                        maxLatency: 5000
                     }
                 },
                 cache: {
@@ -234,7 +237,7 @@ class LLMRouterDemo {
         const temperature = parseFloat(document.getElementById('temperatureSlider').value);
         const maxTokens = parseInt(document.getElementById('maxTokensSlider').value);
         
-        if (this.useDemoMode || !this.isInitialized || !this.router) {
+        if (this.useDemoMode || !this.isInitialized) {
             // Use demo mode with realistic delays
             const fallbackResponse = this.generateFallbackResponse(message, temperature);
             const responseTime = Date.now() - startTime;
@@ -250,31 +253,37 @@ class LLMRouterDemo {
         }
 
         try {
-            const options = {
-                strategy: this.currentStrategy,
-                temperature,
-                maxTokens,
-                streaming
-            };
+            // Make API call to the real SmolLM3 inference endpoint
+            const baseUrl = window.location.hostname === 'localhost' ? '' : 'http://llmrouter.dev:3006';
+            const apiResponse = await fetch(`${baseUrl}/api/inference`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer llm_test_persistent_key_fixed_2025.persistent_test_secret_never_changes_mikecerqua_2025_llm_router'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    maxTokens: maxTokens,
+                    temperature: temperature,
+                    model: 'smollm3-3b'
+                })
+            });
 
-            let response;
-            if (streaming) {
-                // Handle streaming response
-                response = await this.handleStreamingResponse(message, options, startTime);
-            } else {
-                // Handle regular response
-                const result = await this.router.process(message, options);
-                const responseTime = Date.now() - startTime;
-                
-                response = {
-                    text: result.text || result.response,
-                    responseTime,
-                    tokens: result.tokensUsed || result.tokens || Math.floor(result.text?.length / 4 || 0),
-                    model: result.model || 'Unknown',
-                    provider: result.provider || 'HuggingFace',
-                    strategy: result.strategy || this.currentStrategy
-                };
+            if (!apiResponse.ok) {
+                throw new Error(`API Error: ${apiResponse.status} ${apiResponse.statusText}`);
             }
+
+            const result = await apiResponse.json();
+            const responseTime = Date.now() - startTime;
+            
+            const response = {
+                text: result.response || result.text || 'No response generated',
+                responseTime,
+                tokens: result.usage?.tokens || Math.floor((result.response || '').length / 4),
+                model: result.model || 'SmolLM3-3B',
+                provider: 'Transformers.js',
+                strategy: this.currentStrategy
+            };
 
             return response;
 

@@ -749,4 +749,4 @@ class PerformanceProfiler extends EventEmitter {
 const profiler = new PerformanceProfiler();
 
 export default profiler;
-export { PerformanceProfiler };
+export { PerformanceProfiler, PerformanceProfiler as Profiler };

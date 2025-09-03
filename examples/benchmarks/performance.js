@@ -31,15 +31,16 @@ class BenchmarkSuite {
     // Initialize router
     await this.router.initialize();
     
-    // Load test model if available
+    // Try to load a test model from registry
     try {
-      await this.router.load({
-        source: './models/tinyllama/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf',
-        format: 'gguf',
-        id: 'tinyllama-bench',
-        name: 'TinyLlama Benchmark'
-      });
-      console.log('✅ Test model loaded\n');
+      const availableModels = this.router.registry.list();
+      const testModel = availableModels.find(m => m.id === 'smollm3-3b' || m.capabilities?.completion);
+      
+      if (testModel) {
+        console.log(`✅ Using model: ${testModel.name} for benchmarks\n`);
+      } else {
+        console.log('⚠️  Using simple fallback model for benchmarking\n');
+      }
     } catch (error) {
       console.log('⚠️  No model available for benchmarking\n');
     }

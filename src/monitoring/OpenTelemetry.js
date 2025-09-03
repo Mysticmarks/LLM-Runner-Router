@@ -25,7 +25,7 @@ const { JaegerExporter } = otelJaeger;
 const { ZipkinExporter } = otelZipkin;
 const { PrometheusExporter } = otelPrometheus;
 const { metrics, trace, context, baggage } = otelAPI;
-import Logger from '../utils/Logger.js';
+import { Logger } from '../utils/Logger.js';
 
 class OpenTelemetryManager {
   constructor(config = {}) {
@@ -395,5 +395,5 @@ class OpenTelemetryManager {
 // Export singleton instance
 const otelManager = new OpenTelemetryManager();
 
-export default otelManager;
-export { OpenTelemetryManager };
+export default OpenTelemetryManager;
+export { OpenTelemetryManager, otelManager as OpenTelemetry };

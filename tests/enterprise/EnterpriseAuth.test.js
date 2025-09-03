@@ -166,8 +166,9 @@ describe('EnterpriseAuthManager', () => {
     });
 
     it('should reject inactive user', async () => {
-      // Deactivate user
-      testUser.status = 'inactive';
+      // Deactivate user by updating the stored user object
+      const storedUser = authManager.users.get(testUser.id);
+      storedUser.status = 'inactive';
 
       await expect(
         authManager.authenticate('authtest', 'AuthTest123')
@@ -502,8 +503,11 @@ describe('EnterpriseAuthManager', () => {
       expect(result).toBeDefined();
       expect(result.secret).toBeDefined();
       expect(result.qrCode).toBeDefined();
-      expect(user.mfaEnabled).toBe(true);
-      expect(user.mfaSecret).toBeDefined();
+      
+      // Check the stored user object, not the returned clean object
+      const storedUser = authManager.users.get(user.id);
+      expect(storedUser.mfaEnabled).toBe(true);
+      expect(storedUser.mfaSecret).toBeDefined();
     });
 
     it('should prevent enabling MFA twice', async () => {

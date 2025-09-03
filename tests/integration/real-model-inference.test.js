@@ -20,22 +20,12 @@ describe('Real Model Inference Tests', () => {
     router = new LLMRouter();
     await router.initialize();
 
-    // Check which models are actually available
-    const modelPaths = [
-      { name: 'tinyllama', path: './models/tinyllama/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf' },
-      { name: 'phi-2', path: './models/phi-2/phi-2.Q4_K_M.gguf' },
-      { name: 'qwen2.5', path: './models/qwen2.5/qwen2.5-1.5b-instruct-q4_k_m.gguf' }
-    ];
+    // Check which models are actually available from registry
+    const registeredModels = router.registry.list();
+    availableModels = registeredModels.filter(m => m.capabilities?.completion);
 
-    for (const model of modelPaths) {
-      try {
-        await fs.access(model.path);
-        availableModels.push(model);
-        console.log(`✅ Found model: ${model.name} at ${model.path}`);
-      } catch (error) {
-        console.log(`⏭️ Skipping missing model: ${model.name}`);
-      }
-    }
+    console.log(`Found ${availableModels.length} available models for testing:`, 
+                availableModels.map(m => m.name).join(', '));
 
     if (availableModels.length === 0) {
       console.warn('⚠️ No models found - skipping real inference tests');

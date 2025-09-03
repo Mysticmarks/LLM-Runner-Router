@@ -264,6 +264,17 @@ class SimpleLoader extends BaseLoader {
     return Array.from(this.models.values());
   }
 
+  async fromData(data) {
+    logger.info('Creating Simple model from data:', data);
+    const modelConfig = {
+      ...data,
+      format: 'simple'
+    };
+    
+    const model = new SimpleModel(modelConfig);
+    return model;
+  }
+
   getInfo() {
     return {
       name: 'SimpleLoader',

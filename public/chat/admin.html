@@ -16,7 +16,9 @@
                     <button id="saveConfig" class="btn btn-primary">💾 Save Configuration</button>
                     <button id="exportConfig" class="btn btn-secondary">📤 Export</button>
                     <button id="importConfig" class="btn btn-secondary">📥 Import</button>
-                    <a href="/chat/" class="btn btn-info">💬 Back to Chat</a>
+                    <a href="/chat/byok.html" class="btn btn-warning">🔑 BYOK Keys</a>
+                    <a href="/chat/model-selector.html" class="btn btn-info">🤖 Models</a>
+                    <a href="/chat/" class="btn btn-success">💬 Back to Chat</a>
                 </div>
             </div>
         </header>
@@ -45,6 +47,14 @@
                     <li class="nav-item" data-section="monitoring">
                         <span class="icon">📊</span>
                         <span>Monitoring</span>
+                    </li>
+                    <li class="nav-item" data-section="analytics">
+                        <span class="icon">📈</span>
+                        <span>Analytics</span>
+                    </li>
+                    <li class="nav-item" data-section="usage">
+                        <span class="icon">📋</span>
+                        <span>Usage & Billing</span>
                     </li>
                 </ul>
             </nav>
@@ -113,12 +123,24 @@
                     <div class="routing-strategy">
                         <h3>Routing Strategy</h3>
                         <select id="routingStrategy" class="form-control">
-                            <option value="balanced">Balanced</option>
-                            <option value="quality-first">Quality First</option>
-                            <option value="speed-priority">Speed Priority</option>
-                            <option value="cost-optimized">Cost Optimized</option>
-                            <option value="random">Random</option>
+                            <option value="balanced">Balanced - Quality & Cost Balance</option>
+                            <option value="quality-first">Quality First - Best Available Model</option>
+                            <option value="speed-priority">Speed Priority - Fastest Response</option>
+                            <option value="cost-optimized">Cost Optimized - Cheapest Option</option>
+                            <option value="load-balanced">Load Balanced - Distribute Evenly</option>
+                            <option value="random">Random - Random Selection</option>
+                            <option value="round-robin">Round Robin - Cycle Through Models</option>
                         </select>
+                        <small>Strategy determines how the router selects models for each request</small>
+                    </div>
+
+                    <div class="model-performance">
+                        <h3>Model Performance Metrics</h3>
+                        <div id="modelPerformanceContainer" class="metrics-grid">
+                            <div class="loading-placeholder">
+                                <p>Loading performance metrics...</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -371,6 +393,113 @@
                                 <input type="checkbox" id="autoScroll" checked>
                                 Auto-scroll
                             </label>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Analytics Section -->
+                <section id="analytics-section" class="settings-section">
+                    <h2>Analytics & Performance</h2>
+
+                    <div class="analytics-overview">
+                        <div id="analyticsMetrics" class="metrics-grid">
+                            <div class="metric-card">
+                                <h3>Total Requests</h3>
+                                <div class="metric-value" id="totalRequests">Loading...</div>
+                                <div class="metric-trend" id="requestsTrend"></div>
+                            </div>
+                            
+                            <div class="metric-card">
+                                <h3>Success Rate</h3>
+                                <div class="metric-value" id="successRate">Loading...</div>
+                                <div class="metric-trend" id="successTrend"></div>
+                            </div>
+                            
+                            <div class="metric-card">
+                                <h3>Avg Response Time</h3>
+                                <div class="metric-value" id="avgResponseTime">Loading...</div>
+                                <div class="metric-trend" id="responseTrend"></div>
+                            </div>
+                            
+                            <div class="metric-card">
+                                <h3>Cost This Month</h3>
+                                <div class="metric-value" id="monthCost">Loading...</div>
+                                <div class="metric-trend" id="costTrend"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="model-usage-chart">
+                        <h3>Model Usage Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="modelUsageChart">Chart will load when data is available</canvas>
+                        </div>
+                        <div id="chartLegend" class="chart-legend">
+                            <p>No usage data available yet</p>
+                        </div>
+                    </div>
+
+                    <div class="response-time-trends">
+                        <h3>Response Time Trends (24h)</h3>
+                        <canvas id="responseTimeChart">Response time chart will load when data is available</canvas>
+                    </div>
+
+                    <div class="error-analysis">
+                        <h3>Error Analysis</h3>
+                        <div id="errorList" class="error-list">
+                            <div class="loading-placeholder">
+                                <p>Loading error analysis...</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Usage & Billing Section -->
+                <section id="usage-section" class="settings-section">
+                    <h2>Usage & Billing</h2>
+
+                    <div class="usage-overview">
+                        <div class="usage-period">
+                            <select id="usagePeriod" class="form-control">
+                                <option value="today">Today</option>
+                                <option value="week" selected>This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="quarter">This Quarter</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="usage-breakdown">
+                        <h3>Provider Usage & Costs</h3>
+                        <div id="providerUsageGrid" class="provider-usage-grid">
+                            <div class="loading-placeholder">
+                                <p>Loading provider usage data...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cost-optimization">
+                        <h3>Cost Optimization Recommendations</h3>
+                        <div id="recommendationList" class="recommendation-list">
+                            <div class="loading-placeholder">
+                                <p>Analyzing usage patterns to generate recommendations...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="billing-history">
+                        <h3>Billing History</h3>
+                        <div id="billingTable" class="billing-table">
+                            <div class="billing-row billing-header">
+                                <div>Period</div>
+                                <div>Requests</div>
+                                <div>Tokens</div>
+                                <div>Cost</div>
+                                <div>Status</div>
+                            </div>
+                            <div class="loading-placeholder">
+                                <p>Loading billing history...</p>
+                            </div>
                         </div>
                     </div>
                 </section>

@@ -437,20 +437,8 @@ app.post('/api/chat', requireAPIKey, checkRateLimit, recordUsage, async (req, re
       console.error('Inference error:', inferenceError);
       console.error('Stack:', inferenceError.stack);
       
-      // Provide a simulated response for demo purposes
-      const simulatedResponses = [
-        "I understand your message. The LLM Router is successfully processing requests, though actual model inference requires additional setup.",
-        "Your message has been received and routed through the system. The routing logic is working correctly!",
-        "Thanks for testing the chat interface! The router is demonstrating proper message handling and routing capabilities.",
-        "Message processed successfully through the LLM Router's intelligent routing system.",
-        "The routing system is operational and successfully handling your requests!"
-      ];
-      
-      res.json({
-        response: simulatedResponses[Math.floor(Math.random() * simulatedResponses.length)],
-        model: 'simulation-mode',
-        note: 'Running in simulation mode - actual inference requires model configuration'
-      });
+      // NO SIMULATION MODE - throw error instead
+      throw new Error('No models loaded. Cannot process request without AI models.');
     }
   } catch (error) {
     console.error('Chat error:', error);
@@ -546,20 +534,9 @@ app.post('/api/inference', async (req, res) => {
         } catch (routerError) {
           console.error('Router fallback error:', routerError);
           
-          // Final fallback - should not be needed with working SmolLM3Loader
-          console.log('❌ WARNING: Using emergency fallback - SmolLM3Loader should handle all cases');
-          const intelligentResponses = [
-            `I understand you're saying: "${inputText}". I'm experiencing some technical difficulties loading the full SmolLM3 model, but I'm still here to help!`,
-            `Thank you for your message: "${inputText}". While the main SmolLM3 inference is temporarily unavailable, I can still assist you with your questions.`,
-            `I received: "${inputText}". The SmolLM3 model is temporarily having loading issues, but I'm working to provide helpful responses.`
-          ];
-          
-          response = {
-            response: intelligentResponses[Math.floor(Math.random() * intelligentResponses.length)],
-            model: 'SmolLM3-3B (Fallback)',
-            provider: 'Intelligent Fallback',
-            note: 'SmolLM3 inference temporarily unavailable - using intelligent fallback'
-          };
+          // NO FAKE FALLBACKS - throw error instead
+          console.error('❌ CRITICAL: All inference methods failed');
+          throw new Error(`All AI inference methods failed. Input: "${inputText}". Check logs for details.`);
         }
       }
       
@@ -568,11 +545,12 @@ app.post('/api/inference', async (req, res) => {
     } catch (inferenceError) {
       console.error('Complete inference failure:', inferenceError);
       
-      res.json({
-        response: `I apologize, but I'm experiencing some technical difficulties. However, I can confirm that your message "${inputText}" was received successfully. The SmolLM3 system is working to process requests like yours.`,
-        model: 'SmolLM3-3B (Emergency Fallback)',
-        provider: 'Emergency Response',
-        error: 'Temporary inference unavailability'
+      // Return error instead of fake response
+      res.status(500).json({
+        error: 'AI inference failed',
+        message: inferenceError.message,
+        details: 'All AI models failed to generate a response. Check server logs.',
+        input: inputText
       });
     }
   } catch (error) {

@@ -9,11 +9,16 @@ import { Pipeline } from './core/Pipeline.js';
 import { EngineSelector } from './engines/EngineSelector.js';
 import { Logger } from './utils/Logger.js';
 import { Config } from './config/Config.js';
+import { getErrorHandler, handleWithFallback } from './utils/ErrorHandler.js';
+import { getDatabase } from './db/DatabaseManager.js';
 import GGUFLoader from './loaders/GGUFLoader.js';
 import MockLoader from './loaders/MockLoader.js';
 import PyTorchLoader from './loaders/PyTorchLoader.js';
 import BinaryLoader from './loaders/BinaryLoader.js';
 import SimpleLoader from './loaders/SimpleLoader.js';
+import SafetensorsLoader from './loaders/SafetensorsLoader.js';
+import SmolLM3Loader from './loaders/SmolLM3Loader.js';
+import OllamaAdapter from './loaders/adapters/OllamaAdapter.js';
 // import BitNetLoader from './loaders/BitNetLoader.js'; // Commented out - missing dependencies
 
 const logger = new Logger('LLMRouter');
@@ -24,15 +29,27 @@ const logger = new Logger('LLMRouter');
 class LLMRouter {
   constructor(options = {}) {
     this.config = new Config(options);
+    this.errorHandler = getErrorHandler(options.errorHandler);
+    this.database = getDatabase(options.database);
     this.registry = new ModelRegistry(this.config);
     this.router = new Router(this.registry, this.config);
     this.pipeline = new Pipeline(this.config);
     this.engine = null;
     this.initialized = false;
+    this.loaders = new Map(); // Track registered loaders
     
     logger.info('🚀 LLM-Runner-Router initializing...', {
-      version: '1.0.0',
+      version: '2.0.0',
       environment: this.detectEnvironment()
+    });
+
+    // Setup error handling for graceful operation
+    this.errorHandler.on('criticalError', (data) => {
+      logger.error('🚨 Critical system error detected:', data);
+    });
+
+    this.errorHandler.on('fallback', (data) => {
+      logger.warn('🛡️ Fallback strategy activated:', data.errorType);
     });
   }
 
@@ -42,25 +59,54 @@ class LLMRouter {
   async initialize() {
     if (this.initialized) return;
     
-    try {
+    return await handleWithFallback(async () => {
+      // Initialize database first
+      logger.info('🗄️ Initializing database...');
+      await this.database.initialize();
+      logger.success('✅ Database ready');
       // Auto-detect and select best engine
       this.engine = await EngineSelector.getBest(this.config);
       logger.info(`✅ Selected engine: ${this.engine.name}`);
       
       // Register format loaders
-      this.registry.registerLoader('gguf', new GGUFLoader());
+      const ggufLoader = new GGUFLoader();
+      this.registry.registerLoader('gguf', ggufLoader);
+      this.loaders.set('gguf', ggufLoader);
       logger.info('📦 Registered GGUF loader');
       
-      this.registry.registerLoader('mock', new MockLoader());
+      const mockLoader = new MockLoader();
+      this.registry.registerLoader('mock', mockLoader);
+      this.loaders.set('mock', mockLoader);
       logger.info('📦 Registered Mock loader');
       
-      this.registry.registerLoader('pytorch', new PyTorchLoader());
+      const pytorchLoader = new PyTorchLoader();
+      this.registry.registerLoader('pytorch', pytorchLoader);
+      this.loaders.set('pytorch', pytorchLoader);
       logger.info('🔥 Registered PyTorch loader (.pth, .pt)');
       
-      this.registry.registerLoader('binary', new BinaryLoader());
+      const binaryLoader = new BinaryLoader();
+      this.registry.registerLoader('binary', binaryLoader);
+      this.loaders.set('binary', binaryLoader);
       logger.info('📦 Registered Binary loader (.bin)');
       
-      this.registry.registerLoader('simple', new SimpleLoader());
+      const safetensorsLoader = new SafetensorsLoader();
+      this.registry.registerLoader('safetensors', safetensorsLoader);
+      this.loaders.set('safetensors', safetensorsLoader);
+      logger.info('🔒 Registered Safetensors loader (.safetensors)');
+      
+      const smolLM3Loader = new SmolLM3Loader();
+      this.registry.registerLoader('smollm3', smolLM3Loader);
+      this.loaders.set('smollm3', smolLM3Loader);
+      logger.info('🧠 Registered SmolLM3 loader (Transformers.js)');
+      
+      const ollamaAdapter = new OllamaAdapter();
+      this.registry.registerLoader('ollama', ollamaAdapter);
+      this.loaders.set('ollama', ollamaAdapter);
+      logger.info('🦙 Registered Ollama adapter (local models)');
+      
+      const simpleLoader = new SimpleLoader();
+      this.registry.registerLoader('simple', simpleLoader);
+      this.loaders.set('simple', simpleLoader);
       logger.info('🤖 Registered Simple loader (VPS fallback)');
       
       // Register BitNet loader with graceful fallback
@@ -86,10 +132,7 @@ class LLMRouter {
       
       this.initialized = true;
       logger.success('🎯 LLM-Runner-Router ready!');
-    } catch (error) {
-      logger.error('❌ Initialization failed:', error);
-      throw error;
-    }
+    }, { operation: 'initialization', maxRetries: 2 });
   }
 
   /**
@@ -251,6 +294,15 @@ class LLMRouter {
   }
 
   /**
+   * Register a loader for a specific format
+   */
+  registerLoader(format, loader) {
+    this.registry.registerLoader(format, loader);
+    this.loaders.set(format, loader);
+    logger.info(`📦 Registered loader: ${format}`);
+  }
+
+  /**
    * Detect runtime environment
    * @private
    */
@@ -278,6 +330,76 @@ class LLMRouter {
       environment: this.detectEnvironment(),
       memoryUsage: process.memoryUsage?.() || {}
     };
+  }
+
+  /**
+   * Setup Ollama with automatic model discovery
+   * @param {object} config - Ollama configuration
+   */
+  async setupOllama(config = {}) {
+    await this.initialize();
+    
+    const ollamaAdapter = this.registry.getLoader('ollama');
+    if (!ollamaAdapter) {
+      throw new Error('Ollama adapter not registered. Please ensure Ollama is properly initialized.');
+    }
+
+    const baseURL = config.baseURL || 'http://localhost:11434';
+    logger.info(`🦙 Setting up Ollama at ${baseURL}`);
+
+    // Check if Ollama is available
+    const isAvailable = await ollamaAdapter.isAvailable();
+    if (!isAvailable) {
+      throw new Error(`Ollama server not available at ${baseURL}. Please ensure Ollama is running.`);
+    }
+
+    // Get available models from Ollama
+    const availableModels = await ollamaAdapter.getAvailableModels();
+    logger.info(`Found ${availableModels.length} Ollama models: ${availableModels.map(m => m.name).join(', ')}`);
+
+    // Auto-register discovered models
+    for (const model of availableModels) {
+      await this.addOllamaModel(model.name, {
+        ...model,
+        baseURL,
+        autoDiscovered: true
+      });
+    }
+
+    logger.success(`✅ Ollama setup complete with ${availableModels.length} models`);
+    return availableModels;
+  }
+
+  /**
+   * Add a specific Ollama model to the registry
+   * @param {string} modelId - Ollama model identifier
+   * @param {object} config - Model configuration
+   */
+  async addOllamaModel(modelId, config = {}) {
+    await this.initialize();
+    
+    const ollamaAdapter = this.registry.getLoader('ollama');
+    if (!ollamaAdapter) {
+      throw new Error('Ollama adapter not registered');
+    }
+
+    logger.info(`🦙 Adding Ollama model: ${modelId}`);
+
+    // Load the model through the adapter
+    const model = await ollamaAdapter.load(modelId, {
+      id: modelId,
+      name: config.name || modelId,
+      provider: 'ollama',
+      format: 'ollama',
+      baseURL: config.baseURL || 'http://localhost:11434',
+      ...config
+    });
+
+    // Register in the main registry
+    this.registry.register(model);
+    
+    logger.success(`✅ Ollama model registered: ${modelId}`);
+    return model;
   }
 
   /**
@@ -318,6 +440,10 @@ export const quick = (prompt, options) => defaultRouter.quick(prompt, options);
 export const advanced = (config) => defaultRouter.advanced(config);
 export const stream = (prompt, options) => defaultRouter.stream(prompt, options);
 export const ensemble = (models, prompt, options) => defaultRouter.ensemble(models, prompt, options);
+
+// Ollama convenience methods
+export const setupOllama = (config = {}) => defaultRouter.setupOllama(config);
+export const addOllamaModel = (modelId, config = {}) => defaultRouter.addOllamaModel(modelId, config);
 
 // Auto-initialize on import for convenience (disabled in test environment)
 if (typeof process !== 'undefined' && 

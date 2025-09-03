@@ -589,7 +589,7 @@ export class AuthenticationManager extends EventEmitter {
     }
 
     // Revoke all API keys for this user
-    for (const [_keyId, apiKey] of this.apiKeys) {
+    for (const [keyId, apiKey] of this.apiKeys) {
       if (apiKey.userId === userId) {
         this.revokeApiKey(keyId);
       }
@@ -647,7 +647,7 @@ export class AuthenticationManager extends EventEmitter {
   listApiKeys(userId) {
     const apiKeys = [];
     
-    for (const [_id, apiKey] of this.apiKeys) {
+    for (const [, apiKey] of this.apiKeys) {
       if (apiKey.userId === userId) {
         apiKeys.push({
           ...apiKey,
@@ -704,7 +704,7 @@ export class AuthenticationManager extends EventEmitter {
     }
 
     // Remove expired API keys
-    for (const [_keyId, apiKey] of this.apiKeys) {
+    for (const [, apiKey] of this.apiKeys) {
       if (apiKey.expiresAt && apiKey.expiresAt < now) {
         apiKey.active = false;
       }
@@ -746,7 +746,7 @@ export class AuthMiddleware {
   /**
    * JWT authentication middleware
    */
-  authenticate(options = {}) {
+  authenticate() {
     return (req, res, next) => {
       passport.authenticate('jwt', { session: false }, (err, user, info) => {
         if (err) {

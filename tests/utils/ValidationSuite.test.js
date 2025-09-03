@@ -12,13 +12,15 @@ import ValidationSuite, {
 } from '../../src/utils/ValidationSuite.js';
 
 // Mock fs/promises
-jest.mock('fs/promises', () => ({
+const mockFs = {
   access: jest.fn(),
   readFile: jest.fn(),
   writeFile: jest.fn(),
   stat: jest.fn(),
   mkdir: jest.fn()
-}));
+};
+
+jest.mock('fs/promises', () => mockFs);
 
 // Mock worker_threads
 jest.mock('worker_threads', () => ({
@@ -208,18 +210,17 @@ describe('ValidationSuite', () => {
 
   beforeEach(async () => {
     validationSuite = new ValidationSuite();
-    fs = await import('fs/promises');
     jest.clearAllMocks();
     
-    // Mock file operations
-    fs.access.mockResolvedValue();
-    fs.stat.mockResolvedValue({ 
+    // Setup mock implementations
+    mockFs.access.mockResolvedValue();
+    mockFs.stat.mockResolvedValue({ 
       size: 1000000,
       lastModified: new Date()
     });
-    fs.mkdir.mockResolvedValue();
-    fs.writeFile.mockResolvedValue();
-    fs.readFile.mockResolvedValue('test data');
+    mockFs.mkdir.mockResolvedValue();
+    mockFs.writeFile.mockResolvedValue();
+    mockFs.readFile.mockResolvedValue('test data');
   });
 
   afterEach(async () => {

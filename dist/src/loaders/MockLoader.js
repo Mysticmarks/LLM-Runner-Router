@@ -116,6 +116,7 @@ class MockModel extends ModelInterface {
 class MockLoader extends BaseLoader {
   constructor() {
     super();
+    this.name = 'MockLoader';
     this.format = 'mock';
     this.models = new Map();
   }
