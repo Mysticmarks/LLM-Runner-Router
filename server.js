@@ -632,20 +632,50 @@ app.get('/favicon.ico', (req, res) => {
 });
 
 /**
+ * API root endpoint
+ */
+app.get('/api', (req, res) => {
+  res.json({
+    name: 'LLM Router API',
+    version: '2.0.0',
+    status: isReady ? 'ready' : 'initializing',
+    documentation: 'https://llmrouter.dev/docs',
+    endpoints: {
+      health: '/api/health',
+      status: '/api/status',
+      chat: '/api/chat',
+      models: '/api/models/public',
+      inference: '/api/inference'
+    },
+    authentication: 'Optional - API key via X-API-Key header for protected endpoints',
+    message: 'Welcome to LLM Router API. Use the endpoints above to interact with the system.'
+  });
+});
+
+// Also handle /api/ with trailing slash
+app.get('/api/', (req, res) => {
+  res.redirect('/api');
+});
+
+/**
  * Default route
  */
 app.get('/', (req, res) => {
   res.json({
     name: 'LLM Router SaaS API',
-    version: '1.0.0',
+    version: '2.0.0',
     status: isReady ? 'ready' : 'initializing',
+    api: '/api',
+    documentation: '/api',
     authentication: 'API key required (Bearer token or X-API-Key header)',
     endpoints: [
+      'GET /api - API documentation',
       'GET /api/health - Health check (no auth)',
+      'GET /api/status - System status (no auth)',
       'GET /api/models - List models (auth required)',
       'POST /api/models/load - Load model (auth required)', 
       'POST /api/quick - Quick inference (auth required)',
-      'POST /api/chat - Chat completion (auth required)',
+      'POST /api/chat - Chat completion (no auth for basic)',
       'POST /api/inference - Main inference endpoint (auth required)',
       'POST /api/route - Advanced routing (auth required)'
     ],

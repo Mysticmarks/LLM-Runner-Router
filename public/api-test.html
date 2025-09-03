@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Router API - Live Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .endpoint {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f7f7f7;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .endpoint h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #272822;
+            color: #f8f8f2;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.success {
+            background: #48bb78;
+            color: white;
+        }
+        .status.error {
+            background: #f56565;
+            color: white;
+        }
+        .loading {
+            color: #667eea;
+            font-style: italic;
+        }
+        .chat-box {
+            margin-top: 10px;
+        }
+        .chat-box input {
+            width: 70%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .chat-box button {
+            width: 25%;
+            margin-left: 2%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 LLM Router API - Live Test</h1>
+        <p>Testing API endpoints at <strong>https://llmrouter.dev</strong></p>
+
+        <div class="endpoint">
+            <h3>📍 API Root</h3>
+            <p>GET <code>https://llmrouter.dev/api/</code></p>
+            <button onclick="testEndpoint('/api/', 'api-root')">Test Endpoint</button>
+            <span id="api-root-status"></span>
+            <div id="api-root" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="endpoint">
+            <h3>❤️ Health Check</h3>
+            <p>GET <code>https://llmrouter.dev/api/health</code></p>
+            <button onclick="testEndpoint('/api/health', 'health')">Test Endpoint</button>
+            <span id="health-status"></span>
+            <div id="health" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="endpoint">
+            <h3>📊 System Status</h3>
+            <p>GET <code>https://llmrouter.dev/api/status</code></p>
+            <button onclick="testEndpoint('/api/status', 'status')">Test Endpoint</button>
+            <span id="status-status"></span>
+            <div id="status" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="endpoint">
+            <h3>🤖 Available Models</h3>
+            <p>GET <code>https://llmrouter.dev/api/models/public</code></p>
+            <button onclick="testEndpoint('/api/models/public', 'models')">Test Endpoint</button>
+            <span id="models-status"></span>
+            <div id="models" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="endpoint">
+            <h3>💬 Chat Interface</h3>
+            <p>POST <code>https://llmrouter.dev/api/chat</code></p>
+            <div class="chat-box">
+                <input type="text" id="chat-input" placeholder="Enter your message..." value="Hello, are you working?">
+                <button onclick="testChat()">Send Message</button>
+            </div>
+            <span id="chat-status"></span>
+            <div id="chat" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://llmrouter.dev';
+
+        async function testEndpoint(endpoint, elementId) {
+            const resultDiv = document.getElementById(elementId);
+            const statusSpan = document.getElementById(elementId + '-status');
+            
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = 'Loading...';
+            resultDiv.className = 'result loading';
+            statusSpan.innerHTML = '';
+
+            try {
+                const response = await fetch(API_BASE + endpoint);
+                const data = await response.json();
+                
+                resultDiv.className = 'result';
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    statusSpan.innerHTML = '<span class="status success">✅ ' + response.status + ' OK</span>';
+                } else {
+                    statusSpan.innerHTML = '<span class="status error">❌ ' + response.status + '</span>';
+                }
+            } catch (error) {
+                resultDiv.className = 'result';
+                resultDiv.textContent = 'Error: ' + error.message;
+                statusSpan.innerHTML = '<span class="status error">❌ Error</span>';
+            }
+        }
+
+        async function testChat() {
+            const input = document.getElementById('chat-input');
+            const resultDiv = document.getElementById('chat');
+            const statusSpan = document.getElementById('chat-status');
+            
+            if (!input.value.trim()) {
+                alert('Please enter a message');
+                return;
+            }
+            
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = 'Sending message...';
+            resultDiv.className = 'result loading';
+            statusSpan.innerHTML = '';
+
+            try {
+                const response = await fetch(API_BASE + '/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: input.value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.className = 'result';
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    statusSpan.innerHTML = '<span class="status success">✅ ' + response.status + ' OK</span>';
+                } else {
+                    statusSpan.innerHTML = '<span class="status error">❌ ' + response.status + '</span>';
+                }
+            } catch (error) {
+                resultDiv.className = 'result';
+                resultDiv.textContent = 'Error: ' + error.message;
+                statusSpan.innerHTML = '<span class="status error">❌ Error</span>';
+            }
+        }
+
+        // Auto-test API root on page load
+        window.addEventListener('load', () => {
+            testEndpoint('/api/', 'api-root');
+        });
+    </script>
+</body>
+</html>
