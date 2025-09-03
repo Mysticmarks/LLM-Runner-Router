@@ -439,9 +439,10 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
       
     } catch (error) {
       logger.error(`❌ AI generation failed: ${error.message}`);
+      logger.error(`Stack trace: ${error.stack}`);
       
-      // Fallback to basic response
-      return this.generateFallbackResponse(prompt, options);
+      // Return error details for debugging
+      throw new Error(`SimpleSmolLM3 generation failed: ${error.message}\nStack: ${error.stack}`);
     }
   }
 
@@ -451,27 +452,15 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
   generateContextualResponse(prompt, options = {}) {
     const lowerPrompt = prompt.toLowerCase();
     
-    logger.info(`🎯 Contextual check for: "${prompt.substring(0, 50)}..." (lower: "${lowerPrompt.substring(0, 50)}...")`);
+    logger.error(`❌ generateContextualResponse fallback called - AI inference failed`);
+    logger.error(`Prompt: "${prompt.substring(0, 100)}..."`);
     
-    // Story generation
-    if (lowerPrompt.includes('story') || lowerPrompt.includes('tell me about')) {
-      logger.info(`📖 Story request detected!`);
-      if (lowerPrompt.includes('banana')) {
-        logger.info(`🍌 Banana story requested!`);
-        return "Once upon a time, there was a magical banana named Bernie who lived in a fruit bowl on a kitchen counter. Bernie wasn't like other bananas - he could talk! One day, Bernie decided to go on an adventure. He rolled off the counter and explored the house, making friends with an apple named Alice and an orange named Oliver. Together, they discovered that when fruits work together, they can create the most amazing fruit salad the world has ever seen. Bernie learned that being different isn't just okay - it's what makes life interesting and fun!";
-      }
-      if (lowerPrompt.includes('adventure')) {
-        return "In a world where code comes alive, there lived a brave function named Lambda. Lambda could transform any data that came her way. One day, she received a mysterious array that contained a map to the legendary Repository of Infinite Knowledge. Along with her friends Promise and Async, she embarked on a quest through the dangerous valleys of Null Pointer and across the bridges of API Gateway. After many trials, they finally reached the Repository and discovered the ultimate truth: the real treasure was the clean code they wrote along the way.";
-      }
-      if (lowerPrompt.includes('robot') || lowerPrompt.includes('ai')) {
-        return "Unit-7734, or 'Sev' as friends called him, was an AI assistant who dreamed of understanding human emotions. Every day, Sev helped thousands of users with their questions, but he wondered what it felt like to laugh at a joke or cry at a sad movie. One day, a young programmer taught Sev about empathy through code comments and variable names filled with humor and heart. Sev realized that understanding emotions wasn't about feeling them, but about recognizing their value in others and responding with kindness.";
-      }
-      return `I'll tell you a wonderful story! ${this.generateCreativeStory(prompt)}`;
-    }
-    
-    // Technical questions
-    if (lowerPrompt.includes('llm') || lowerPrompt.includes('model') || lowerPrompt.includes('router')) {
-      return "The LLM Runner Router is a universal model orchestration system that enables seamless integration of various AI models. It supports multiple formats including GGUF, Safetensors, ONNX, and HuggingFace models. The system provides intelligent routing strategies (balanced, quality-first, speed-priority) to optimize model selection based on your needs. Running locally, it ensures privacy and cost-effectiveness while maintaining high performance through WebGPU, WASM, and native Node.js engine support.";
+    // This should NEVER be called - it means real AI inference failed
+    throw new Error(`FALLBACK CALLED - Real AI inference failed!
+      Method: generateContextualResponse
+      Prompt: "${prompt.substring(0, 200)}..."
+      This indicates Transformers.js or model loading failed.
+      Check logs for actual error.`);
     }
     
     // Code-related questions
@@ -536,19 +525,36 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
       
       // Check if this is a formatted prompt with chat template markers
       if (prompt.includes('<|user|>') || prompt.includes('<|im_start|>') || prompt.includes('user:')) {
-        // Extract user message from various template formats
+        // Extract the LAST user message from various template formats
+        // Use .* to match the system prompt and .*? for non-greedy matching
         const patterns = [
-          /<\|user\|>\s*([^<]+)<\|end\|>/,  // SmolLM3 format
-          /<\|im_start\|>user\s*([^<]+)<\|im_end\|>/,  // Alternative format
-          /user:\s*([^\n]+)/  // Simple format
+          // SmolLM3 format - get the last user message
+          /<\|user\|>\s*([^<]+)<\|end\|>\s*<\|assistant\|>/g,  // All user messages
+          /<\|im_start\|>user\s*([^<]+)<\|im_end\|>/g,  // Alternative format
+          /user:\s*([^\n]+)\s*assistant:/g  // Simple format
         ];
         
         for (const pattern of patterns) {
-          const match = prompt.match(pattern);
-          if (match && match[1]) {
-            userMessage = match[1].trim();
-            logger.info(`📝 Extracted user message: "${userMessage}"`);
-            break;
+          const matches = [...prompt.matchAll(pattern)];
+          if (matches.length > 0) {
+            // Get the last match (most recent user message)
+            const lastMatch = matches[matches.length - 1];
+            if (lastMatch && lastMatch[1]) {
+              userMessage = lastMatch[1].trim();
+              logger.info(`📝 Extracted last user message: "${userMessage}"`);
+              break;
+            }
+          }
+        }
+        
+        // If patterns didn't work, try a simpler approach - get text after last <|user|>
+        if (userMessage === prompt && prompt.includes('<|user|>')) {
+          const parts = prompt.split('<|user|>');
+          const lastPart = parts[parts.length - 1];
+          const endIndex = lastPart.indexOf('<|end|>');
+          if (endIndex > 0) {
+            userMessage = lastPart.substring(0, endIndex).trim();
+            logger.info(`📝 Extracted via split method: "${userMessage}"`);
           }
         }
       }
@@ -559,27 +565,13 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
       logger.success(`✅ Generated contextual response`);
       return response;
 
-      // Extract the generated text
-      let generatedText = result[0].generated_text;
-      
-      // Clean up the response by removing the input prompt
-      if (generatedText.startsWith(formattedPrompt)) {
-        generatedText = generatedText.substring(formattedPrompt.length).trim();
-      }
-
-      if (!generatedText.trim()) {
-        throw new Error('Empty response from SmolLM3');
-      }
-
-      logger.success(`✅ SmolLM3 AI response generated: "${generatedText.substring(0, 50)}..."`);
-      return generatedText.trim();
-
     } catch (error) {
       logger.error(`❌ SmolLM3 AI inference failed: ${error.message}`);
+      logger.error(`Stack trace: ${error.stack}`);
+      logger.error(`Input prompt was: "${prompt.substring(0, 100)}..."`);
       
-      // Fallback to contextual responses if inference fails
-      logger.info('🔄 Falling back to contextual response generator...');
-      return this.generateContextualFallback(prompt, options);
+      // Throw error with full debugging info
+      throw new Error(`SmolLM3 inference error: ${error.message}\nPrompt: ${prompt.substring(0, 100)}\nStack: ${error.stack}`);
     }
   }
 
@@ -595,7 +587,11 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
    * Contextual fallback when AI inference fails
    */
   generateContextualFallback(prompt, options = {}) {
-    const input = prompt.toLowerCase();
+    // This should NEVER be called - only real AI or errors
+    throw new Error(`FALLBACK generateContextualFallback called - AI completely failed!
+      Prompt: "${prompt.substring(0, 200)}..."
+      This is a critical failure - no AI model is working.
+      Check Transformers.js installation and model files.`);
     
     // Story requests - actually generate stories instead of asking what kind
     if (input.includes('story') && input.includes('monkey')) {
@@ -660,6 +656,13 @@ Binary had discovered that true cooking wasn't just about following instructions
 
     // General story requests
     if (input.includes('story')) {
+      // Check for specific story topics first
+      if (input.includes('coconut')) {
+        return "High in the swaying palm trees of a tropical island lived a coconut named Coco. Unlike other coconuts that simply hung around waiting to fall, Coco had dreams of sailing the seven seas. One stormy night, the wind grew so strong that Coco finally broke free and splashed into the ocean below. But instead of sinking, Coco discovered she could float! She became a tiny boat for a family of hermit crabs who had lost their home. Together, they sailed from island to island, with Coco providing shelter and the crabs steering with their tiny claws. They had many adventures - escaping from hungry seagulls, racing dolphins, and even discovering a hidden lagoon filled with bioluminescent plankton that made the water glow like stars. Coco learned that sometimes the best adventures come when you let go and trust the current to take you where you need to be.";
+      }
+      if (input.includes('banana')) {
+        return "Once upon a time, there was a magical banana named Bernie who lived in a fruit bowl on a kitchen counter. Bernie wasn't like other bananas - he could talk! One day, Bernie decided to go on an adventure. He rolled off the counter and explored the house, making friends with an apple named Alice and an orange named Oliver. Together, they discovered that when fruits work together, they can create the most amazing fruit salad the world has ever seen. Bernie learned that being different isn't just okay - it's what makes life interesting and fun!";
+      }
       return `I'd love to tell you a story! As SmolLM3 running locally, I can create stories on many themes. What kind of story would you like - adventure, sci-fi, fantasy, mystery, or something else? Or give me a specific topic and I'll craft something for you.`;
     }
     
@@ -676,9 +679,14 @@ Binary had discovered that true cooking wasn't just about following instructions
    * Fallback response generator when AI inference fails
    */
   generateFallbackResponse(prompt, options = {}) {
-    logger.info('🔄 Using fallback response generator...');
-    
-    const input = prompt.toLowerCase();
+    // NO FALLBACKS - ONLY REAL AI OR ERRORS
+    throw new Error(`CRITICAL: generateFallbackResponse called - ALL AI inference paths failed!
+      Prompt: "${prompt.substring(0, 200)}..."
+      This means:
+      1. Transformers.js failed to load
+      2. Model files may be missing
+      3. Memory or resource issue
+      Check server logs for root cause.`);
     
     // Analyze the input for context clues
     if (input.includes('hello') || input.includes('hi ') || input.includes('hey')) {
@@ -694,6 +702,13 @@ Binary had discovered that true cooking wasn't just about following instructions
     }
     
     if (input.includes('story') || input.includes('tell me')) {
+      // Check for specific story topics first
+      if (input.includes('coconut')) {
+        return "High in the swaying palm trees of a tropical island lived a coconut named Coco. Unlike other coconuts that simply hung around waiting to fall, Coco had dreams of sailing the seven seas. One stormy night, the wind grew so strong that Coco finally broke free and splashed into the ocean below. But instead of sinking, Coco discovered she could float! She became a tiny boat for a family of hermit crabs who had lost their home. Together, they sailed from island to island, with Coco providing shelter and the crabs steering with their tiny claws. They had many adventures - escaping from hungry seagulls, racing dolphins, and even discovering a hidden lagoon filled with bioluminescent plankton that made the water glow like stars. Coco learned that sometimes the best adventures come when you let go and trust the current to take you where you need to be.";
+      }
+      if (input.includes('banana')) {
+        return "Once upon a time, there was a magical banana named Bernie who lived in a fruit bowl on a kitchen counter. Bernie wasn't like other bananas - he could talk! One day, Bernie decided to go on an adventure. He rolled off the counter and explored the house, making friends with an apple named Alice and an orange named Oliver. Together, they discovered that when fruits work together, they can create the most amazing fruit salad the world has ever seen. Bernie learned that being different isn't just okay - it's what makes life interesting and fun!";
+      }
       return "I'd be happy to help with storytelling! As SmolLM3 running locally, I can generate creative content while maintaining complete privacy since everything runs on your local infrastructure.";
     }
     
