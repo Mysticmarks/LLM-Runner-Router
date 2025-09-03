@@ -47,6 +47,7 @@ class PreBuildAutomation {
       await this.validateEnvironment();
       await this.collectBuildInfo();
       await this.cleanOutputDirectory();
+      await this.createOutputDirectories();
       await this.copySourceFiles();
       await this.processFiles();
       await this.generateBuildManifest();
@@ -132,10 +133,30 @@ class PreBuildAutomation {
       // Directory might not exist, that's fine
     }
     
-    await fs.mkdir(outputPath, { recursive: true });
-    
     if (this.options.verbose) {
       console.log(`🧹 Cleaned output directory: ${outputPath}`);
+    }
+  }
+
+  /**
+   * Create output directories
+   */
+  async createOutputDirectories() {
+    const outputPath = path.join(rootDir, this.options.outputDir);
+    const dirs = [
+      outputPath,
+      path.join(outputPath, 'src'),
+      path.join(outputPath, 'bin'),
+      path.join(outputPath, 'migrations'),
+      path.join(outputPath, 'logs')
+    ];
+
+    for (const dir of dirs) {
+      await fs.mkdir(dir, { recursive: true });
+    }
+
+    if (this.options.verbose) {
+      console.log(`📁 Created output directories`);
     }
   }
 
