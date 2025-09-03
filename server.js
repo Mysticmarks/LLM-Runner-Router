@@ -177,12 +177,12 @@ async function initializeRouter() {
     // Load Simple fallback model for VPS environments
     // This ensures we always have at least one working model
     try {
-      console.log('\n🤖 Loading Simple fallback model for VPS...');
+      console.log('\n🤖 Loading Simple SmolLM3 model for VPS...');
       const simpleModel = await router.load({
-        source: 'simple',
-        format: 'simple',
-        id: 'simple-fallback',
-        name: 'Simple VPS Fallback Model'
+        source: './models/smollm3-3b',
+        format: 'smollm3',
+        id: 'simple-smollm3',
+        name: 'SmolLM3-3B Simple'
       });
       console.log('  ✅ Simple fallback model loaded successfully');
       modelsLoaded++;

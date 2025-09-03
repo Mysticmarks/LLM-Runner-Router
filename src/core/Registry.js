@@ -544,7 +544,20 @@ class ModelRegistry extends EventEmitter {
   async saveRegistry() {
     const data = {
       version: '1.0.0',
-      models: Array.from(this.models.values()).map(m => m.toJSON())
+      models: Array.from(this.models.values()).map(m => {
+        // If model has toJSON method, use it
+        if (m && typeof m.toJSON === 'function') {
+          return m.toJSON();
+        }
+        // Otherwise return basic model info
+        return {
+          id: m.id,
+          name: m.name,
+          format: m.format,
+          source: m.source || m.path,
+          loaded: m.loaded || false
+        };
+      })
     };
     await fs.writeFile(this.config.registryPath, JSON.stringify(data, null, 2));
   }
@@ -646,4 +659,4 @@ class ModelRegistry extends EventEmitter {
 
 
 export default ModelRegistry;
-export { ModelRegistry };
+export { ModelRegistry, ModelRegistry as Registry };
