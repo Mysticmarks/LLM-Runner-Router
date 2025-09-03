@@ -376,8 +376,8 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
       
     } catch (error) {
       logger.error(`❌ AI generation failed: ${error.message}`);
-      // Return a helpful error message instead of fake responses
-      return `I apologize, but I'm having trouble generating a response right now. Error: ${error.message}`;
+      // Throw error instead of returning fake apology
+      throw new Error(`AI generation completely failed: ${error.message}`);
     }
   }
 
