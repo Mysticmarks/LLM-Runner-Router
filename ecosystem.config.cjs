@@ -1,36 +1,98 @@
 /**
- * 🚀 PM2 Configuration for LLM Router SaaS
- * Production deployment with 24/7 uptime
+ * 🚀 PM2 Unified Configuration for LLM Router
+ * 
+ * Supports multiple deployment modes via SERVER_MODE environment:
+ * - production (default): Standard production deployment
+ * - secure: Enhanced security with strict rate limiting
+ * - resilient: Self-healing with aggressive auto-recovery
+ * - development: Local development with file watching
+ * 
+ * Usage:
+ *   pm2 start ecosystem.config.cjs                    # Production mode
+ *   SERVER_MODE=secure pm2 start ecosystem.config.cjs # Secure mode
+ *   pm2 start ecosystem.config.cjs --env development  # Dev mode
  */
+
+const SERVER_MODE = process.env.SERVER_MODE || 'production';
+
+// Mode-specific configurations
+const modeConfigs = {
+  production: {
+    instances: 1,
+    max_memory_restart: '2G',
+    max_restarts: 10,
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3006,
+      SERVER_MODE: 'production',
+      AUTO_INIT: 'true'
+    }
+  },
+  secure: {
+    instances: 1,
+    max_memory_restart: '1.5G',
+    max_restarts: 5,
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3006,
+      SERVER_MODE: 'secure',
+      AUTO_INIT: 'true',
+      ENABLE_RATE_LIMIT: 'true',
+      ENABLE_HELMET: 'true'
+    }
+  },
+  resilient: {
+    instances: 1,
+    max_memory_restart: '2G',
+    max_restarts: 100,
+    min_uptime: '5s',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3006,
+      SERVER_MODE: 'resilient',
+      AUTO_INIT: 'true',
+      AUTO_RECOVERY: 'true'
+    }
+  },
+  development: {
+    instances: 1,
+    watch: true,
+    max_memory_restart: '4G',
+    env: {
+      NODE_ENV: 'development',
+      PORT: 3006,
+      SERVER_MODE: 'development',
+      AUTO_INIT: 'false'
+    }
+  }
+};
+
+const config = modeConfigs[SERVER_MODE] || modeConfigs.production;
 
 module.exports = {
   apps: [
     {
       // Application Configuration
-      name: 'llm-router-saas',
+      name: `llm-router-${SERVER_MODE}`,
       script: 'server.js',
       cwd: '/home/mikecerqua/projects/LLM-Runner-Router',
       
       // Process Management
-      instances: 1, // Single instance for VPS - can be scaled later
-      exec_mode: 'fork', // Use fork mode for single instance
+      instances: config.instances,
+      exec_mode: 'fork',
       
       // Auto-restart Configuration
-      watch: false, // Disable file watching in production
+      watch: config.watch || false,
       autorestart: true,
-      max_restarts: 10,
-      min_uptime: '10s',
+      max_restarts: config.max_restarts || 10,
+      min_uptime: config.min_uptime || '10s',
       
       // Resource Management
-      max_memory_restart: '2G', // Restart if memory exceeds 2GB
+      max_memory_restart: config.max_memory_restart,
       
       // Environment Variables
-      env_file: '.env.production',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 3000,
-        AUTO_INIT: 'true'
-      },
+      env_file: `.env.${SERVER_MODE}`,
+      env: config.env,
       
       // Logging Configuration
       log_file: './logs/llm-router-combined.log',

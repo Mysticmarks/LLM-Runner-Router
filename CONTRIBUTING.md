@@ -2,6 +2,13 @@
 
 Thank you for your interest in contributing to LLM-Runner-Router! This document provides guidelines and instructions for contributing to the project.
 
+## Quick References
+
+- **AI Assistants**: See [AGENTS.md](AGENTS.md) for AI-specific guidelines
+- **Claude Users**: See [CLAUDE.md](CLAUDE.md) for Claude-specific instructions  
+- **Environment Setup**: See [ENV_VARIABLES.md](ENV_VARIABLES.md) for configuration
+- **Deployment**: See [DEPLOYMENT.md](DEPLOYMENT.md) for deployment guidance
+
 ## Table of Contents
 - [Code of Conduct](#code-of-conduct)
 - [Getting Started](#getting-started)

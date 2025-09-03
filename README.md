@@ -30,6 +30,58 @@
 
 ---
 
+## 🚀 Developer Quick Start
+
+### Prerequisites
+- Node.js 20+ 
+- 16GB RAM (for 3B models)
+- 50GB free disk space
+
+### 30-Second Setup
+```bash
+# Clone and enter directory
+git clone https://github.com/MCERQUA/LLM-Runner-Router.git
+cd LLM-Runner-Router
+
+# Install dependencies
+npm install
+
+# Download a model (optional - uses mock by default)
+npx huggingface-cli download HuggingFaceTB/SmolLM3-3B-Base --local-dir ./models/smollm3-3b
+
+# Start the server
+npm start
+
+# API is ready at https://llmrouter.dev:3006
+```
+
+### Test Your First Request
+```bash
+curl -X POST https://llmrouter.dev:3006/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello, AI!"}'
+```
+
+### Key Files to Know
+- `server.js` - Main server entry point
+- `src/index.js` - Core LLMRouter class
+- `src/loaders/` - Model loaders for different formats
+- `models/` - Local model storage
+- `.env` - Configuration (copy from .env.example)
+
+### Common Commands
+```bash
+npm start          # Start production server
+npm run dev        # Development with hot reload  
+npm test           # Run test suite
+npm run benchmark  # Performance testing
+npm run docs       # Generate documentation
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for production setup.
+
+---
+
 ## 📊 Project Status
 
 **Current Version**: 2.0.0 | **Development Stage**: Production Ready | **Last Updated**: December 2024
