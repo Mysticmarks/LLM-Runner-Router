@@ -57,7 +57,7 @@ try {
   // Copy configuration and docs
   const filesToCopy = [
     'README.md', 'package.json', 'package-lock.json',
-    'server.js', 'jest.config.js', '.env.example'
+    'server.js', '.env.example'
   ];
   
   for (const file of filesToCopy) {
