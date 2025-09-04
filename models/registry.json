@@ -2,6 +2,31 @@
   "version": "1.0.0",
   "models": [
     {
+      "id": "llama-gguf",
+      "name": "Llama 3 8B GGUF",
+      "version": "1.0.0",
+      "format": "gguf",
+      "architecture": {},
+      "parameters": {},
+      "metadata": {},
+      "capabilities": {
+        "streaming": false,
+        "batching": false,
+        "quantization": false,
+        "embedding": false,
+        "completion": true
+      },
+      "metrics": {
+        "loadTime": 1756965913317,
+        "inferenceCount": 0,
+        "totalTokens": 0,
+        "avgLatency": 0,
+        "lastUsed": null
+      },
+      "source": "./models/Meta-Llama-3-8B.Q2_K.gguf",
+      "path": "./models/Meta-Llama-3-8B.Q2_K.gguf"
+    },
+    {
       "id": "simple-smollm3",
       "name": "SmolLM3-3B Simple",
       "format": "safetensors",

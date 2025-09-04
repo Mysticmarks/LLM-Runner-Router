@@ -19,6 +19,7 @@ import SimpleLoader from './loaders/SimpleLoader.js';
 import SafetensorsLoader from './loaders/SafetensorsLoader.js';
 import SmolLM3Loader from './loaders/SmolLM3Loader.js';
 import SimpleSmolLM3Loader from './loaders/SimpleSmolLM3Loader.js';
+import NodeLlamaCppLoader from './loaders/NodeLlamaCppLoader.js';
 import OllamaAdapter from './loaders/adapters/OllamaAdapter.js';
 // import BitNetLoader from './loaders/BitNetLoader.js'; // Commented out - missing dependencies
 
@@ -114,6 +115,11 @@ class LLMRouter {
       this.registry.registerLoader('simple-smollm3', simpleSmolLM3Loader);
       this.loaders.set('simple-smollm3', simpleSmolLM3Loader);
       logger.info('🧠 Registered SimpleSmolLM3 loader for local inference');
+      
+      const nodeLlamaCppLoader = new NodeLlamaCppLoader();
+      this.registry.registerLoader('gguf', nodeLlamaCppLoader);
+      this.loaders.set('gguf', nodeLlamaCppLoader);
+      logger.info('🦙 Registered NodeLlamaCpp loader for REAL GGUF inference');
       
       // Register BitNet loader with graceful fallback
       // Commented out - BitNetLoader has missing dependencies
