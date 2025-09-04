@@ -5,7 +5,6 @@
 
 import { APIKeyManager } from '../auth/APIKeyManager.js';
 import rateLimit from 'express-rate-limit';
-import { RateLimiterRedis } from 'rate-limiter-flexible';
 
 // Global API key manager instance
 let apiKeyManager = null;
