@@ -8,7 +8,7 @@ This document outlines the current deployment status, known issues, and solution
 
 ### Server Infrastructure
 - **PM2 Process Manager**: Running in cluster mode with 4 instances
-- **Port**: Successfully listening on port 3000
+- **Port**: Successfully listening on port 3006
 - **API Server**: Express server operational and responding
 - **Health Endpoints**: `/health` endpoint returns proper status
 - **Frontend**: Chat interface successfully served at `/chat/`
@@ -30,7 +30,7 @@ This document outlines the current deployment status, known issues, and solution
 ## ✅ Current Status Summary (UPDATED: 2:21 PM EST)
 
 **Infrastructure**: ✅ Fully operational  
-**API Server**: ✅ Running on port 3000 with PM2 (4 cluster instances)  
+**API Server**: ✅ Running on port 3006 with PM2 (4 cluster instances)
 **Chat Interface**: ✅ Served at `/chat/`  
 **Authentication**: ✅ API key protection working  
 **node-llama-cpp**: ✅ Successfully installed and working!  
@@ -149,7 +149,7 @@ git push origin main
 ### Prerequisites
 - [x] Node.js ≥18.0.0 installed
 - [x] PM2 installed globally
-- [x] Port 3000 available
+- [x] Port 3006 available
 - [x] Environment variables configured
 - [ ] Model loader functional
 - [ ] Git LFS configured (if using large models)
@@ -172,16 +172,16 @@ pm2 status
 pm2 logs llm-router
 
 # Test health endpoint
-curl http://localhost:3000/health
+curl http://localhost:3006/health
 ```
 
 ### Environment Variables
 ```env
 NODE_ENV=production
-PORT=3000
+PORT=3006
 HOST=0.0.0.0
 API_KEYS=your-api-key-here
-ALLOWED_ORIGINS=http://localhost:3000,https://your-domain.com
+ALLOWED_ORIGINS=http://localhost:3006,https://your-domain.com
 ```
 
 ## 🚀 Immediate Fix Required
@@ -203,7 +203,7 @@ The MockLoader is registered but the mock model isn't being loaded at startup. N
    pm2 restart llm-router
    
    # Test inference
-   curl -X POST http://localhost:3000/api/inference \
+   curl -X POST http://localhost:3006/api/inference \
      -H "Content-Type: application/json" \
      -H "x-api-key: YOUR_API_KEY" \
      -d '{"prompt": "Hello", "model": "mock-assistant"}'
@@ -237,7 +237,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 COPY . .
-EXPOSE 3000
+EXPOSE 3006
 CMD ["npm", "start"]
 ```
 
@@ -251,7 +251,7 @@ CMD ["npm", "start"]
 ```
 ┌─────────────────┐
 │   Chat UI       │
-│  (Port 3000)    │
+│  (Port 3006)    │
 └────────┬────────┘
          │
 ┌────────▼────────┐
@@ -282,7 +282,7 @@ CMD ["npm", "start"]
 pm2 logs llm-router | grep -i "model\|loading\|error"
 
 # Test API with authentication
-curl -H "x-api-key: YOUR_API_KEY" http://localhost:3000/api/models
+curl -H "x-api-key: YOUR_API_KEY" http://localhost:3006/api/models
 
 # Check process memory usage
 pm2 monit
@@ -292,7 +292,7 @@ pm2 delete llm-router
 pm2 start ecosystem.config.cjs --env production
 
 # Check port usage
-lsof -i :3000
+lsof -i :3006
 ```
 
 ## 📚 Additional Resources
@@ -311,11 +311,11 @@ If you successfully resolve the model loading issue, please update this document
 ## 📍 Current Access Points
 
 ### Local Access
-- **Health Check**: http://localhost:3000/health
-- **Chat Interface**: http://localhost:3000/chat/
-- **API Status**: http://localhost:3000/api/status (requires API key)
-- **API Models**: http://localhost:3000/api/models (requires API key)
-- **API Inference**: POST to http://localhost:3000/api/inference (requires API key)
+- **Health Check**: http://localhost:3006/health
+- **Chat Interface**: http://localhost:3006/chat/
+- **API Status**: http://localhost:3006/api/status (requires API key)
+- **API Models**: http://localhost:3006/api/models (requires API key)
+- **API Inference**: POST to http://localhost:3006/api/inference (requires API key)
 
 ### Authentication
 - **API Key**: `047628ea3ee6da8f05e383d43bb6f5d75e56c03cb447a27fd4482e97b155af46`

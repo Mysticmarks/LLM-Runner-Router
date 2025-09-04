@@ -573,7 +573,18 @@ class ModelRegistry extends EventEmitter {
   async registerFromData(data) {
     const loader = this.loaders.get(data.format);
     if (!loader) return null;
-    
+
+    const relativeSource = data.path || data.source || '';
+    let resolvedSource = relativeSource;
+    if (relativeSource && !path.isAbsolute(relativeSource)) {
+      resolvedSource = relativeSource.startsWith('models')
+        || relativeSource.startsWith('./models')
+        ? path.resolve(process.cwd(), relativeSource)
+        : path.resolve(process.cwd(), 'models', relativeSource);
+    }
+    data.source = resolvedSource;
+    data.path = resolvedSource;
+
     const model = await loader.fromData(data);
     this.models.set(model.id, model);
     this.indexModel(model);

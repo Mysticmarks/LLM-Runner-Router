@@ -149,7 +149,7 @@ case $option in
         if command_exists docker; then
             docker build -t llm-router:latest .
             echo -e "${GREEN}✅ Docker image built${NC}"
-            echo "Run: docker run -p 3000:3000 --env-file .env.production llm-router:latest"
+            echo "Run: docker run -p 3006:3006 --env-file .env.production llm-router:latest"
         else
             echo -e "${RED}❌ Docker is not installed${NC}"
         fi
@@ -171,7 +171,7 @@ echo -e "\n${YELLOW}🔍 Running post-deployment checks...${NC}"
 sleep 5
 
 # Check health endpoint
-if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+if curl -f http://localhost:3006/health > /dev/null 2>&1; then
     echo -e "${GREEN}✅ Server health check passed${NC}"
 else
     echo -e "${YELLOW}⚠️  Server may still be starting up${NC}"
@@ -180,9 +180,9 @@ fi
 # Display important information
 echo -e "\n${GREEN}=== Deployment Complete ===${NC}"
 echo -e "\n📝 Important Information:"
-echo -e "- Health check: http://localhost:3000/health"
-echo -e "- Chat interface: http://localhost:3000/chat"
-echo -e "- API endpoint: http://localhost:3000/api/inference"
+echo -e "- Health check: http://localhost:3006/health"
+echo -e "- Chat interface: http://localhost:3006/chat"
+echo -e "- API endpoint: http://localhost:3006/api/inference"
 echo -e "- Logs directory: ./logs/"
 
 if [ -f .env.production ]; then

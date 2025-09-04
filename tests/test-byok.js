@@ -10,7 +10,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const API_BASE = process.env.API_BASE || 'http://localhost:3000';
+const API_BASE = process.env.API_BASE || 'http://localhost:3006';
 const TEST_API_KEY = 'llm_test_persistent_key_fixed_2025.TEST_SECRET_KEY_2025_PERSISTENT';
 
 console.log('🧪 BYOK System Test Suite\n');

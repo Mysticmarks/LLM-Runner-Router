@@ -161,7 +161,7 @@ class LLMExpressServer {
   setupMiddleware() {
     // CORS
     this.app.use(cors({
-      origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+      origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3006'],
       credentials: true
     }));
 
@@ -331,7 +331,7 @@ class LLMExpressServer {
     console.log('LLM Router initialized successfully');
   }
 
-  async start(port = 3000) {
+  async start(port = 3006) {
     await this.initialize();
     
     this.server = this.app.listen(port, () => {
@@ -361,7 +361,7 @@ class LLMExpressServer {
 // Start server
 if (import.meta.url === `file://${process.argv[1]}`) {
   const server = new LLMExpressServer();
-  server.start(process.env.PORT || 3000);
+  server.start(process.env.PORT || 3006);
 }
 
 export default LLMExpressServer;
@@ -792,8 +792,8 @@ async function createServer() {
 async function start() {
   try {
     const server = await createServer();
-    await server.listen({ port: 3000, host: '0.0.0.0' });
-    console.log('Server started on port 3000');
+    await server.listen({ port: 3006, host: '0.0.0.0' });
+    console.log('Server started on port 3006');
   } catch (error) {
     console.error('Error starting server:', error);
     process.exit(1);
@@ -957,12 +957,12 @@ services:
       - redis
       - postgres
     ports:
-      - "3001:3000"
+      - "3001:3006"
     volumes:
       - ./models:/app/models
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -1015,7 +1015,7 @@ services:
   grafana:
     image: grafana/grafana
     ports:
-      - "3000:3000"
+      - "3006:3006"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
@@ -1067,7 +1067,7 @@ spec:
       - name: llm-router
         image: llm-router:latest
         ports:
-        - containerPort: 3000
+        - containerPort: 3006
         env:
         - name: NODE_ENV
           value: "production"
@@ -1086,13 +1086,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 3000
+            port: 3006
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /health
-            port: 3000
+            port: 3006
           initialDelaySeconds: 5
           periodSeconds: 5
         volumeMounts:
@@ -1114,7 +1114,7 @@ spec:
   ports:
   - protocol: TCP
     port: 80
-    targetPort: 3000
+    targetPort: 3006
   type: ClusterIP
 
 ---

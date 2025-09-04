@@ -10,24 +10,17 @@ console.log(`Building ${packageJson.name} v${packageJson.version}...`);
 
 try {
   console.log('🏗️ Starting production build process...');
-  
+  const start = Date.now();
+
   // Run tests first (critical for production)
   console.log('🧪 Running test suite...');
-  try {
-    execSync('npm test', { stdio: 'pipe' });
-    console.log('✅ All tests passed');
-  } catch (testError) {
-    console.warn('⚠️ Some tests failed, but continuing build (check logs)');
-  }
-  
-  // Run linting (warn but don't fail build)
+  execSync('npm test', { stdio: 'inherit' });
+  console.log('✅ All tests passed');
+
+  // Run linting
   console.log('🔍 Running ESLint...');
-  try {
-    execSync('npm run lint', { stdio: 'inherit' });
-    console.log('✅ ESLint passed');
-  } catch (lintError) {
-    console.warn('⚠️ ESLint found issues but continuing build...');
-  }
+  execSync('npm run lint', { stdio: 'inherit' });
+  console.log('✅ ESLint passed');
   
   // Format code
   console.log('✨ Formatting code...');
@@ -64,7 +57,7 @@ try {
   // Copy configuration and docs
   const filesToCopy = [
     'README.md', 'package.json', 'package-lock.json',
-    'server.js', 'jest.config.js', '.env.example'
+    'server.js', '.env.example'
   ];
   
   for (const file of filesToCopy) {
@@ -139,7 +132,7 @@ Version: ${packageJson.version}
   console.log('🎯 Project is ready for production deployment!');
   console.log('📁 Distribution files created in ./dist directory');
   console.log('🔧 Run "cd dist && npm install --production && npm start"');
-  console.log(`📊 Build completed in ${Date.now() - Date.now()} ms`);
+  console.log(`📊 Build completed in ${Date.now() - start} ms`);
   
 } catch (error) {
   console.error('❌ Build failed:', error.message);

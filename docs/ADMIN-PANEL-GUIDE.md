@@ -6,7 +6,7 @@ The LLM Router Chat Interface now includes a comprehensive admin settings panel 
 
 ## Access
 
-- **URL**: http://178.156.181.117:3000/chat/admin.html
+- **URL**: http://178.156.181.117:3006/chat/admin.html
 - **Access from Chat**: Click the "⚙️ Settings" button in the main chat interface
 
 ## Features

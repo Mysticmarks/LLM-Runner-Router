@@ -652,7 +652,7 @@ class ErrorHandler extends EventEmitter {
    *     // Creates ./config/ directory and empty app.json file
    *     
    *     // Now write default configuration
-   *     const defaultConfig = { port: 3000, env: 'development' };
+   *     const defaultConfig = { port: 3006, env: 'development' };
    *     await fs.writeFile('./config/app.json', JSON.stringify(defaultConfig, null, 2));
    *   }
    * }

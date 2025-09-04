@@ -22,7 +22,7 @@ fi
 # Set the API key for the functional tests
 export ROUTER_API_KEY="$API_KEY"
 
-echo "🚀 Starting functional tests against local server (http://localhost:3000)"
+echo "🚀 Starting functional tests against local server (http://localhost:3006)"
 echo "🔑 Using API key: ${API_KEY:0:20}..."
 echo ""
 

@@ -5,6 +5,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { createHash } from 'crypto';
 import { Logger } from '../utils/Logger.js';
 import { CostOptimizer } from './CostOptimizer.js';
 import { QualityScorer } from './QualityScorer.js';
@@ -50,7 +51,7 @@ class Router extends EventEmitter {
     // Routing cache
     this.routeCache = new Map();
     this.modelScores = new Map();
-    
+
     // Statistics
     this.stats = {
       totalRoutes: 0,
@@ -58,7 +59,11 @@ class Router extends EventEmitter {
       failures: 0,
       avgLatency: 0
     };
-    
+
+    // Monitoring intervals
+    this.cacheCleanupInterval = null;
+    this.scoreRecomputeInterval = null;
+
     // Expose strategy property for tests
     this.strategy = this.config.strategy;
     
@@ -70,13 +75,16 @@ class Router extends EventEmitter {
    */
   async initialize(engine) {
     this.engine = engine;
-    
+
+    // Ensure previous monitoring intervals are cleared
+    this.stopMonitoring();
+
     // Precompute model scores
     await this.computeModelScores();
-    
+
     // Setup monitoring
     this.startMonitoring();
-    
+
     logger.info('✅ Router ready with engine:', engine.name);
   }
 
@@ -469,12 +477,11 @@ class Router extends EventEmitter {
   /**
    * Get cache key for route
    * @private
-   */
+  */
   getCacheKey(prompt, requirements) {
-    // Simple hash - in production, use proper hashing
-    const promptHash = prompt.substring(0, 50);
-    const reqHash = JSON.stringify(requirements);
-    return `${promptHash}_${reqHash}`;
+    return createHash('sha256')
+      .update(prompt + JSON.stringify(requirements))
+      .digest('hex');
   }
 
   /**
@@ -494,7 +501,7 @@ class Router extends EventEmitter {
    */
   startMonitoring() {
     // Periodic cache cleanup
-    setInterval(() => {
+    this.cacheCleanupInterval = setInterval(() => {
       const now = Date.now();
       for (const [key, value] of this.routeCache.entries()) {
         if (now - value.timestamp > this.config.cacheTTL) {
@@ -502,11 +509,26 @@ class Router extends EventEmitter {
         }
       }
     }, 60000); // Every minute
-    
+
     // Periodic score recomputation
-    setInterval(() => {
+    this.scoreRecomputeInterval = setInterval(() => {
       this.computeModelScores().catch(console.error);
     }, 300000); // Every 5 minutes
+  }
+
+  /**
+   * Stop monitoring
+   * @private
+   */
+  stopMonitoring() {
+    if (this.cacheCleanupInterval) {
+      clearInterval(this.cacheCleanupInterval);
+      this.cacheCleanupInterval = null;
+    }
+    if (this.scoreRecomputeInterval) {
+      clearInterval(this.scoreRecomputeInterval);
+      this.scoreRecomputeInterval = null;
+    }
   }
 
   /**
@@ -694,6 +716,7 @@ class Router extends EventEmitter {
    * });
    */
   async cleanup() {
+    this.stopMonitoring();
     this.routeCache.clear();
     this.modelScores.clear();
     this.removeAllListeners();

@@ -3,7 +3,7 @@
 ## ✅ Working Components
 
 ### Infrastructure
-- **Server**: Running on `178.156.181.117:3000`
+- **Server**: Running on `178.156.181.117:3006`
 - **PM2**: Managing 4 cluster instances
 - **Chat Interface**: Available at `/chat/`
 - **API**: Fully operational with authentication
@@ -62,10 +62,10 @@ pm2 status
 pm2 logs llm-router
 
 # Test API
-curl http://178.156.181.117:3000/api/status
+curl http://178.156.181.117:3006/api/status
 
 # Access chat interface
-# Open: http://178.156.181.117:3000/chat/
+# Open: http://178.156.181.117:3006/chat/
 ```
 
 ---

@@ -89,7 +89,7 @@ if [ "$NGINX_AVAILABLE" = true ]; then
 # Secure reverse proxy with SSL termination
 
 upstream llm_router_backend {
-    server 127.0.0.1:3000;
+    server 127.0.0.1:3006;
     keepalive 32;
 }
 
@@ -292,7 +292,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         HOST: '127.0.0.1',  // Localhost only
-        PORT: 3000,
+        PORT: 3006,
         AUTO_INIT: 'true',
         ROUTING_STRATEGY: 'balanced',
         ADMIN_API_KEY: '$NEW_ADMIN_KEY',
@@ -342,15 +342,15 @@ pm2 save
 
 # Test localhost binding
 sleep 3
-if curl -s http://127.0.0.1:3000/api/health > /dev/null; then
-    echo "✅ Service running on localhost:3000"
+if curl -s http://127.0.0.1:3006/api/health > /dev/null; then
+    echo "✅ Service running on localhost:3006"
 else
     echo "❌ Service not responding on localhost"
     exit 1
 fi
 
 # Check if external access is blocked (should fail)
-if curl -s --connect-timeout 2 http://178.156.181.117:3000/api/health > /dev/null; then
+if curl -s --connect-timeout 2 http://178.156.181.117:3006/api/health > /dev/null; then
     echo "⚠️ WARNING: Service still accessible externally!"
     echo "   This is expected if Nginx reverse proxy is configured"
 else
@@ -391,7 +391,7 @@ echo -e "  5. Reload Nginx: sudo systemctl reload nginx"
 
 echo -e "\n${BLUE}🎯 Deployment Options:${NC}"
 echo -e "  A. Full security: Complete all manual steps, then run ./deploy-secure.sh"
-echo -e "  B. Localhost only: Run ./deploy-secure.sh (service on 127.0.0.1:3000)"
+echo -e "  B. Localhost only: Run ./deploy-secure.sh (service on 127.0.0.1:3006)"
 echo -e "  C. Testing mode: Keep current setup for development"
 
 echo -e "\n${GREEN}🔑 New Admin Key: $NEW_ADMIN_KEY${NC}"

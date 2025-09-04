@@ -8,7 +8,8 @@ const __dirname = path.dirname(__filename);
 console.log('Loading LLM Router...');
 
 // Load the registry
-const registryPath = path.join(__dirname, 'models', 'registry.json');
+const projectRoot = path.resolve(__dirname, '..', '..');
+const registryPath = path.join(projectRoot, 'models', 'registry.json');
 if (fs.existsSync(registryPath)) {
     const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
     console.log('\n📚 Registered Models:');
@@ -17,10 +18,10 @@ if (fs.existsSync(registryPath)) {
         console.log(`    Name: ${model.name}`);
         console.log(`    Format: ${model.format}`);
         console.log(`    Size: ${model.parameters.size}`);
-        console.log(`    Path: ${model.path}`);
-        
+        console.log(`    Path: ${model.path || model.source}`);
+
         // Check if model file exists
-        const modelPath = path.join(__dirname, model.path);
+        const modelPath = path.join(projectRoot, 'models', model.path || model.source || '');
         const exists = fs.existsSync(modelPath);
         console.log(`    Status: ${exists ? '✅ Available' : '❌ Not found'}`);
     });

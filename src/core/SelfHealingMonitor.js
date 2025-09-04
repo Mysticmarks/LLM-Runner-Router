@@ -199,7 +199,7 @@ class SelfHealingMonitor extends EventEmitter {
     try {
       // Test health endpoint
       const startTime = Date.now();
-      const response = await fetch('http://localhost:3000/health').catch(() => null);
+      const response = await fetch('http://localhost:3006/health').catch(() => null);
       const responseTime = Date.now() - startTime;
       
       health.responseTime = responseTime;
@@ -234,7 +234,7 @@ class SelfHealingMonitor extends EventEmitter {
    */
   async checkEndpoint(endpoint) {
     try {
-      const response = await fetch(`http://localhost:3000${endpoint}`);
+      const response = await fetch(`http://localhost:3006${endpoint}`);
       return {
         endpoint,
         status: response.status,

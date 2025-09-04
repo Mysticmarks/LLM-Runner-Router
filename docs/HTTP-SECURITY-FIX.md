@@ -51,7 +51,7 @@ app.use(cors({
 ✅ Browser console is clean
 
 ## Access the Chat Interface
-- URL: http://178.156.181.117:3000/chat/
+- URL: http://178.156.181.117:3006/chat/
 - No HTTPS required
 - Works in all modern browsers
 

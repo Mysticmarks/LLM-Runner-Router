@@ -67,7 +67,7 @@ spec:
           service:
             name: llm-runner-router
             port:
-              number: 3000
+              number: 3006
   - host: llm-router.yourdomain.com
     http:
       paths:
@@ -77,7 +77,7 @@ spec:
           service:
             name: llm-runner-router
             port:
-              number: 3000
+              number: 3006
 
 ---
 # WebSocket-specific ingress for better handling

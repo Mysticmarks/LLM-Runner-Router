@@ -27,7 +27,7 @@ export default {
       // Environment Variables
       env: {
         NODE_ENV: 'production',
-        PORT: 3000,
+        PORT: 3006,
         AUTO_INIT: 'true',
         ROUTING_STRATEGY: 'balanced',
         // API keys will be loaded from .env.global
@@ -41,7 +41,7 @@ export default {
       merge_logs: true,
       
       // Health Monitoring
-      health_check_url: 'http://localhost:3000/api/health',
+      health_check_url: 'http://localhost:3006/api/health',
       health_check_grace_period: 3000,
       
       // Advanced Settings
@@ -61,7 +61,7 @@ export default {
       // Custom Environment for SaaS
       env_production: {
         NODE_ENV: 'production',
-        PORT: 3000,
+        PORT: 3006,
         ROUTING_STRATEGY: 'balanced',
         LOG_LEVEL: 'info'
       }

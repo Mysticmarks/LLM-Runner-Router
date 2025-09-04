@@ -11,14 +11,14 @@ services:
     environment:
       - NODE_ENV=production
       - LOG_LEVEL=info
-      - API_PORT=3000
+      - API_PORT=3006
       - DEFAULT_STRATEGY=balanced
       - MAX_MODELS=10
       - MODEL_CACHE_DIR=/app/models/cache
       - AUTO_INIT=true
     
     ports:
-      - "3000:3000"
+      - "3006:3006"
     
     volumes:
       - ./models:/app/models:ro
@@ -30,7 +30,7 @@ services:
       - llm-network
     
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3006/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3

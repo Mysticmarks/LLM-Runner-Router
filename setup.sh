@@ -76,8 +76,8 @@ check_prerequisites() {
         missing_deps+=("nodejs")
     else
         NODE_VERSION=$(node --version | cut -d'v' -f2)
-        if [[ $(echo "$NODE_VERSION 18.0.0" | tr " " "\n" | sort -V | head -n1) != "18.0.0" ]]; then
-            warning "Node.js version $NODE_VERSION detected. Minimum required: 18.0.0"
+        if [[ $(echo "$NODE_VERSION 20.0.0" | tr " " "\n" | sort -V | head -n1) != "20.0.0" ]]; then
+            warning "Node.js version $NODE_VERSION detected. Node.js 20.0.0 or higher is required"
             missing_deps+=("nodejs-update")
         else
             success "Node.js $NODE_VERSION is compatible"
@@ -351,7 +351,7 @@ setup_monitoring() {
 #!/bin/bash
 # Health check script for LLM Router
 
-HEALTH_URL="http://localhost:3000/api/health"
+HEALTH_URL="http://localhost:3006/api/health"
 MAX_RETRIES=3
 RETRY_DELAY=5
 
@@ -515,7 +515,7 @@ main() {
     fi
     
     echo ""
-    log "📚 Documentation: http://localhost:3000/docs.html"
+    log "📚 Documentation: http://localhost:3006/docs.html"
     log "🔗 Repository: https://github.com/MCERQUA/LLM-Runner-Router"
 }
 

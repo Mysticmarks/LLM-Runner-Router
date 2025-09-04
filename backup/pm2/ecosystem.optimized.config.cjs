@@ -30,7 +30,7 @@ module.exports = {
     // Environment Variables
     env: {
       NODE_ENV: 'production',
-      PORT: 3000,
+      PORT: 3006,
       HOST: '0.0.0.0',
       // Model Loading Configuration
       MAX_MODEL_SIZE: '2GB',  // Limit individual model size
@@ -44,7 +44,7 @@ module.exports = {
     
     env_development: {
       NODE_ENV: 'development',
-      PORT: 3000,
+      PORT: 3006,
       HOST: 'localhost',
       DEBUG: 'true'
     },

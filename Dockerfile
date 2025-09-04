@@ -12,14 +12,17 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies including dev packages for build
+RUN npm ci
 
 # Copy source code
 COPY . .
 
 # Build the project
 RUN npm run build
+
+# Remove development dependencies to slim runtime image
+RUN npm prune --production
 
 # Stage 2: Runtime
 FROM node:20-alpine
@@ -52,16 +55,16 @@ RUN mkdir -p /app/cache /app/models/cache && \
 USER nodejs
 
 # Expose ports
-EXPOSE 3000
+EXPOSE 3006
 EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {r.statusCode === 200 ? process.exit(0) : process.exit(1)})"
+    CMD node -e "require('http').get('http://localhost:3006/api/health', (r) => {r.statusCode === 200 ? process.exit(0) : process.exit(1)})"
 
 # Environment variables
 ENV NODE_ENV=production \
-    PORT=3000 \
+    PORT=3006 \
     WS_PORT=8080 \
     MAX_MEMORY=4096 \
     ROUTING_STRATEGY=balanced \

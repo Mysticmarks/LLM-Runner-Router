@@ -8,7 +8,7 @@
 ### ✅ **Implemented Security Measures**
 
 1. **Localhost-Only Binding** ✅
-   - Service bound to `127.0.0.1:3000` (not `0.0.0.0`)
+   - Service bound to `127.0.0.1:3006` (not `0.0.0.0`)
    - External direct access **BLOCKED**
    - Only accessible via reverse proxy
 
@@ -40,17 +40,17 @@
 ### ✅ **Secured (Localhost Only)**
 ```bash
 # ✅ WORKS - Localhost access
-curl http://127.0.0.1:3000/api/health
+curl http://127.0.0.1:3006/api/health
 
 # ✅ WORKS - Admin access with new key
 curl -H "X-Admin-Key: 85dea3a443471c55a735551898159d7eb2f29fdc5fbdddd1b38eb513e7b887a6" \
-  http://127.0.0.1:3000/api/admin/stats
+  http://127.0.0.1:3006/api/admin/stats
 ```
 
 ### ❌ **Blocked (External Access)**
 ```bash
 # ❌ BLOCKED - Direct external access
-curl http://178.156.181.117:3000/api/health
+curl http://178.156.181.117:3006/api/health
 # Connection refused/timeout
 ```
 
@@ -95,7 +95,7 @@ sudo certbot --nginx -d yourdomain.com
 ### **Option B: Development with SSH Tunnel**
 ```bash
 # Create SSH tunnel for secure access
-ssh -L 8443:127.0.0.1:3000 mikecerqua@178.156.181.117
+ssh -L 8443:127.0.0.1:3006 mikecerqua@178.156.181.117
 
 # Then access via: http://localhost:8443/api/health
 ```
@@ -150,7 +150,7 @@ ssh -L 8443:127.0.0.1:3000 mikecerqua@178.156.181.117
 
 ### **Service Status**
 - **Process**: PM2 managed, auto-restart enabled
-- **Binding**: 127.0.0.1:3000 (localhost only)
+- **Binding**: 127.0.0.1:3006 (localhost only)
 - **Memory**: ~77MB usage (efficient)
 - **Uptime**: Stable with health monitoring
 

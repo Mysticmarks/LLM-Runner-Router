@@ -5,7 +5,7 @@
       "id": "simple-smollm3",
       "name": "SmolLM3-3B Simple",
       "format": "safetensors",
-      "source": "/home/mikecerqua/projects/LLM-Runner-Router/models/smollm3-3b",
+      "source": "./smollm3-3b",
       "loaded": true
     }
   ]

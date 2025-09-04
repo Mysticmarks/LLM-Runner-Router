@@ -26,7 +26,7 @@ async function main() {
     console.log('  1. Use this key in your test scripts:');
     console.log(`     export ROUTER_API_KEY="${fullKey}"`);
     console.log('\n  2. Or in curl commands:');
-    console.log(`     curl -H "Authorization: Bearer ${fullKey}" http://178.156.181.117:3000/api/models`);
+    console.log(`     curl -H "Authorization: Bearer ${fullKey}" http://178.156.181.117:3006/api/models`);
     console.log('\n  3. This key will automatically be restored if missing from api-keys.json');
     console.log('\n  4. The key never changes - safe to hardcode in test scripts');
     

@@ -12,7 +12,7 @@ LOG_FILE="$PROJECT_DIR/monitoring.log"
 ALERT_LOG="$PROJECT_DIR/alerts.log"
 
 # Configuration
-HEALTH_URL="http://localhost:3000/api/health"
+HEALTH_URL="http://localhost:3006/api/health"
 CHECK_INTERVAL=30
 MAX_MEMORY_MB=1536  # 1.5GB
 MAX_CPU_PERCENT=80

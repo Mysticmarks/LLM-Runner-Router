@@ -13,7 +13,7 @@ module.exports = {
     env: {
       NODE_ENV: 'production',
       LOG_LEVEL: 'info',
-      API_PORT: 3000,
+      API_PORT: 3006,
       DEFAULT_STRATEGY: 'balanced',
       MAX_MODELS: 10,
       MODEL_CACHE_DIR: './models/cache',
@@ -52,7 +52,7 @@ module.exports = {
     // Health Monitoring
     health_check_http: {
       path: '/api/health',
-      port: 3000,
+      port: 3006,
       interval: 30000,
       timeout: 5000
     },

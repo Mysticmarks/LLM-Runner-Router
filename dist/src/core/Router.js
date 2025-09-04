@@ -5,6 +5,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { createHash } from 'crypto';
 import { Logger } from '../utils/Logger.js';
 import { CostOptimizer } from './CostOptimizer.js';
 import { QualityScorer } from './QualityScorer.js';
@@ -469,12 +470,11 @@ class Router extends EventEmitter {
   /**
    * Get cache key for route
    * @private
-   */
+  */
   getCacheKey(prompt, requirements) {
-    // Simple hash - in production, use proper hashing
-    const promptHash = prompt.substring(0, 50);
-    const reqHash = JSON.stringify(requirements);
-    return `${promptHash}_${reqHash}`;
+    return createHash('sha256')
+      .update(prompt + JSON.stringify(requirements))
+      .digest('hex');
   }
 
   /**
