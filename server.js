@@ -22,6 +22,7 @@ import WebSocketAPI from './src/api/WebSocket.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import Config from './src/config/Config.js';
 
 // Import authentication middleware
 import { 
@@ -75,9 +76,16 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(enableCORS);
 
 // Create a single global router instance
-const router = new LLMRouter({ 
+const router = new LLMRouter({
   autoInit: false,
   strategy: process.env.ROUTING_STRATEGY || 'balanced'
+});
+
+// Server configuration
+const serverConfig = new Config({
+  routingStrategy: process.env.ROUTING_STRATEGY || 'balanced',
+  apiPort: PORT,
+  apiHost: HOST
 });
 
 // Global model loading status
@@ -247,6 +255,13 @@ app.get('/api/status', (req, res) => {
     version: '2.0.0',
     environment: process.env.NODE_ENV || 'production'
   });
+});
+
+/**
+ * Configuration endpoint (public)
+ */
+app.get('/api/config', (req, res) => {
+  res.json(serverConfig.exportForClient());
 });
 
 /**

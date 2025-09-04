@@ -62,6 +62,11 @@ curl -X POST https://llmrouter.dev:3006/api/chat \
   -d '{"message": "Hello, AI!"}'
 ```
 
+### Get Server Configuration
+```bash
+curl https://llmrouter.dev:3006/api/config
+```
+
 ### Key Files to Know
 - `server.js` - Main server entry point
 - `src/index.js` - Core LLMRouter class
