@@ -104,18 +104,33 @@ export function validateInput(req, res, next) {
  * Sanitize object recursively
  */
 function sanitizeObject(obj) {
+  if (Array.isArray(obj)) {
+    return obj.map(item => {
+      if (typeof item === 'string') {
+        return item
+          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+          .replace(/javascript:/gi, '')
+          .replace(/on\w+\s*=/gi, '');
+      }
+      if (typeof item === 'object') {
+        return sanitizeObject(item);
+      }
+      return item;
+    });
+  }
+
   if (typeof obj !== 'object' || obj === null) {
     return obj;
   }
-  
+
   const sanitized = {};
-  
+
   for (const [key, value] of Object.entries(obj)) {
     // Skip potentially dangerous properties
     if (key.startsWith('__') || key.includes('prototype')) {
       continue;
     }
-    
+
     if (typeof value === 'string') {
       // Remove potential script tags and other dangerous content
       sanitized[key] = value
@@ -128,7 +143,7 @@ function sanitizeObject(obj) {
       sanitized[key] = value;
     }
   }
-  
+
   return sanitized;
 }
 
