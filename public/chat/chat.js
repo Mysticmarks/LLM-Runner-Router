@@ -33,7 +33,7 @@ class LLMRouterDemo {
             
             // Test connection to the inference API endpoint
             try {
-                const baseUrl = window.location.hostname === 'localhost' ? '' : 'http://llmrouter.dev:3006';
+                const baseUrl = window.location.hostname === 'localhost' ? '' : '';
                 const response = await fetch(`${baseUrl}/api/health`);
                 const healthData = await response.json();
                 
@@ -254,7 +254,7 @@ class LLMRouterDemo {
 
         try {
             // Make API call to the real SmolLM3 inference endpoint
-            const baseUrl = window.location.hostname === 'localhost' ? '' : 'http://llmrouter.dev:3006';
+            const baseUrl = window.location.hostname === 'localhost' ? '' : '';
             const apiResponse = await fetch(`${baseUrl}/api/inference`, {
                 method: 'POST',
                 headers: {
