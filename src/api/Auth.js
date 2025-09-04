@@ -11,6 +11,7 @@ import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import { Strategy as OAuth2Strategy } from 'passport-oauth2';
 import { v4 as uuidv4 } from 'uuid';
 import { EventEmitter } from 'events';
+import crypto from 'node:crypto';
 
 export class AuthenticationManager extends EventEmitter {
   constructor(options = {}) {
@@ -684,7 +685,6 @@ export class AuthenticationManager extends EventEmitter {
    * Generate secure random secret
    */
   generateSecureSecret() {
-    const crypto = require('crypto');
     const secret = crypto.randomBytes(64).toString('hex');
     console.warn('🚨 SECURITY WARNING: Using auto-generated secret. Set JWT_SECRET and SESSION_SECRET environment variables for production.');
     return secret;
