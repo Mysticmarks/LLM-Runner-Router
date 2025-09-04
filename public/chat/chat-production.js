@@ -198,8 +198,8 @@ class LLMRouterChat {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // Note: In production, you'd want to use an API key here
-                // 'x-api-key': 'your-api-key'
+                // Use the persistent test API key
+                'Authorization': 'Bearer llm_test_persistent_key_fixed_2025.persistent_test_secret_never_changes_mikecerqua_2025_llm_router'
             },
             body: JSON.stringify(requestBody)
         });

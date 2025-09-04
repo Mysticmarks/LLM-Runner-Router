@@ -228,6 +228,11 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
         unload: () => {
           this.loadedModels.delete(modelId);
           logger.info(`🗑️ Unloaded local model: ${modelId}`);
+        },
+        
+        // Alias for Registry compatibility
+        cleanup: async () => {
+          localModel.unload();
         }
       };
       

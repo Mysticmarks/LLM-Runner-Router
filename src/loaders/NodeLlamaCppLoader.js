@@ -137,6 +137,11 @@ class NodeLlamaCppLoader extends BaseLoader {
           await model.dispose();
           this.loadedModels.delete(modelId);
           logger.info(`🗑️ Unloaded model: ${modelId}`);
+        },
+        
+        // Alias for Registry compatibility
+        cleanup: async () => {
+          await localModel.unload();
         }
       };
       
