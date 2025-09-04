@@ -203,6 +203,19 @@ const DocsConfig = {
             border: '#e2e8f0',
             borderLight: '#f1f5f9'
         },
+        darkTheme: {
+            primary: '#22c55e',
+            primaryDark: '#15803d',
+            primaryLight: '#4ade80',
+            secondary: '#f59e0b',
+            background: '#0f172a',
+            surface: '#1e293b',
+            textPrimary: '#f8fafc',
+            textSecondary: '#cbd5e1',
+            textMuted: '#94a3b8',
+            border: '#334155',
+            borderLight: '#1e293b'
+        },
         sidebar: {
             width: '320px',
             collapsible: true,
@@ -340,13 +353,20 @@ const DocsConfig = {
     features: {
         offlineSupport: true,
         pwaSupport: true,
-        darkMode: false, // TODO: Implement
-        multiLanguage: false, // TODO: Implement
-        comments: false, // TODO: Consider
-        ratings: false, // TODO: Consider
-        exportToPdf: false, // TODO: Consider
-        printOptimized: true,
-        socialShare: false // TODO: Consider
+        darkMode: {
+            enabled: true,
+            default: 'system'
+        },
+        multiLanguage: {
+            enabled: true
+        },
+        printOptimized: true
+    },
+
+    // Internationalization
+    i18n: {
+        default: 'en',
+        supported: ['en']
     },
 
     // Content Configuration
@@ -355,7 +375,7 @@ const DocsConfig = {
         readingSpeed: 200, // words per minute
         codeTheme: 'tomorrow-night',
         mathSupport: false,
-        mermaidSupport: false, // TODO: Consider for diagrams
+        mermaidSupport: false,
         embedSupport: {
             youtube: false,
             codepen: false,
@@ -411,11 +431,26 @@ DocsConfig.getFileMapping = function() {
 };
 
 DocsConfig.isFeatureEnabled = function(feature) {
-    return this.features[feature] === true;
+    const value = this.features[feature];
+    if (typeof value === 'object') {
+        return value.enabled === true;
+    }
+    return value === true;
 };
 
-DocsConfig.getThemeColor = function(colorName) {
+DocsConfig.getThemeColor = function(colorName, mode = 'light') {
+    if (mode === 'dark' && this.ui.darkTheme?.[colorName]) {
+        return this.ui.darkTheme[colorName];
+    }
     return this.ui.theme[colorName];
+};
+
+DocsConfig.getDefaultLanguage = function() {
+    return this.i18n?.default || 'en';
+};
+
+DocsConfig.getSupportedLanguages = function() {
+    return this.i18n?.supported || [this.getDefaultLanguage()];
 };
 
 DocsConfig.getApiUrl = function(endpoint, params = {}) {
