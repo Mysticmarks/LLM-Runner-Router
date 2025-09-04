@@ -659,7 +659,7 @@ const structuredLogging = {
 # Application
 NODE_ENV=production
 DEBUG=0
-PORT=3000
+PORT=3006
 HOST=0.0.0.0
 
 # Models

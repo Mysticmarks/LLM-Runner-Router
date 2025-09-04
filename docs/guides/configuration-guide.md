@@ -56,7 +56,7 @@ router.updateConfig({
 ```bash
 # Application
 NODE_ENV=production                    # Environment (development|production|test)
-PORT=3000                             # Server port
+PORT=3006                             # Server port
 HOST=0.0.0.0                          # Server host
 
 # Logging
@@ -156,7 +156,7 @@ CLUSTER_WORKERS=4
 {
   "environment": "production",
   "server": {
-    "port": 3000,
+    "port": 3006,
     "host": "0.0.0.0",
     "timeout": 30000,
     "keepAliveTimeout": 5000
@@ -755,7 +755,7 @@ const networkSecurityConfig = {
         allowlist: ['192.168.1.0/24', '10.0.0.0/8'],
         blocklist: ['192.168.1.100'],
         rules: [
-            { action: 'allow', source: '192.168.1.0/24', port: 3000 },
+            { action: 'allow', source: '192.168.1.0/24', port: 3006 },
             { action: 'deny', source: '*', port: 22 }
         ]
     },
@@ -987,9 +987,9 @@ const haConfig = {
         healthChecks: true,
         
         upstream: [
-            { host: 'llm-router-1', port: 3000, weight: 1 },
-            { host: 'llm-router-2', port: 3000, weight: 1 },
-            { host: 'llm-router-3', port: 3000, weight: 2 }
+            { host: 'llm-router-1', port: 3006, weight: 1 },
+            { host: 'llm-router-2', port: 3006, weight: 1 },
+            { host: 'llm-router-3', port: 3006, weight: 2 }
         ]
     },
     
