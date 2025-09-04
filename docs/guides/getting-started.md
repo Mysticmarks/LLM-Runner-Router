@@ -47,7 +47,7 @@ npm install
 
 ```bash
 docker pull llm-runner-router:latest
-docker run -p 3000:3000 llm-runner-router
+docker run -p 3006:3006 llm-runner-router
 ```
 
 ## Quick Start
@@ -121,8 +121,8 @@ app.post('/chat', async (req, res) => {
     }
 });
 
-app.listen(3000, () => {
-    console.log('LLM Router server running on http://localhost:3000');
+app.listen(3006, () => {
+    console.log('LLM Router server running on http://localhost:3006');
 });
 ```
 
@@ -133,7 +133,7 @@ node server.js
 
 Test it:
 ```bash
-curl -X POST http://localhost:3000/chat \
+curl -X POST http://localhost:3006/chat \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Explain quantum computing", "maxTokens": 200}'
 ```
@@ -146,7 +146,7 @@ Create a `.env` file:
 
 ```env
 # Server Configuration
-PORT=3000
+PORT=3006
 NODE_ENV=development
 
 # Model Storage

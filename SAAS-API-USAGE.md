@@ -6,7 +6,7 @@ Your LLM Router is now deployed as a production SaaS API! Here's how to use it:
 
 ### Base URL
 ```
-http://178.156.181.117:3000
+http://178.156.181.117:3006
 ```
 
 **🌐 Your LLM Router SaaS API is live and accessible from anywhere in the world!**
@@ -27,7 +27,7 @@ X-API-Key: YOUR_API_KEY
 
 #### Health Check
 ```bash
-curl http://178.156.181.117:3000/api/health
+curl http://178.156.181.117:3006/api/health
 ```
 
 ### 🔒 Protected Endpoints (Require API Key)
@@ -35,12 +35,12 @@ curl http://178.156.181.117:3000/api/health
 #### List Available Models
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  http://178.156.181.117:3000/api/models
+  http://178.156.181.117:3006/api/models
 ```
 
 #### Chat Completion
 ```bash
-curl -X POST http://178.156.181.117:3000/api/chat \
+curl -X POST http://178.156.181.117:3006/api/chat \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -54,7 +54,7 @@ curl -X POST http://178.156.181.117:3000/api/chat \
 
 #### Quick Inference
 ```bash
-curl -X POST http://178.156.181.117:3000/api/quick \
+curl -X POST http://178.156.181.117:3006/api/quick \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -66,7 +66,7 @@ curl -X POST http://178.156.181.117:3000/api/quick \
 
 #### Load New Model
 ```bash
-curl -X POST http://178.156.181.117:3000/api/models/load \
+curl -X POST http://178.156.181.117:3006/api/models/load \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -97,7 +97,7 @@ curl -X POST http://178.156.181.117:3000/api/models/load \
 
 ### Create API Key (Admin Only)
 ```bash
-curl -X POST http://178.156.181.117:3000/api/admin/keys \
+curl -X POST http://178.156.181.117:3006/api/admin/keys \
   -H "X-Admin-Key: YOUR_ADMIN_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -110,13 +110,13 @@ curl -X POST http://178.156.181.117:3000/api/admin/keys \
 ### View Statistics (Admin Only)
 ```bash
 curl -H "X-Admin-Key: YOUR_ADMIN_KEY" \
-  http://178.156.181.117:3000/api/admin/stats
+  http://178.156.181.117:3006/api/admin/stats
 ```
 
 ### List All Keys (Admin Only)
 ```bash
 curl -H "X-Admin-Key: YOUR_ADMIN_KEY" \
-  http://178.156.181.117:3000/api/admin/keys
+  http://178.156.181.117:3006/api/admin/keys
 ```
 
 ## Error Responses
@@ -151,7 +151,7 @@ X-RateLimit-Used: 101
 
 For real-time token streaming:
 ```javascript
-const ws = new WebSocket('ws://178.156.181.117:3000/ws');
+const ws = new WebSocket('ws://178.156.181.117:3006/ws');
 ws.onopen = () => {
   ws.send(JSON.stringify({
     type: 'authenticate',
@@ -178,7 +178,7 @@ pm2 stop llm-router-saas   # Stop service
 ### Environment Variables
 ```bash
 NODE_ENV=production
-PORT=3000
+PORT=3006
 ADMIN_API_KEY=your_admin_key
 ROUTING_STRATEGY=balanced
 ```
