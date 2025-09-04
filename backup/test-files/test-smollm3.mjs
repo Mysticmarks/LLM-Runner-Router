@@ -11,7 +11,8 @@ console.log('🧪 Testing SmolLM3-3B Model Integration...\n');
 
 // Test 1: Verify model files exist
 console.log('📁 Checking SmolLM3-3B files...');
-const modelDir = path.join(__dirname, 'models', 'smollm3-3b');
+const projectRoot = path.resolve(__dirname, '..', '..');
+const modelDir = path.join(projectRoot, 'models', 'smollm3-3b');
 const requiredFiles = [
     'config.json',
     'model-00001-of-00002.safetensors',
@@ -40,7 +41,7 @@ if (!filesOK) {
 
 // Test 2: Verify registry entry
 console.log('\n📚 Checking model registry...');
-const registryPath = path.join(__dirname, 'models', 'registry.json');
+const registryPath = path.join(projectRoot, 'models', 'registry.json');
 if (fs.existsSync(registryPath)) {
     const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
     const smollm3Model = registry.models.find(m => m.id === 'smollm3-3b');
@@ -50,7 +51,7 @@ if (fs.existsSync(registryPath)) {
         console.log(`     - ID: ${smollm3Model.id}`);
         console.log(`     - Name: ${smollm3Model.name}`);
         console.log(`     - Format: ${smollm3Model.format}`);
-        console.log(`     - Path: ${smollm3Model.path}`);
+        console.log(`     - Path: ${smollm3Model.path || smollm3Model.source}`);
         console.log(`     - Architecture: ${smollm3Model.architecture.type}`);
         console.log(`     - Parameters: ${(smollm3Model.parameters.total_size / 1024 / 1024 / 1024).toFixed(2)} GB`);
     } else {
