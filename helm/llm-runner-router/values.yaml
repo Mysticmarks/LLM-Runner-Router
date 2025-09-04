@@ -44,7 +44,7 @@ deployment:
       name: llm-runner-router
       ports:
         - name: http
-          containerPort: 3000
+          containerPort: 3006
           protocol: TCP
         - name: websocket
           containerPort: 8080
@@ -104,11 +104,11 @@ service:
   ports:
     - name: http
       port: 80
-      targetPort: 3000
+      targetPort: 3006
       protocol: TCP
     - name: https
       port: 443
-      targetPort: 3000
+      targetPort: 3006
       protocol: TCP
     - name: websocket
       port: 8080
@@ -178,7 +178,7 @@ websocketIngress:
 config:
   # Application settings
   nodeEnv: production
-  port: 3000
+  port: 3006
   wsPort: 8080
   
   # LLM Router settings

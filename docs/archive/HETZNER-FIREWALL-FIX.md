@@ -4,7 +4,7 @@
 Your services ARE running correctly but are **BLOCKED BY HETZNER'S CLOUD FIREWALL**.
 
 - **Server**: Hetzner Cloud (178.156.181.117)
-- **Services Running**: ✅ Both ports 3000 and 3001 are listening
+- **Services Running**: ✅ Both ports 3006 and 3001 are listening
 - **Issue**: 🚫 Hetzner firewall is blocking external access
 
 ## 🛠️ SOLUTION: Configure Hetzner Cloud Firewall
@@ -47,7 +47,7 @@ sudo ./configure-firewall.sh
    Rule 1:
    - Direction: Inbound
    - Protocol: TCP
-   - Port: 3000
+   - Port: 3006
    - Source: 0.0.0.0/0 (or specific IPs if you want to restrict)
    - Description: LLM Router API
    
@@ -74,7 +74,7 @@ hcloud context create my-project
 
 # Create firewall rules
 hcloud firewall create llm-router-firewall
-hcloud firewall add-rule llm-router-firewall --direction in --source-ips 0.0.0.0/0 --protocol tcp --port 3000
+hcloud firewall add-rule llm-router-firewall --direction in --source-ips 0.0.0.0/0 --protocol tcp --port 3006
 hcloud firewall add-rule llm-router-firewall --direction in --source-ips 0.0.0.0/0 --protocol tcp --port 3001
 
 # Apply firewall to your server
@@ -92,7 +92,7 @@ sudo ufw enable
 sudo ufw allow 22/tcp
 
 # Allow the LLM Router ports
-sudo ufw allow 3000/tcp
+sudo ufw allow 3006/tcp
 sudo ufw allow 3001/tcp
 
 # Check status
@@ -108,24 +108,24 @@ After configuring the firewall:
 
 1. **Test from external network** (not from the server itself):
    ```bash
-   curl http://178.156.181.117:3000/api/health
+   curl http://178.156.181.117:3006/api/health
    curl http://178.156.181.117:3001/
    ```
 
 2. **Access in browser**:
-   - API Health: http://178.156.181.117:3000/api/health
+   - API Health: http://178.156.181.117:3006/api/health
    - Chat Interface: http://178.156.181.117:3001/standalone.html
 
 ## 📋 CURRENT STATUS
 
 ✅ **What's Working:**
-- Node.js API server running on port 3000
+- Node.js API server running on port 3006
 - Python web server running on port 3001
 - Both services listening on 0.0.0.0 (all interfaces)
 - Server can access its own services locally
 
 ❌ **What's Blocked:**
-- External access to port 3000
+- External access to port 3006
 - External access to port 3001
 - All traffic blocked by Hetzner cloud firewall
 
@@ -148,6 +148,6 @@ If you need help:
 Your chat application will be accessible at:
 - **Standalone Chat**: http://178.156.181.117:3001/standalone.html
 - **Simple Chat**: http://178.156.181.117:3001/chat/simple.html
-- **API Endpoint**: http://178.156.181.117:3000/api/health
+- **API Endpoint**: http://178.156.181.117:3006/api/health
 
 The firewall is the ONLY thing preventing access. Once configured, everything will work!

@@ -27,7 +27,7 @@ service:
   ports:
     - name: http
       port: 80
-      targetPort: 3000
+      targetPort: 3006
       protocol: TCP
       nodePort: 30000
     - name: websocket

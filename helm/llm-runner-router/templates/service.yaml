@@ -49,8 +49,8 @@ spec:
   type: ClusterIP
   ports:
   - name: http
-    port: 3000
-    targetPort: 3000
+    port: 3006
+    targetPort: 3006
     protocol: TCP
   - name: websocket
     port: 8080
@@ -74,8 +74,8 @@ spec:
   clusterIP: None
   ports:
   - name: http
-    port: 3000
-    targetPort: 3000
+    port: 3006
+    targetPort: 3006
     protocol: TCP
   - name: websocket
     port: 8080

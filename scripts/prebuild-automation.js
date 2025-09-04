@@ -286,7 +286,7 @@ REDIS_URL=redis://localhost:6379
 
 # Application Settings
 NODE_ENV=production
-PORT=3000
+PORT=3006
 LOG_LEVEL=info
 
 # Security

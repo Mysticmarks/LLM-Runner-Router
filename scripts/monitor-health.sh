@@ -130,11 +130,11 @@ fi
 echo ""
 echo "Port Status:"
 echo "------------"
-PORT_CHECK=$(netstat -tln | grep ":3000 " 2>/dev/null)
+PORT_CHECK=$(netstat -tln | grep ":3006 " 2>/dev/null)
 if [ ! -z "$PORT_CHECK" ]; then
-    log_info "Port 3000 is listening"
+    log_info "Port 3006 is listening"
 else
-    log_warning "Port 3000 is not listening"
+    log_warning "Port 3006 is not listening"
 fi
 
 # Disk usage check

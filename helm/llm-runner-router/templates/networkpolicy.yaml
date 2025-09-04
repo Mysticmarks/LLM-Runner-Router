@@ -29,7 +29,7 @@ spec:
           name: kube-system
     ports:
     - protocol: TCP
-      port: 3000
+      port: 3006
     - protocol: TCP
       port: 8080
   # Allow traffic from monitoring systems
@@ -39,7 +39,7 @@ spec:
           name: monitoring
     ports:
     - protocol: TCP
-      port: 3000
+      port: 3006
     - protocol: TCP
       port: 9090
   # Allow traffic from other pods in the same namespace
@@ -49,14 +49,14 @@ spec:
           name: {{ .Release.Namespace }}
     ports:
     - protocol: TCP
-      port: 3000
+      port: 3006
     - protocol: TCP
       port: 8080
   # Allow traffic from load balancer health checks
   - from: []
     ports:
     - protocol: TCP
-      port: 3000
+      port: 3006
   {{- with .Values.networkPolicy.ingress.from }}
   {{- toYaml . | nindent 2 }}
   {{- end }}

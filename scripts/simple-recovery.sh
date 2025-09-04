@@ -57,7 +57,7 @@ check_api_health() {
     info "Checking API health..."
     
     # Check health endpoint
-    if curl -s -f -o /dev/null http://localhost:3000/health; then
+    if curl -s -f -o /dev/null http://localhost:3006/health; then
         log "API health check passed"
         return 0
     else

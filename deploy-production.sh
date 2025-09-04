@@ -7,7 +7,7 @@ echo "🚀 Starting LLM-Runner-Router Production Deployment..."
 # Set production environment
 export NODE_ENV=production
 export LOG_LEVEL=info
-export API_PORT=3000
+export API_PORT=3006
 export DEFAULT_STRATEGY=balanced
 export MAX_MODELS=10
 
@@ -125,6 +125,6 @@ print_info "📡 Available Commands:"
 echo "  npm start                 - Start production server"
 echo "  npm run monitor          - Monitor with PM2"
 echo "  npm run logs             - View logs"
-echo "  curl localhost:3000/api/health - Health check"
+echo "  curl localhost:3006/api/health - Health check"
 echo ""
 print_status "✅ Deployment ready!"

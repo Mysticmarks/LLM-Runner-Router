@@ -421,7 +421,7 @@ TEST_API=true npm test tests/test-byok.js
 
 ### Manual Testing
 1. Start the server: `npm start`
-2. Navigate to: `http://localhost:3000/byok-interface.html`
+2. Navigate to: `http://localhost:3006/byok-interface.html`
 3. Add test keys and verify functionality
 
 ## Migration Guide

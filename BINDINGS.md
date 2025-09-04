@@ -137,7 +137,7 @@ use llm_runner_router::{Client, RouterConfig};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let config = RouterConfig::new("http://localhost:3000");
+    let config = RouterConfig::new("http://localhost:3006");
     let client = Client::new(config).await?;
     
     let response = client.quick_inference("What is Rust?").await?;
@@ -153,7 +153,7 @@ import init, * as llmRouter from 'llm-runner-router-wasm';
 
 await init();
 const client = new llmRouter.LLMRouterClient(
-    new llmRouter.RouterConfig('http://localhost:3000')
+    new llmRouter.RouterConfig('http://localhost:3006')
 );
 
 const response = await client.quickInference('Hello WASM!');

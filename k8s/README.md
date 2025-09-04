@@ -344,7 +344,7 @@ kubectl get all -n llm-systems
 kubectl get events -n llm-systems --sort-by=.metadata.creationTimestamp
 
 # Port forward for testing
-kubectl port-forward service/llm-runner-router 8080:3000 -n llm-systems
+kubectl port-forward service/llm-runner-router 8080:3006 -n llm-systems
 
 # Exec into pod
 kubectl exec -it <pod-name> -n llm-systems -- /bin/sh

@@ -80,11 +80,11 @@ RUN chown -R llmrouter:nodejs /app
 USER llmrouter
 
 # Expose port
-EXPOSE 3000
+EXPOSE 3006
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
+  CMD curl -f http://localhost:3006/health || exit 1
 
 # Start the application
 CMD ["npm", "start"]
@@ -128,10 +128,10 @@ RUN mkdir -p /app/models /app/logs /app/cache && \
 
 USER llmrouter
 
-EXPOSE 3000
+EXPOSE 3006
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+  CMD node -e "require('http').get('http://localhost:3006/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 CMD ["node", "server.js"]
 ```
@@ -145,10 +145,10 @@ services:
   llm-router:
     build: .
     ports:
-      - "3000:3000"
+      - "3006:3006"
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=3006
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql://user:pass@postgres:5432/llmrouter
     volumes:
@@ -206,7 +206,7 @@ docker build -t llm-router:latest .
 # Run with production settings
 docker run -d \
   --name llm-router-prod \
-  -p 3000:3000 \
+  -p 3006:3006 \
   -e NODE_ENV=production \
   -v $(pwd)/models:/app/models \
   -v $(pwd)/logs:/app/logs \
@@ -249,7 +249,7 @@ metadata:
   namespace: llm-router
 data:
   NODE_ENV: "production"
-  PORT: "3000"
+  PORT: "3006"
   LOG_LEVEL: "info"
   MAX_CONCURRENT_REQUESTS: "20"
   ENABLE_METRICS: "true"
@@ -300,7 +300,7 @@ spec:
       - name: llm-router
         image: llm-router:latest
         ports:
-        - containerPort: 3000
+        - containerPort: 3006
           name: http
         envFrom:
         - configMapRef:
@@ -317,7 +317,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 3000
+            port: 3006
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -325,7 +325,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /ready
-            port: 3000
+            port: 3006
           initialDelaySeconds: 5
           periodSeconds: 5
           timeoutSeconds: 3
@@ -359,7 +359,7 @@ spec:
   type: ClusterIP
   ports:
   - port: 80
-    targetPort: 3000
+    targetPort: 3006
     protocol: TCP
     name: http
   selector:
@@ -532,9 +532,9 @@ kubectl apply -f k8s/
 # nginx.conf
 upstream llm_router_backend {
     least_conn;
-    server llm-router-1:3000 weight=1 max_fails=3 fail_timeout=30s;
-    server llm-router-2:3000 weight=1 max_fails=3 fail_timeout=30s;
-    server llm-router-3:3000 weight=1 max_fails=3 fail_timeout=30s;
+    server llm-router-1:3006 weight=1 max_fails=3 fail_timeout=30s;
+    server llm-router-2:3006 weight=1 max_fails=3 fail_timeout=30s;
+    server llm-router-3:3006 weight=1 max_fails=3 fail_timeout=30s;
 }
 
 server {
@@ -621,9 +621,9 @@ frontend llm_router_frontend
 
 backend llm_router_backend
     option httpchk GET /health
-    server llm-router-1 llm-router-1:3000 check inter 30s
-    server llm-router-2 llm-router-2:3000 check inter 30s
-    server llm-router-3 llm-router-3:3000 check inter 30s
+    server llm-router-1 llm-router-1:3006 check inter 30s
+    server llm-router-2 llm-router-2:3006 check inter 30s
+    server llm-router-3 llm-router-3:3006 check inter 30s
 ```
 
 ## Security Configuration
@@ -633,7 +633,7 @@ backend llm_router_backend
 ```bash
 # production.env
 NODE_ENV=production
-PORT=3000
+PORT=3006
 
 # Security
 JWT_SECRET=your-super-secure-jwt-secret-here
@@ -1040,7 +1040,7 @@ USER llmrouter
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
-EXPOSE 3000
+EXPOSE 3006
 
 CMD ["node", "dist/server.js"]
 ```

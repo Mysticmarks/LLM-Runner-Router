@@ -129,4 +129,4 @@ patches:
               name: llm-systems-staging
         ports:
         - protocol: TCP
-          port: 3000
+          port: 3006

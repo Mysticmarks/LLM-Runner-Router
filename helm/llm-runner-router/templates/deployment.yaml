@@ -29,7 +29,7 @@ spec:
       annotations:
         {{- if .Values.monitoring.enabled }}
         prometheus.io/scrape: "true"
-        prometheus.io/port: "3000"
+        prometheus.io/port: "3006"
         prometheus.io/path: "/metrics"
         {{- end }}
         {{- with .Values.deployment.pod.annotations }}

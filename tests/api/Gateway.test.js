@@ -752,7 +752,7 @@ describe.skip('API Gateway', () => {
     test('should handle CORS preflight requests', (done) => {
       request(app)
         .options('/api/v1/test')
-        .set('Origin', 'http://localhost:3000')
+        .set('Origin', 'http://localhost:3006')
         .expect(200)
         .end((err, res) => {
           if (err) return done(err);

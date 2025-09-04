@@ -292,7 +292,7 @@ const securityMiddleware = [
   
   // CORS configuration
   cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3006'],
     credentials: true,
     optionsSuccessStatus: 200
   })
@@ -640,7 +640,7 @@ app.post('/models/:id/load', authenticate, rbac.authorize('model:load'), loadMod
 const secureDefaults = {
   // Network security
   server: {
-    port: process.env.PORT || 3000,
+    port: process.env.PORT || 3006,
     host: '0.0.0.0', // Bind to all interfaces
     timeout: 30000,
     keepAliveTimeout: 5000
@@ -705,7 +705,7 @@ RUN apk del --purge curl wget
 USER llmrunner
 
 # Expose port
-EXPOSE 3000
+EXPOSE 3006
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
