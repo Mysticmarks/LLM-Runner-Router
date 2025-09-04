@@ -407,8 +407,9 @@ class LLMRouter {
    */
   async cleanup() {
     logger.info('🧹 Cleaning up resources...');
-    
+
     await this.pipeline.cleanup();
+    this.router.stopMonitoring();
     await this.router.cleanup();
     await this.registry.cleanup();
     await this.engine?.cleanup();
