@@ -29,8 +29,8 @@ if ! ufw status | grep -q "Status: active"; then
 fi
 
 # Allow LLM Router API port
-echo "📡 Allowing port 3000 (API server)..."
-ufw allow 3000/tcp comment 'LLM Router API'
+echo "📡 Allowing port 3006 (API server)..."
+ufw allow 3006/tcp comment 'LLM Router API'
 
 # Allow LLM Router Chat UI port
 echo "💬 Allowing port 3001 (Chat interface)..."
@@ -58,8 +58,8 @@ echo ""
 echo "🔍 Testing accessibility..."
 
 # Test local connectivity
-echo -n "  Local API (3000): "
-if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health | grep -q "200"; then
+echo -n "  Local API (3006): "
+if curl -s -o /dev/null -w "%{http_code}" http://localhost:3006/api/health | grep -q "200"; then
     echo "✅ Working"
 else
     echo "❌ Not responding"
@@ -74,7 +74,7 @@ fi
 
 echo ""
 echo "📱 Your services should now be accessible at:"
-echo "  🔗 API: http://178.156.181.117:3000/api/health"
+echo "  🔗 API: http://178.156.181.117:3006/api/health"
 echo "  💬 Chat: http://178.156.181.117:3001/standalone.html"
 echo ""
 echo "⚠️  IMPORTANT: If services are still not accessible externally,"
@@ -82,5 +82,5 @@ echo "   you may need to configure Hetzner Cloud Firewall via the console:"
 echo "   https://console.hetzner.cloud/"
 echo ""
 echo "   Add these rules in Hetzner Cloud Console:"
-echo "   • Inbound TCP Port 3000 from 0.0.0.0/0"
+echo "   • Inbound TCP Port 3006 from 0.0.0.0/0"
 echo "   • Inbound TCP Port 3001 from 0.0.0.0/0"

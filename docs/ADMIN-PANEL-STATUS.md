@@ -3,16 +3,16 @@
 ## Access URLs
 
 ### Live Interfaces
-- **Chat Interface**: http://178.156.181.117:3000/chat/
-- **Admin Panel**: http://178.156.181.117:3000/chat/admin.html
+- **Chat Interface**: http://178.156.181.117:3006/chat/
+- **Admin Panel**: http://178.156.181.117:3006/chat/admin.html
 
 ### API Endpoints (No Auth Required)
-- `GET http://178.156.181.117:3000/api/health` - Server health
-- `GET http://178.156.181.117:3000/api/status` - System status
-- `GET http://178.156.181.117:3000/api/models` - Available models
-- `GET http://178.156.181.117:3000/api/config` - Current configuration
-- `POST http://178.156.181.117:3000/api/config` - Save configuration
-- `GET http://178.156.181.117:3000/api/diagnostics` - System diagnostics
+- `GET http://178.156.181.117:3006/api/health` - Server health
+- `GET http://178.156.181.117:3006/api/status` - System status
+- `GET http://178.156.181.117:3006/api/models` - Available models
+- `GET http://178.156.181.117:3006/api/config` - Current configuration
+- `POST http://178.156.181.117:3006/api/config` - Save configuration
+- `GET http://178.156.181.117:3006/api/diagnostics` - System diagnostics
 
 ## Admin Panel Features
 
@@ -96,16 +96,16 @@
 
 ```bash
 # Test health endpoint
-curl http://178.156.181.117:3000/api/health
+curl http://178.156.181.117:3006/api/health
 
 # Get current config
-curl http://178.156.181.117:3000/api/config | python3 -m json.tool
+curl http://178.156.181.117:3006/api/config | python3 -m json.tool
 
 # List models
-curl http://178.156.181.117:3000/api/models | python3 -m json.tool
+curl http://178.156.181.117:3006/api/models | python3 -m json.tool
 
 # Test inference
-curl -X POST http://178.156.181.117:3000/api/inference \
+curl -X POST http://178.156.181.117:3006/api/inference \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Hello", "maxTokens": 10}'
 ```

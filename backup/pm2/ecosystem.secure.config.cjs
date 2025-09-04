@@ -27,7 +27,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         HOST: '127.0.0.1',  // Localhost only
-        PORT: 3000,
+        PORT: 3006,
         AUTO_INIT: 'true',
         ROUTING_STRATEGY: 'balanced',
         ADMIN_API_KEY: '85dea3a443471c55a735551898159d7eb2f29fdc5fbdddd1b38eb513e7b887a6',

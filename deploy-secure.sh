@@ -14,15 +14,15 @@ pm2 save
 
 # Test localhost binding
 sleep 3
-if curl -s http://127.0.0.1:3000/api/health > /dev/null; then
-    echo "✅ Service running on localhost:3000"
+if curl -s http://127.0.0.1:3006/api/health > /dev/null; then
+    echo "✅ Service running on localhost:3006"
 else
     echo "❌ Service not responding on localhost"
     exit 1
 fi
 
 # Check if external access is blocked (should fail)
-if curl -s --connect-timeout 2 http://178.156.181.117:3000/api/health > /dev/null; then
+if curl -s --connect-timeout 2 http://178.156.181.117:3006/api/health > /dev/null; then
     echo "⚠️ WARNING: Service still accessible externally!"
     echo "   This is expected if Nginx reverse proxy is configured"
 else

@@ -12,7 +12,7 @@ BACKUP_DIR="$PROJECT_DIR/deployments/$DEPLOYMENT_ID"
 
 # Configuration
 DEFAULT_ENV="production"
-DEFAULT_PORT="3000"
+DEFAULT_PORT="3006"
 HEALTH_CHECK_RETRIES=10
 HEALTH_CHECK_DELAY=3
 
@@ -392,10 +392,10 @@ if [[ $# -eq 0 ]]; then
     echo ""
     echo "Arguments:"
     echo "  environment  - deployment environment (production|staging|development)"
-    echo "  port         - port number (default: 3000)"
+    echo "  port         - port number (default: 3006)"
     echo ""
     echo "Examples:"
-    echo "  $0 production 3000"
+    echo "  $0 production 3006"
     echo "  $0 staging 3001"
     echo "  $0 development"
     echo ""

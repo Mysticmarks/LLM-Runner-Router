@@ -15,7 +15,7 @@ export class OpenAPIManager extends EventEmitter {
       title: (options.title && options.title.trim()) || 'LLM Runner Router API',
       description: options.description || 'Universal LLM model orchestration and intelligent routing system',
       version: options.version || '1.2.1',
-      serverUrl: options.serverUrl || 'http://localhost:3000',
+      serverUrl: options.serverUrl || 'http://localhost:3006',
       contact: {
         name: 'Echo AI Systems',
         email: 'support@echoai.systems',
@@ -1158,7 +1158,7 @@ export class OpenAPIManager extends EventEmitter {
 const axios = require('axios');
 
 class LLMRouterClient {
-  constructor(baseURL = 'http://localhost:3000', apiKey = null) {
+  constructor(baseURL = 'http://localhost:3006', apiKey = null) {
     this.client = axios.create({
       baseURL,
       headers: {
@@ -1198,7 +1198,7 @@ import requests
 from typing import List, Dict, Optional
 
 class LLMRouterClient:
-    def __init__(self, base_url: str = "http://localhost:3000", api_key: Optional[str] = None):
+    def __init__(self, base_url: str = "http://localhost:3006", api_key: Optional[str] = None):
         self.base_url = base_url
         self.headers = {"Content-Type": "application/json"}
         if api_key:

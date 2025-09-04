@@ -6,9 +6,9 @@ The LLM Router includes a comprehensive Model Manager that allows you to downloa
 
 ## Access Points
 
-- **Model Manager UI**: http://178.156.181.117:3000/chat/model-selector.html
-- **Chat Interface**: http://178.156.181.117:3000/chat/
-- **Admin Panel**: http://178.156.181.117:3000/chat/admin.html
+- **Model Manager UI**: http://178.156.181.117:3006/chat/model-selector.html
+- **Chat Interface**: http://178.156.181.117:3006/chat/
+- **Admin Panel**: http://178.156.181.117:3006/chat/admin.html
 
 ## Features
 
@@ -73,7 +73,7 @@ The system comes pre-configured with 8 popular GGUF models:
 #### Storage API
 ```bash
 # Check storage usage
-curl http://178.156.181.117:3000/api/models/storage
+curl http://178.156.181.117:3006/api/models/storage
 
 # Response:
 {
@@ -209,7 +209,7 @@ pm2 logs llm-router-http --lines 50
 ls -lah /home/mikecerqua/projects/LLM-Runner-Router/models/
 
 # Test model loading
-curl -X POST http://localhost:3000/api/models/load \
+curl -X POST http://localhost:3006/api/models/load \
   -H "Content-Type: application/json" \
   -d '{"modelId": "tinyllama", "path": "models/tinyllama/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"}'
 ```

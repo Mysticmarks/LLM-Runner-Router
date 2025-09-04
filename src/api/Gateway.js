@@ -22,7 +22,7 @@ export class APIGateway extends EventEmitter {
       // Service discovery
       services: {
         llm: {
-          url: 'http://localhost:3000',
+          url: 'http://localhost:3006',
           healthPath: '/api/health',
           timeout: 30000,
           retries: 3,

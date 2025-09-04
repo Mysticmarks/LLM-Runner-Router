@@ -137,20 +137,20 @@ echo "🛡️ Configuring firewall rules..."
 # Clear existing rules (if updating)
 if [ -n "$EXISTING_FIREWALL" ]; then
     echo "Clearing existing rules..."
-    hcloud firewall delete-rule $FIREWALL_ID --direction in --source-ips 0.0.0.0/0 --protocol tcp --port 3000 2>/dev/null || true
+    hcloud firewall delete-rule $FIREWALL_ID --direction in --source-ips 0.0.0.0/0 --protocol tcp --port 3006 2>/dev/null || true
     hcloud firewall delete-rule $FIREWALL_ID --direction in --source-ips 0.0.0.0/0 --protocol tcp --port 3001 2>/dev/null || true
 fi
 
 # Add new rules
-echo "Adding rule: Allow TCP 3000 (API)..."
+echo "Adding rule: Allow TCP 3006 (API)..."
 hcloud firewall add-rule $FIREWALL_ID \
     --direction in \
     --source-ips 0.0.0.0/0 \
     --protocol tcp \
-    --port 3000 \
+    --port 3006 \
     --description "LLM Router API"
 
-print_status "Added rule for port 3000"
+print_status "Added rule for port 3006"
 
 echo "Adding rule: Allow TCP 3001 (Chat UI)..."
 hcloud firewall add-rule $FIREWALL_ID \
@@ -195,7 +195,7 @@ echo ""
 echo "Your LLM Router services should now be accessible at:"
 echo ""
 echo "  🔗 API Health Check:"
-echo "     http://178.156.181.117:3000/api/health"
+echo "     http://178.156.181.117:3006/api/health"
 echo ""
 echo "  💬 Chat Interfaces:"
 echo "     http://178.156.181.117:3001/standalone.html"
@@ -222,7 +222,7 @@ test_url() {
     fi
 }
 
-test_url "http://178.156.181.117:3000/api/health" "API endpoint"
+test_url "http://178.156.181.117:3006/api/health" "API endpoint"
 test_url "http://178.156.181.117:3001/standalone.html" "Chat interface"
 
 echo ""

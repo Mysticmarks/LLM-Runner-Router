@@ -102,7 +102,7 @@ module.exports = {
       merge_logs: true,
       
       // Health Monitoring
-      health_check_url: 'http://localhost:3000/api/health',
+      health_check_url: 'http://localhost:3006/api/health',
       health_check_grace_period: 3000,
       
       // Advanced Settings
@@ -122,7 +122,7 @@ module.exports = {
       // Custom Environment for SaaS
       env_production: {
         NODE_ENV: 'production',
-        PORT: 3000,
+        PORT: 3006,
         LOG_LEVEL: 'warn'
       }
     }

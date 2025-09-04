@@ -16,7 +16,7 @@ describe('OpenAPI System', () => {
     openAPIManager = new OpenAPIManager({
       title: 'Test LLM Router API',
       version: '1.0.0-test',
-      serverUrl: 'http://localhost:3000'
+      serverUrl: 'http://localhost:3006'
     });
 
     app = express();
@@ -470,7 +470,7 @@ describe('OpenAPI System', () => {
       
       const devServer = servers.find(s => s.description === 'Development server');
       expect(devServer).toBeDefined();
-      expect(devServer.url).toBe('http://localhost:3000');
+      expect(devServer.url).toBe('http://localhost:3006');
     });
   });
 

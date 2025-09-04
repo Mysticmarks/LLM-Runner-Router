@@ -127,13 +127,13 @@ pm2 monit
 ### Health Checks
 ```bash
 # Basic health check
-curl http://localhost:3000/health
+curl http://localhost:3006/health
 
 # Diagnostics (requires API key)
-curl -H "x-api-key: YOUR_KEY" http://localhost:3000/api/diagnostics
+curl -H "x-api-key: YOUR_KEY" http://localhost:3006/api/diagnostics
 
 # Manual healing trigger
-curl -X POST -H "x-api-key: YOUR_KEY" http://localhost:3000/api/heal
+curl -X POST -H "x-api-key: YOUR_KEY" http://localhost:3006/api/heal
 ```
 
 ## Configuration
@@ -243,7 +243,7 @@ pm2 delete llm-router-http
 pm2 start ecosystem.config.cjs
 
 # Check port conflicts
-lsof -i :3000
+lsof -i :3006
 ```
 
 ### Recovery Loop

@@ -89,7 +89,7 @@ Create `.env` file for your deployment:
 # Core Configuration
 NODE_ENV=production
 LOG_LEVEL=info
-PORT=3000
+PORT=3006
 
 # Model Settings
 MODEL_REGISTRY_PATH=/var/lib/llm-router/registry.json
@@ -241,8 +241,8 @@ app.post('/api/stream', (req, res) => {
   res.end();
 });
 
-app.listen(3000, () => {
-  console.log('🚀 LLM Router serving on port 3000');
+app.listen(3006, () => {
+  console.log('🚀 LLM Router serving on port 3006');
 });
 ```
 
@@ -258,7 +258,7 @@ module.exports = {
     exec_mode: 'cluster',
     env: {
       NODE_ENV: 'production',
-      PORT: 3000
+      PORT: 3006
     },
     error_file: './logs/error.log',
     out_file: './logs/out.log',
@@ -379,7 +379,7 @@ RUN mkdir -p /var/lib/llm-router && \
 
 USER nodejs
 
-EXPOSE 3000
+EXPOSE 3006
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "dist/server.js"]
 ```
@@ -393,7 +393,7 @@ services:
   llm-router:
     build: .
     ports:
-      - "3000:3000"
+      - "3006:3006"
     volumes:
       - model-cache:/var/lib/llm-router
       - ./config:/app/config
@@ -410,7 +410,7 @@ services:
           cpus: '1'
           memory: 2G
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -455,7 +455,7 @@ spec:
       - name: llm-router
         image: echoaisystems/llm-router:latest
         ports:
-        - containerPort: 3000
+        - containerPort: 3006
         env:
         - name: NODE_ENV
           value: "production"
@@ -474,13 +474,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 3000
+            port: 3006
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /ready
-            port: 3000
+            port: 3006
           initialDelaySeconds: 5
           periodSeconds: 5
       volumes:
@@ -501,7 +501,7 @@ spec:
     app: llm-router
   ports:
   - port: 80
-    targetPort: 3000
+    targetPort: 3006
   type: ClusterIP
 ---
 apiVersion: networking.k8s.io/v1
@@ -725,7 +725,7 @@ export default function() {
     maxTokens: 50
   });
   
-  const response = http.post('http://localhost:3000/api/inference', payload, {
+  const response = http.post('http://localhost:3006/api/inference', payload, {
     headers: { 'Content-Type': 'application/json' }
   });
   

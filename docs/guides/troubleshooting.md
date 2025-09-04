@@ -23,16 +23,16 @@ This guide helps you diagnose and resolve common issues with LLM Runner Router.
 
 ```bash
 # Check system health
-curl http://localhost:3000/health
+curl http://localhost:3006/health
 
 # Check detailed status
-curl http://localhost:3000/status
+curl http://localhost:3006/status
 
 # Check model availability
-curl http://localhost:3000/models
+curl http://localhost:3006/models
 
 # Test basic inference
-curl -X POST http://localhost:3000/chat \
+curl -X POST http://localhost:3006/chat \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Hello", "maxTokens": 10}'
 ```
@@ -613,7 +613,7 @@ try {
 }
 
 // Test API key
-curl -H "X-API-Key: your-api-key" http://localhost:3000/health
+curl -H "X-API-Key: your-api-key" http://localhost:3006/health
 ```
 
 ### CORS Issues
@@ -625,7 +625,7 @@ curl -H "X-API-Key: your-api-key" http://localhost:3000/health
 const router = new LLMRouter({
     security: {
         cors: {
-            origin: ['http://localhost:3000', 'https://yourdomain.com'],
+            origin: ['http://localhost:3006', 'https://yourdomain.com'],
             credentials: true,
             methods: ['GET', 'POST', 'PUT', 'DELETE'],
             allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
@@ -756,14 +756,14 @@ docker logs container-name
 docker run -it llm-router:latest /bin/sh
 
 # Check health
-docker exec container-name curl http://localhost:3000/health
+docker exec container-name curl http://localhost:3006/health
 ```
 
 ```dockerfile
 # Add debugging to Dockerfile
 RUN npm run test
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
+  CMD curl -f http://localhost:3006/health || exit 1
 ```
 
 ### Kubernetes Issues
@@ -850,7 +850,7 @@ du -sh /path/to/models
 
 # Check network
 ping google.com
-curl -I http://localhost:3000
+curl -I http://localhost:3006
 ```
 
 ### Log Analysis

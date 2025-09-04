@@ -17,7 +17,7 @@ echo -e "${BLUE}🚀 LLM Router SaaS Deployment Starting...${NC}\n"
 # Configuration
 PROJECT_DIR="/home/mikecerqua/projects/LLM-Runner-Router"
 SERVICE_NAME="llm-router-saas"
-PORT=3000
+PORT=3006
 
 # Check if we're in the right directory
 if [ "$PWD" != "$PROJECT_DIR" ]; then

@@ -201,7 +201,7 @@ docker-build: ## Build Docker image
 	docker build -t llm-runner-router .
 
 docker-run: ## Run Docker container
-	docker run -p 3000:3000 llm-runner-router
+    docker run -p 3006:3006 llm-runner-router
 
 # Maintenance targets
 update-deps: ## Update all dependencies

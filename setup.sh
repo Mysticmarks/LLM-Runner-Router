@@ -351,7 +351,7 @@ setup_monitoring() {
 #!/bin/bash
 # Health check script for LLM Router
 
-HEALTH_URL="http://localhost:3000/api/health"
+HEALTH_URL="http://localhost:3006/api/health"
 MAX_RETRIES=3
 RETRY_DELAY=5
 
@@ -515,7 +515,7 @@ main() {
     fi
     
     echo ""
-    log "📚 Documentation: http://localhost:3000/docs.html"
+    log "📚 Documentation: http://localhost:3006/docs.html"
     log "🔗 Repository: https://github.com/MCERQUA/LLM-Runner-Router"
 }
 

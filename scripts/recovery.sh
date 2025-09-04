@@ -99,14 +99,14 @@ check_api_health() {
     info "Checking API health..."
     
     # Check health endpoint
-    HEALTH_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/health)
+    HEALTH_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3006/health)
     if [ "$HEALTH_RESPONSE" != "200" ]; then
         error "Health check failed (HTTP $HEALTH_RESPONSE)"
         return 1
     fi
     
     # Check response time
-    RESPONSE_TIME=$(curl -s -o /dev/null -w "%{time_total}" http://localhost:3000/health)
+    RESPONSE_TIME=$(curl -s -o /dev/null -w "%{time_total}" http://localhost:3006/health)
     if (( $(echo "$RESPONSE_TIME > 5" | bc -l) )); then
         warning "Slow API response: ${RESPONSE_TIME}s"
     fi

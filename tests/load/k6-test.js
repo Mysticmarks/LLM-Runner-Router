@@ -56,7 +56,7 @@ export const options = {
 };
 
 // Test data
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3006';
 const API_KEY = __ENV.API_KEY || 'llmr_load_test_key';
 const ADMIN_API_KEY = __ENV.ADMIN_API_KEY || 'llmr_admin_key';
 

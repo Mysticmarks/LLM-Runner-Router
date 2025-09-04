@@ -61,10 +61,10 @@
 8. **StableLM 3B** (1.8 GB) - Stability AI model
 
 ### Access URLs
-- **Chat Interface**: http://178.156.181.117:3000/chat/
-- **Model Manager**: http://178.156.181.117:3000/chat/model-selector.html
-- **Admin Panel**: http://178.156.181.117:3000/chat/admin.html
-- **API Health**: http://178.156.181.117:3000/api/health
+- **Chat Interface**: http://178.156.181.117:3006/chat/
+- **Model Manager**: http://178.156.181.117:3006/chat/model-selector.html
+- **Admin Panel**: http://178.156.181.117:3006/chat/admin.html
+- **API Health**: http://178.156.181.117:3006/api/health
 
 ## 🔄 In Progress / Planned
 
@@ -103,11 +103,11 @@ pm2 restart llm-router-http
 pm2 logs llm-router-http
 
 # Model Management
-curl http://localhost:3000/api/models/downloaded
-curl http://localhost:3000/api/models/storage
+curl http://localhost:3006/api/models/downloaded
+curl http://localhost:3006/api/models/storage
 
 # Testing
-curl http://localhost:3000/api/health
+curl http://localhost:3006/api/health
 ```
 
 ## 📚 Documentation

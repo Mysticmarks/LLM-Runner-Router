@@ -24,7 +24,7 @@ module.exports = {
     // Environment variables
     env: {
       NODE_ENV: 'development',
-      PORT: 3000,
+      PORT: 3006,
       HOST: '0.0.0.0',
       CLUSTER_MODE: 'false', // PM2 handles clustering
       ROUTING_STRATEGY: 'balanced',
@@ -36,7 +36,7 @@ module.exports = {
     
     env_production: {
       NODE_ENV: 'production',
-      PORT: 3000,
+      PORT: 3006,
       HOST: '0.0.0.0',
       CLUSTER_MODE: 'false',
       ROUTING_STRATEGY: 'balanced',
@@ -45,7 +45,7 @@ module.exports = {
       MAX_CONCURRENT: '20',
       LOG_LEVEL: 'warn',
       API_KEYS: process.env.API_KEYS || '',
-      ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || 'http://localhost:3000'
+      ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || 'http://localhost:3006'
     },
     
     // Error handling
@@ -77,7 +77,7 @@ module.exports = {
       max_consecutive_failures: 3,
       http_options: {
         hostname: 'localhost',
-        port: 3000,
+        port: 3006,
         path: '/health',
         method: 'GET'
       }

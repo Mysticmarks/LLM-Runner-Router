@@ -24,7 +24,7 @@ spec:
           name: kube-system
     ports:
     - protocol: TCP
-      port: 3000
+      port: 3006
     - protocol: TCP
       port: 8080
   # Allow traffic from monitoring systems
@@ -34,7 +34,7 @@ spec:
           name: monitoring
     ports:
     - protocol: TCP
-      port: 3000
+      port: 3006
     - protocol: TCP
       port: 9090  # metrics port
   # Allow traffic from other pods in the same namespace
@@ -44,14 +44,14 @@ spec:
           name: llm-systems
     ports:
     - protocol: TCP
-      port: 3000
+      port: 3006
     - protocol: TCP
       port: 8080
   # Allow traffic from load balancer health checks
   - from: []  # Allow from anywhere for health checks
     ports:
     - protocol: TCP
-      port: 3000
+      port: 3006
   egress:
   # Allow DNS resolution
   - to: []
@@ -170,7 +170,7 @@ spec:
           app: grafana
     ports:
     - protocol: TCP
-      port: 3000
+      port: 3006
 
 ---
 # Network policy for database access (if using external database)
@@ -231,7 +231,7 @@ spec:
           app: llm-runner-router
     ports:
     - protocol: TCP
-      port: 3000
+      port: 3006
     - protocol: TCP
       port: 8080
   egress:
@@ -242,6 +242,6 @@ spec:
           app: llm-runner-router
     ports:
     - protocol: TCP
-      port: 3000
+      port: 3006
     - protocol: TCP
       port: 8080
