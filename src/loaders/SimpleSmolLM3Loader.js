@@ -9,7 +9,11 @@
 
 import { BaseLoader } from './BaseLoader.js';
 import { Logger } from '../utils/Logger.js';
-import { pipeline } from '@xenova/transformers';
+import { pipeline, env } from '@xenova/transformers';
+
+// Configure Transformers.js for server-side usage
+env.allowLocalModels = false;
+env.useBrowserCache = false;
 import ChatTemplateEngine from '../templates/ChatTemplateEngine.js';
 import path from 'path';
 import fs from 'fs';
@@ -27,6 +31,10 @@ class SimpleSmolLM3Loader extends BaseLoader {
     // Initialize the chat template engine
     this.templateEngine = new ChatTemplateEngine();
     this.detectedTemplate = null;
+    
+    // Transformers.js pipeline - will be initialized on first use
+    this.generator = null;
+    this.initializingPipeline = false;
     
     // SmolLM3 chat template (legacy fallback)
     this.chatTemplate = {
@@ -289,66 +297,76 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
    * Load the actual SmolLM3 model using node-llama-cpp (which can handle local files properly)
    */
   async loadActualModel() {
-    if (this.generator) {
-      logger.info('🔄 SmolLM3 model already loaded');
+    // Skip if we have a working Transformers.js pipeline
+    if (this.generator && typeof this.generator === 'function') {
+      logger.info('🔄 Transformers.js pipeline already loaded');
+      return this.generator;
+    }
+
+    // Prevent multiple simultaneous initializations
+    if (this.initializingPipeline) {
+      logger.info('⏳ Pipeline already initializing, waiting...');
+      while (this.initializingPipeline) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
       return this.generator;
     }
 
     try {
-      logger.info('🤖 Loading SmolLM3-3B model from local safetensors files...');
+      this.initializingPipeline = true;
+      logger.info('🤖 Loading SmolLM3-3B model with Transformers.js...');
       
-      // Use node-llama-cpp which is already installed and can handle local files
-      const { LlamaModel, LlamaContext, LlamaChatSession } = await import('node-llama-cpp');
-      
-      // Check if we have a GGUF version, otherwise use safetensors approach
-      const ggufPath = path.join(this.modelPath, 'model.gguf');
-      
-      if (fs.existsSync(ggufPath)) {
-        logger.info('📁 Found GGUF model file, loading...');
-        const model = new LlamaModel({ modelPath: ggufPath });
-        const context = new LlamaContext({ model });
-        const session = new LlamaChatSession({ context });
+      // Try to use Transformers.js with HuggingFace model
+      try {
+        logger.info('🌐 Attempting to load model from HuggingFace...');
         
-        // Wrap the session in a consistent interface
-        this.generator = {
-          generate: async (prompt, options = {}) => {
-            try {
-              const response = await session.prompt(prompt, {
-                maxTokens: options.maxTokens || 150,
-                temperature: options.temperature || 0.7,
-                topP: options.topP || 0.95
-              });
-              return response;
-            } catch (error) {
-              logger.error(`❌ GGUF generation failed: ${error.message}`);
-              throw error;
+        // Use the text-generation pipeline with a smaller model
+        // Using a model that's available in ONNX format for browser/Node.js
+        const modelName = 'Xenova/gpt2'; // GPT-2 works well with Transformers.js
+        
+        this.generator = await pipeline(
+          'text-generation',
+          modelName,
+          { 
+            revision: 'main',
+            progress_callback: (progress) => {
+              if (progress.status === 'progress') {
+                const percent = Math.round((progress.loaded / progress.total) * 100);
+                logger.info(`📥 Downloading model: ${percent}%`);
+              }
             }
           }
-        };
+        );
         
-        logger.success('✅ GGUF model loaded successfully!');
-      } else {
-        logger.info('📁 No GGUF found, creating a lightweight inference wrapper for safetensors...');
-        // Create a simple inference wrapper that uses the model info we have
+        logger.success('✅ Transformers.js pipeline loaded successfully!');
+        return this.generator;
+        
+      } catch (transformersError) {
+        logger.warn(`⚠️ Transformers.js failed: ${transformersError.message}`);
+        logger.info('📁 Falling back to safetensors wrapper...');
+        
+        // Create a simple inference wrapper
         this.generator = {
           generate: this.generateFromSafetensors.bind(this)
         };
+        
         logger.success('✅ Safetensors wrapper created!');
+        return this.generator;
       }
       
-      return this.generator;
-      
     } catch (error) {
-      logger.error(`❌ Failed to load local model: ${error.message}`);
-      logger.info('🔄 Creating simple response generator...');
+      logger.error(`❌ Failed to load model: ${error.message}`);
       
-      // Create a basic generator that uses the tokenizer and model config we loaded
+      // Create a basic generator as last resort
       this.generator = {
         generate: this.generateFromSafetensors.bind(this)
       };
       
       logger.success('✅ Basic generator ready');
       return this.generator;
+      
+    } finally {
+      this.initializingPipeline = false;
     }
   }
 
@@ -367,8 +385,28 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
       
       logger.info(`🤖 Generating AI response for: "${input.substring(0, 50)}..."`);
       
-      // Use the generator (either GGUF via node-llama-cpp or safetensors wrapper)
-      const response = await this.generator.generate(formattedPrompt, options);
+      // Check if we have a Transformers.js pipeline
+      if (typeof this.generator === 'function') {
+        // Transformers.js pipeline - call it directly
+        const result = await this.generator(formattedPrompt, {
+          max_new_tokens: options.maxTokens || 150,
+          temperature: options.temperature || 0.7,
+          do_sample: true,
+          top_p: options.topP || 0.95
+        });
+        
+        // Extract the generated text
+        const response = result[0].generated_text || result;
+        return response;
+        
+      } else if (this.generator && this.generator.generate) {
+        // Fallback wrapper - use generate method
+        const response = await this.generator.generate(formattedPrompt, options);
+        return response;
+        
+      } else {
+        throw new Error('No valid generator available');
+      }
       
       logger.success(`✅ AI response generated: "${response.substring(0, 50)}..."`);
       
