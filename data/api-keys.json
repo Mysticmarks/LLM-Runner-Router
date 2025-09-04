@@ -1,165 +1,13 @@
 {
   "keys": {
-    "llm_699c228817422254c14a4e51f570ad2e": {
-      "id": "llm_699c228817422254c14a4e51f570ad2e",
-      "hash": "$2b$12$acBbizVHjxZsl6D4tudkqu.Jj5atP.cyNgN4YQvp3Vn9idwYPiVee",
-      "customer": "test-customer",
-      "email": "test@example.com",
-      "tier": "basic",
-      "createdAt": "2025-08-21T00:55:15.652Z",
-      "lastUsed": "2025-08-21T00:55:35.372Z",
-      "active": true,
-      "rateLimit": {
-        "requestsPerMinute": 60,
-        "requestsPerHour": 1000
-      },
-      "quotas": {
-        "dailyRequests": 1000,
-        "dailyTokens": 100000,
-        "monthlyRequests": 25000
-      }
-    },
-    "llm_7e55431e0dcb055f68dbe9f52fd0e039": {
-      "id": "llm_7e55431e0dcb055f68dbe9f52fd0e039",
-      "hash": "$2b$12$CV1mAqhcqJ4kt51Wx2foguHuf8gs/6NyJvtPyiWLZ/nGT1hYw.5MC",
-      "customer": "production-customer",
-      "email": "prod@example.com",
-      "tier": "pro",
-      "createdAt": "2025-08-21T00:59:59.025Z",
-      "lastUsed": "2025-08-21T02:28:06.342Z",
-      "active": true,
-      "rateLimit": {
-        "requestsPerMinute": 300,
-        "requestsPerHour": 10000
-      },
-      "quotas": {
-        "dailyRequests": 10000,
-        "dailyTokens": 1000000,
-        "monthlyRequests": 250000
-      }
-    },
-    "llm_a21c6f2f14fb3db67dd23fcf34534d73": {
-      "id": "llm_a21c6f2f14fb3db67dd23fcf34534d73",
-      "hash": "$2b$12$royR207QMs2XEQ5EP/3Sj.wJ3BVS7nbUwPqBpdyKHzCK1p0P3eoDC",
-      "customer": "test-production",
-      "email": null,
-      "tier": "premium",
-      "createdAt": "2025-08-21T03:20:42.739Z",
-      "lastUsed": "2025-08-21T04:44:35.022Z",
-      "active": true,
-      "rateLimit": {
-        "requestsPerMinute": 60,
-        "requestsPerHour": 1000
-      },
-      "quotas": {
-        "dailyRequests": 1000,
-        "dailyTokens": 100000,
-        "monthlyRequests": 25000
-      }
-    },
-    "llm_baf8797fc1bf33b956fd7c0ffc4e9422": {
-      "id": "llm_baf8797fc1bf33b956fd7c0ffc4e9422",
-      "hash": "$2b$12$bogsA9m6xadJNEwvTKheHOEr2h0mR1cNZQlWAve7zIdQDbwQLdFB6",
-      "customer": "Test User",
-      "email": "test@example.com",
-      "tier": "basic",
-      "createdAt": "2025-08-22T19:26:51.772Z",
-      "lastUsed": "2025-09-03T22:18:05.923Z",
-      "active": true,
-      "rateLimit": {
-        "requestsPerMinute": 60,
-        "requestsPerHour": 1000
-      },
-      "quotas": {
-        "dailyRequests": 1000,
-        "dailyTokens": 100000,
-        "monthlyRequests": 25000
-      }
-    },
-    "llm_6bc760f8772f1b80e3fa7b632e48ed98": {
-      "id": "llm_6bc760f8772f1b80e3fa7b632e48ed98",
-      "hash": "$2b$12$UYfurQxDVv0x4ps/o9Mgs.i7MjoNZnnMwW7euXAu2OFUuh6ZCvzHi",
-      "customer": "Test User",
-      "email": "test@example.com",
-      "tier": "basic",
-      "createdAt": "2025-08-22T19:35:02.231Z",
-      "lastUsed": null,
-      "active": true,
-      "rateLimit": {
-        "requestsPerMinute": 60,
-        "requestsPerHour": 1000
-      },
-      "quotas": {
-        "dailyRequests": 1000,
-        "dailyTokens": 100000,
-        "monthlyRequests": 25000
-      }
-    },
-    "llm_8465544b564ef3191b5a373272124358": {
-      "id": "llm_8465544b564ef3191b5a373272124358",
-      "hash": "$2b$12$4mjyBDcreMgWrkYQ.KimI.4gklyXnDmRCDLZzRfnAW38K7y/J5Fdu",
-      "customer": "Functional Test User",
-      "email": "functional-test@example.com",
-      "tier": "basic",
-      "createdAt": "2025-08-22T20:53:03.898Z",
-      "lastUsed": "2025-08-22T20:55:51.236Z",
-      "active": true,
-      "rateLimit": {
-        "requestsPerMinute": 60,
-        "requestsPerHour": 1000
-      },
-      "quotas": {
-        "dailyRequests": 1000,
-        "dailyTokens": 100000,
-        "monthlyRequests": 25000
-      }
-    },
-    "llm_d044a6b36ad6a99a52fde640148bd0a1": {
-      "id": "llm_d044a6b36ad6a99a52fde640148bd0a1",
-      "hash": "$2b$12$vvXojnFQ4RaaaL9UvJE07uA2jcchVUyB4OkQNoRKye3pByJh3/nYq",
-      "customer": "Functional Test User",
-      "email": "functional-test@example.com",
-      "tier": "basic",
-      "createdAt": "2025-08-22T21:02:00.746Z",
-      "lastUsed": null,
-      "active": true,
-      "rateLimit": {
-        "requestsPerMinute": 60,
-        "requestsPerHour": 1000
-      },
-      "quotas": {
-        "dailyRequests": 1000,
-        "dailyTokens": 100000,
-        "monthlyRequests": 25000
-      }
-    },
-    "llm_9ef2bcc88e7223f3f318cace2cded02b": {
-      "id": "llm_9ef2bcc88e7223f3f318cace2cded02b",
-      "hash": "$2b$12$2BS2Y1TqA9n4nCUfmeF38uysJH83mk4zTHmqVvjUhR7HmQOEII5Fm",
-      "customer": "Test User",
-      "email": "test@example.com",
-      "tier": "basic",
-      "createdAt": "2025-08-22T21:39:29.777Z",
-      "lastUsed": "2025-08-22T21:40:13.558Z",
-      "active": true,
-      "rateLimit": {
-        "requestsPerMinute": 60,
-        "requestsPerHour": 1000
-      },
-      "quotas": {
-        "dailyRequests": 1000,
-        "dailyTokens": 100000,
-        "monthlyRequests": 25000
-      }
-    },
     "llm_test_persistent_key_fixed_2025": {
       "id": "llm_test_persistent_key_fixed_2025",
-      "hash": "$2b$12$3BA8iLFP8nu/4XnQR2jar.SOl49.DQE9/Dhyq7gHw.kY0f0oEiUoS",
+      "hash": "$2b$12$/qlfwNfDyyEnjhkgHolpSuYy/GWeVThEQBjnhBiv5HoABgl.B7oXK",
       "customer": "Testing User (Persistent)",
       "email": "test-persistent@llm-router.local",
       "tier": "pro",
       "createdAt": "2025-08-22T00:00:00.000Z",
-      "lastUsed": "2025-09-03T22:17:59.930Z",
+      "lastUsed": "2025-09-04T06:12:01.915Z",
       "active": true,
       "rateLimit": {
         "requestsPerMinute": 300,
@@ -174,159 +22,23 @@
     }
   },
   "usage": {
-    "llm_699c228817422254c14a4e51f570ad2e": {
-      "requestCount": 2,
-      "tokenCount": 79,
-      "lastReset": "2025-08-21T00:55:15.652Z",
-      "dailyUsage": {
-        "Thu Aug 21 2025": {
-          "requests": 2,
-          "tokens": 79
-        }
-      },
-      "monthlyUsage": {
-        "2025-8": {
-          "requests": 2,
-          "tokens": 79
-        }
-      }
-    },
-    "llm_7e55431e0dcb055f68dbe9f52fd0e039": {
-      "requestCount": 2,
-      "tokenCount": 86,
-      "lastReset": "2025-08-21T00:59:59.025Z",
-      "dailyUsage": {
-        "Thu Aug 21 2025": {
-          "requests": 2,
-          "tokens": 86
-        }
-      },
-      "monthlyUsage": {
-        "2025-8": {
-          "requests": 2,
-          "tokens": 86
-        }
-      }
-    },
-    "llm_a21c6f2f14fb3db67dd23fcf34534d73": {
-      "requestCount": 5,
-      "tokenCount": 243,
-      "lastReset": "2025-08-21T03:20:42.739Z",
-      "dailyUsage": {
-        "Thu Aug 21 2025": {
-          "requests": 5,
-          "tokens": 243
-        }
-      },
-      "monthlyUsage": {
-        "2025-8": {
-          "requests": 5,
-          "tokens": 243
-        }
-      }
-    },
-    "llm_baf8797fc1bf33b956fd7c0ffc4e9422": {
-      "requestCount": 135,
-      "tokenCount": 2073,
-      "lastReset": "2025-08-22T19:26:51.772Z",
-      "dailyUsage": {
-        "Fri Aug 22 2025": {
-          "requests": 114,
-          "tokens": 1831
-        },
-        "Wed Sep 03 2025": {
-          "requests": 21,
-          "tokens": 242
-        }
-      },
-      "monthlyUsage": {
-        "2025-8": {
-          "requests": 114,
-          "tokens": 1831
-        },
-        "2025-9": {
-          "requests": 21,
-          "tokens": 242
-        }
-      }
-    },
-    "llm_6bc760f8772f1b80e3fa7b632e48ed98": {
-      "requestCount": 0,
-      "tokenCount": 0,
-      "lastReset": "2025-08-22T19:35:02.231Z",
-      "dailyUsage": {},
-      "monthlyUsage": {}
-    },
-    "llm_8465544b564ef3191b5a373272124358": {
-      "requestCount": 15,
-      "tokenCount": 361,
-      "lastReset": "2025-08-22T20:53:03.898Z",
-      "dailyUsage": {
-        "Fri Aug 22 2025": {
-          "requests": 15,
-          "tokens": 361
-        }
-      },
-      "monthlyUsage": {
-        "2025-8": {
-          "requests": 15,
-          "tokens": 361
-        }
-      }
-    },
-    "llm_d044a6b36ad6a99a52fde640148bd0a1": {
-      "requestCount": 0,
-      "tokenCount": 0,
-      "lastReset": "2025-08-22T21:02:00.747Z",
-      "dailyUsage": {},
-      "monthlyUsage": {}
-    },
-    "llm_9ef2bcc88e7223f3f318cace2cded02b": {
-      "requestCount": 1,
-      "tokenCount": 28,
-      "lastReset": "2025-08-22T21:39:29.778Z",
-      "dailyUsage": {
-        "Fri Aug 22 2025": {
-          "requests": 1,
-          "tokens": 28
-        }
-      },
-      "monthlyUsage": {
-        "2025-8": {
-          "requests": 1,
-          "tokens": 28
-        }
-      }
-    },
     "llm_test_persistent_key_fixed_2025": {
-      "requestCount": 63,
-      "tokenCount": 18448,
+      "requestCount": 1,
+      "tokenCount": 8,
       "lastReset": "2025-08-22T00:00:00.000Z",
       "dailyUsage": {
-        "Fri Aug 22 2025": {
-          "requests": 57,
-          "tokens": 18006
-        },
-        "Sat Aug 30 2025": {
-          "requests": 4,
-          "tokens": 416
-        },
-        "Wed Sep 03 2025": {
-          "requests": 2,
-          "tokens": 26
+        "Thu Sep 04 2025": {
+          "requests": 1,
+          "tokens": 8
         }
       },
       "monthlyUsage": {
-        "2025-8": {
-          "requests": 61,
-          "tokens": 18422
-        },
         "2025-9": {
-          "requests": 2,
-          "tokens": 26
+          "requests": 1,
+          "tokens": 8
         }
       }
     }
   },
-  "lastUpdated": "2025-09-03T22:18:05.924Z"
+  "lastUpdated": "2025-09-04T06:12:01.916Z"
 }

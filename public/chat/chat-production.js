@@ -69,7 +69,7 @@ class LLMRouterChat {
         
         sendButton.addEventListener('click', () => this.sendMessage());
         messageInput.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 this.sendMessage();
             }
@@ -198,8 +198,8 @@ class LLMRouterChat {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // Note: In production, you'd want to use an API key here
-                // 'x-api-key': 'your-api-key'
+                // Use the persistent test API key
+                'Authorization': 'Bearer llm_test_persistent_key_fixed_2025.persistent_test_secret_never_changes_mikecerqua_2025_llm_router'
             },
             body: JSON.stringify(requestBody)
         });
@@ -260,12 +260,16 @@ class LLMRouterChat {
         typingDiv.innerHTML = `
             <div class="message-header">
                 <span class="message-role">🤖 LLM Router</span>
+                <span class="message-time" style="color: #007bff;">Generating response...</span>
             </div>
             <div class="message-content">
                 <div class="typing-dots">
                     <span></span>
                     <span></span>
                     <span></span>
+                </div>
+                <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                    SmolLM3 is thinking (typically 3-5 seconds on CPU)...
                 </div>
             </div>
         `;

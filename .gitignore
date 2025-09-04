@@ -152,6 +152,11 @@ Thumbs.db
 .claude/
 CLAUDE.md
 
+# API Keys - NEVER commit these
+api-keys.json
+api-keys.txt
+*-api-keys.json
+
 # Environment files (all variants)
 .env.vps
 .env.production
