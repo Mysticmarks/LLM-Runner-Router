@@ -6,7 +6,7 @@
 [![Built by Echo AI Systems](https://img.shields.io/badge/Built%20by-Echo%20AI%20Systems-blue)](https://echoaisystem.com)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![NPM Package](https://img.shields.io/npm/v/llm-runner-router.svg)](https://www.npmjs.com/package/llm-runner-router)
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org/)
 [![WebGPU Ready](https://img.shields.io/badge/WebGPU-Ready-orange)](docs/PERFORMANCE.md)
 [![GGUF Support](https://img.shields.io/badge/GGUF-Supported-purple)](docs/MODEL_FORMATS.md)
 [![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen.svg)](https://github.com/MCERQUA/LLM-Runner-Router)
