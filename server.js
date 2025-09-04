@@ -1,14 +1,17 @@
 /**
  * 🚀 LLM Router Server - Unified Production Server
- * 
+ *
  * Configurable server supporting multiple modes:
  * - DEFAULT: Standard production mode with HTTPS (default)
  * - HTTP: Development mode without HTTPS
  * - SECURE: Enhanced security with rate limiting and headers
  * - RESILIENT: Self-healing with auto-recovery
- * 
+ *
  * Set SERVER_MODE environment variable to change modes
  */
+
+import dotenv from 'dotenv';
+dotenv.config();
 
 import express from 'express';
 import { createServer } from 'http';
