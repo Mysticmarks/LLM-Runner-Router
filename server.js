@@ -17,6 +17,7 @@ import GGUFLoader from './src/loaders/GGUFLoader.js';
 import ONNXLoader from './src/loaders/ONNXLoader.js';
 import SafetensorsLoader from './src/loaders/SafetensorsLoader.js';
 import SimpleSmolLM3Loader from './src/loaders/SimpleSmolLM3Loader.js';
+import OllamaAdapter from './src/loaders/adapters/OllamaAdapter.js';
 import HFLoader from './src/loaders/HFLoader.js';
 import WebSocketAPI from './src/api/WebSocket.js';
 import fs from 'fs/promises';
@@ -128,6 +129,11 @@ async function initializeRouter() {
     
     router.registry.registerLoader('smollm3', new SimpleSmolLM3Loader());
     console.log('  ✅ SmolLM3 loader registered (using Transformers.js)');
+    
+    // Register Ollama adapter for Qwen model
+    const ollamaAdapter = new OllamaAdapter();
+    router.registry.registerLoader('ollama', ollamaAdapter);
+    console.log('  ✅ Ollama adapter registered');
     
     router.registry.registerLoader('huggingface', new HFLoader());
     console.log('  ✅ HuggingFace loader registered');
@@ -516,27 +522,58 @@ app.post('/api/inference', async (req, res) => {
       } catch (modelError) {
         console.error('SmolLM3 model error:', modelError);
         
-        // Fallback to router's quick method
+        // Fallback to Ollama with Qwen model
+        console.log('🦙 Attempting Ollama fallback with Qwen2.5...');
         try {
-          const routerResponse = await router.quick(inputText, {
+          const ollamaAdapter = router.registry.getLoader('ollama');
+          if (!ollamaAdapter) {
+            throw new Error('Ollama adapter not registered');
+          }
+          
+          // Use Ollama with Qwen2.5:0.5b model
+          const ollamaModel = await ollamaAdapter.load('qwen2.5:0.5b');
+          const ollamaResult = await ollamaModel.generate(inputText, {
             maxTokens,
-            temperature,
-            modelId: model || 'mock'
+            temperature
           });
           
           response = {
-            response: routerResponse.text || routerResponse,
-            model: routerResponse.model || 'Mock Model',
-            provider: 'LLM Router Fallback',
-            usage: routerResponse.usage || { tokens: maxTokens }
+            response: ollamaResult.text,
+            text: ollamaResult.text,
+            model: 'qwen2.5:0.5b',
+            provider: 'Ollama',
+            usage: ollamaResult.usage || { total_tokens: maxTokens },
+            fallback: true,
+            note: 'Using Ollama Qwen model as fallback'
           };
           
-        } catch (routerError) {
-          console.error('Router fallback error:', routerError);
+          console.log('✅ Ollama inference successful');
           
-          // NO FAKE FALLBACKS - throw error instead
-          console.error('❌ CRITICAL: All inference methods failed');
-          throw new Error(`All AI inference methods failed. Input: "${inputText}". Check logs for details.`);
+        } catch (ollamaError) {
+          console.error('Ollama fallback error:', ollamaError);
+          
+          // Try router's quick method as last resort
+          try {
+            const routerResponse = await router.quick(inputText, {
+              maxTokens,
+              temperature,
+              modelId: model || 'mock'
+            });
+            
+            response = {
+              response: routerResponse.text || routerResponse,
+              model: routerResponse.model || 'Mock Model',
+              provider: 'LLM Router Fallback',
+              usage: routerResponse.usage || { tokens: maxTokens }
+            };
+            
+          } catch (routerError) {
+            console.error('Router fallback error:', routerError);
+            
+            // NO FAKE FALLBACKS - throw error instead
+            console.error('❌ CRITICAL: All inference methods failed');
+            throw new Error(`All AI inference methods failed. Input: "${inputText}". Check logs for details.`);
+          }
         }
       }
       
