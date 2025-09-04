@@ -12,14 +12,17 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies including dev packages for build
+RUN npm ci
 
 # Copy source code
 COPY . .
 
 # Build the project
 RUN npm run build
+
+# Remove development dependencies to slim runtime image
+RUN npm prune --production
 
 # Stage 2: Runtime
 FROM node:20-alpine
