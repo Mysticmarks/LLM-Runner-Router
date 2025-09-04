@@ -14,21 +14,13 @@ try {
 
   // Run tests first (critical for production)
   console.log('🧪 Running test suite...');
-  try {
-    execSync('npm test', { stdio: 'pipe' });
-    console.log('✅ All tests passed');
-  } catch (testError) {
-    console.warn('⚠️ Some tests failed, but continuing build (check logs)');
-  }
-  
-  // Run linting (warn but don't fail build)
+  execSync('npm test', { stdio: 'inherit' });
+  console.log('✅ All tests passed');
+
+  // Run linting
   console.log('🔍 Running ESLint...');
-  try {
-    execSync('npm run lint', { stdio: 'inherit' });
-    console.log('✅ ESLint passed');
-  } catch (lintError) {
-    console.warn('⚠️ ESLint found issues but continuing build...');
-  }
+  execSync('npm run lint', { stdio: 'inherit' });
+  console.log('✅ ESLint passed');
   
   // Format code
   console.log('✨ Formatting code...');
