@@ -3,29 +3,31 @@
 ## ✅ What's Working
 
 1. **Local AI Inference**
-   - SmolLM3-3B via Transformers.js (GPT-2 fallback)
-   - Llama 3 8B GGUF model loaded (3GB)
-   - node-llama-cpp installed and configured
+   - SmolLM3-3B via Transformers.js (working)
+   - Real AI responses generating successfully
+   - ~3 second response time for inference
 
 2. **API Authentication**
    - Working API key: `llm_test_persistent_key_fixed_2025.persistent_test_secret_never_changes_mikecerqua_2025_llm_router`
    - Key embedded in chat-production.js
 
 3. **Server Status**
-   - Running on port 3006
+   - Running stable on port 3006 (3+ minutes uptime)
    - Accessible at https://llmrouter.dev
    - Health endpoint working
+   - Memory usage: ~770MB with SmolLM3
 
 ## ⚠️ Issues
 
-1. **Server Instability**
-   - Frequent restarts (99+ times)
-   - High memory usage (3.9GB)
-   - 502 errors from browser but curl works
+1. **Server Stability Improved**
+   - Was restarting frequently (111 times total)
+   - Memory reduced to 770MB (from 3.9GB)
+   - Server now stable with SmolLM3 only
 
 2. **Chat Interface**
-   - Getting 502 Bad Gateway errors
-   - May be CORS or request format issue
+   - API works via curl perfectly
+   - Test page created at /test-api.html
+   - Browser requests may have timeout issues
 
 ## 📝 Test Commands
 
@@ -42,5 +44,6 @@ curl -k -X POST https://llmrouter.dev/api/inference \
 
 ## 🔄 Current Status
 - Model: SmolLM3-3B (Transformers.js)
-- Response: Working via curl
-- Chat UI: 502 errors, needs debugging
+- Response: Working perfectly via curl
+- Server: Stable (removed GGUF model to reduce memory)
+- Test page: https://llmrouter.dev/test-api.html

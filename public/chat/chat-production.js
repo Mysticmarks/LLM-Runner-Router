@@ -69,7 +69,7 @@ class LLMRouterChat {
         
         sendButton.addEventListener('click', () => this.sendMessage());
         messageInput.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 this.sendMessage();
             }
@@ -260,12 +260,16 @@ class LLMRouterChat {
         typingDiv.innerHTML = `
             <div class="message-header">
                 <span class="message-role">🤖 LLM Router</span>
+                <span class="message-time" style="color: #007bff;">Generating response...</span>
             </div>
             <div class="message-content">
                 <div class="typing-dots">
                     <span></span>
                     <span></span>
                     <span></span>
+                </div>
+                <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                    SmolLM3 is thinking (typically 3-5 seconds on CPU)...
                 </div>
             </div>
         `;
