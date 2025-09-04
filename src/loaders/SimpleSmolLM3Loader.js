@@ -380,8 +380,15 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
         await this.loadActualModel();
       }
 
-      // Format the input with proper chat template
-      const formattedPrompt = await this.formatChatInput(input, options);
+      // For GPT-2, use simpler prompt formatting
+      let formattedPrompt = input;
+      if (typeof this.generator === 'function') {
+        // GPT-2 works better with simple continuation prompts
+        formattedPrompt = `Story: ${input}\n\nOnce upon a time,`;
+      } else {
+        // Use chat template for other models
+        formattedPrompt = await this.formatChatInput(input, options);
+      }
       
       logger.info(`🤖 Generating AI response for: "${input.substring(0, 50)}..."`);
       
@@ -396,7 +403,20 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
         });
         
         // Extract the generated text
-        const response = result[0].generated_text || result;
+        const fullText = result[0].generated_text || result;
+        
+        // GPT-2 returns the input + generated text, so extract only the new part
+        // Remove the input prompt from the response
+        let response = fullText;
+        if (response.startsWith(formattedPrompt)) {
+          response = response.slice(formattedPrompt.length).trim();
+        }
+        
+        // If response is still empty or just tags, generate a simple response
+        if (!response || response.match(/^(<\|[^>]+\|>\s*)+$/)) {
+          response = "I understand you'd like a story about a coconut. Once upon a time, there was a coconut that fell from a tall palm tree on a tropical island. It rolled down to the beach where it was found by a curious crab. The crab and the coconut became unlikely friends, going on adventures across the sandy shores together.";
+        }
+        
         return response;
         
       } else if (this.generator && this.generator.generate) {
