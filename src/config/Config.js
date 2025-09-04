@@ -46,7 +46,7 @@ class Config {
       maxTokens: 4096,
       
       // API Configuration
-      apiPort: process.env.PORT || 3000,
+      apiPort: process.env.PORT || 3006,
       apiHost: process.env.HOST || 'localhost',
       corsEnabled: true
     };
