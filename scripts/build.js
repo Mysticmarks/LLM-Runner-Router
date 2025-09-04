@@ -10,7 +10,8 @@ console.log(`Building ${packageJson.name} v${packageJson.version}...`);
 
 try {
   console.log('🏗️ Starting production build process...');
-  
+  const start = Date.now();
+
   // Run tests first (critical for production)
   console.log('🧪 Running test suite...');
   try {
@@ -139,7 +140,7 @@ Version: ${packageJson.version}
   console.log('🎯 Project is ready for production deployment!');
   console.log('📁 Distribution files created in ./dist directory');
   console.log('🔧 Run "cd dist && npm install --production && npm start"');
-  console.log(`📊 Build completed in ${Date.now() - Date.now()} ms`);
+  console.log(`📊 Build completed in ${Date.now() - start} ms`);
   
 } catch (error) {
   console.error('❌ Build failed:', error.message);
