@@ -197,29 +197,33 @@ async function initializeRouter() {
     logger.info('Router initialized');
     
     // Load models from registry with size constraints
-    const registryPath = path.join(__dirname, 'models', 'registry.json');
+    const projectRoot = path.resolve(__dirname, '..', '..');
+    const registryPath = path.join(projectRoot, 'models', 'registry.json');
     const MAX_MODEL_SIZE = parseInt(process.env.MAX_MODEL_SIZE || '2000000000'); // 2GB default
-    
+
     try {
       const registryData = await fs.readFile(registryPath, 'utf8');
       const registry = JSON.parse(registryData);
-      
+
       logger.info(`Loading ${registry.models?.length || 0} models from registry...`);
-      
+
       for (const modelConfig of registry.models || []) {
         try {
-          const modelPath = path.join(__dirname, modelConfig.path || modelConfig.source || '');
+          const relativeSource = modelConfig.path || modelConfig.source || '';
+          const modelPath = path.isAbsolute(relativeSource)
+            ? relativeSource
+            : path.join(projectRoot, 'models', relativeSource);
           const stats = await fs.stat(modelPath).catch(() => null);
-          
+
           if (stats) {
             if (stats.size > MAX_MODEL_SIZE) {
               logger.warn(`Model ${modelConfig.name} exceeds size limit (${stats.size} > ${MAX_MODEL_SIZE})`);
               continue;
             }
-            
+
             logger.info(`Loading model: ${modelConfig.name}`);
             const model = await router.load({
-              source: modelConfig.path || modelConfig.source,
+              source: modelPath,
               format: modelConfig.format,
               id: modelConfig.id,
               name: modelConfig.name,

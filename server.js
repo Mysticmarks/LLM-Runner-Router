@@ -148,25 +148,28 @@ async function initializeRouter() {
     console.log('  ✅ Router initialized');
     
     // Load models from registry
-    const registryPath = path.join(__dirname, 'models', 'registry.json');
+    const projectRoot = __dirname;
+    const registryPath = path.join(projectRoot, 'models', 'registry.json');
     let modelsLoaded = 0;
-    
+
     try {
       const registryData = await fs.readFile(registryPath, 'utf8');
       const registry = JSON.parse(registryData);
-      
+
       console.log(`\n📦 Loading ${registry.models?.length || 0} models from registry...`);
-      
+
       for (const modelConfig of registry.models || []) {
         try {
-          // Check if model file exists
-          const modelPath = path.join(__dirname, modelConfig.path || modelConfig.source || '');
+          const relativeSource = modelConfig.path || modelConfig.source || '';
+          const modelPath = path.isAbsolute(relativeSource)
+            ? relativeSource
+            : path.join(projectRoot, 'models', relativeSource);
           const exists = await fs.access(modelPath).then(() => true).catch(() => false);
-          
+
           if (exists) {
             console.log(`  🔄 Loading: ${modelConfig.name}`);
             const model = await router.load({
-              source: modelConfig.path || modelConfig.source,
+              source: modelPath,
               format: modelConfig.format,
               id: modelConfig.id,
               name: modelConfig.name,
@@ -184,13 +187,13 @@ async function initializeRouter() {
     } catch (error) {
       console.log('  ⚠️  No registry file found or invalid JSON');
     }
-    
+
     // Load Simple fallback model for VPS environments
     // This ensures we always have at least one working model
     try {
       console.log('\n🤖 Loading Simple SmolLM3 model for VPS...');
       const simpleModel = await router.load({
-        source: './models/smollm3-3b',
+        source: path.join(projectRoot, 'models', 'smollm3-3b'),
         format: 'smollm3',
         id: 'simple-smollm3',
         name: 'SmolLM3-3B Simple'
