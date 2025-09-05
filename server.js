@@ -28,6 +28,7 @@ import fsSync from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Config from './src/config/Config.js';
+import Logger from './src/utils/Logger.js';
 
 // Import authentication middleware
 import { 
@@ -65,7 +66,8 @@ const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 3006;
 const HOST = process.env.HOST || '0.0.0.0'; // Use HOST env var for binding
 
-console.log('🚀 LLM Router Server Starting...\n');
+const logger = new Logger('Server');
+logger.info('🚀 LLM Router Server Starting...\n');
 
 // Initialize Express and HTTP server
 const app = express();
@@ -117,48 +119,48 @@ let byokSystem = null;
  */
 async function initializeRouter() {
   try {
-    console.log('📚 Initializing router...');
+    logger.info('📚 Initializing router...');
     
     // Initialize authentication system first
-    console.log('🛡️ Initializing authentication system...');
+    logger.info('🛡️ Initializing authentication system...');
     authSystem = await initializeAuth();
-    console.log('  ✅ Authentication system ready');
+    logger.success(' ✅ Authentication system ready');
     
     // Initialize BYOK system
-    console.log('🔑 Initializing BYOK system...');
+    logger.info('🔑 Initializing BYOK system...');
     byokSystem = await initializeBYOK();
-    console.log('  ✅ BYOK system ready');
+    logger.success(' ✅ BYOK system ready');
     
     // Ensure persistent test key exists
-    console.log('🔑 Ensuring persistent test key...');
+    logger.info('🔑 Ensuring persistent test key...');
     const persistentKey = new PersistentTestKey();
     const testKey = await persistentKey.ensurePersistentTestKey();
-    console.log('  ✅ Persistent test key ready for testing');
+    logger.success(' ✅ Persistent test key ready for testing');
     
     // Register all loaders
     router.registry.registerLoader('gguf', new GGUFLoader());
-    console.log('  ✅ GGUF loader registered');
+    logger.success(' ✅ GGUF loader registered');
     
     router.registry.registerLoader('onnx', new ONNXLoader());
-    console.log('  ✅ ONNX loader registered');
+    logger.success(' ✅ ONNX loader registered');
     
     router.registry.registerLoader('safetensors', new SafetensorsLoader());
-    console.log('  ✅ Safetensors loader registered');
+    logger.success(' ✅ Safetensors loader registered');
     
     router.registry.registerLoader('smollm3', new SimpleSmolLM3Loader());
-    console.log('  ✅ SmolLM3 loader registered (using Transformers.js)');
+    logger.success(' ✅ SmolLM3 loader registered (using Transformers.js)');
     
     // Register Ollama adapter for Qwen model
     const ollamaAdapter = new OllamaAdapter();
     router.registry.registerLoader('ollama', ollamaAdapter);
-    console.log('  ✅ Ollama adapter registered');
+    logger.success(' ✅ Ollama adapter registered');
     
     router.registry.registerLoader('huggingface', new HFLoader());
-    console.log('  ✅ HuggingFace loader registered');
+    logger.success(' ✅ HuggingFace loader registered');
     
     // Initialize the router
     await router.initialize();
-    console.log('  ✅ Router initialized');
+    logger.success(' ✅ Router initialized');
     
     // Load models from registry
     const projectRoot = __dirname;
@@ -169,7 +171,7 @@ async function initializeRouter() {
       const registryData = await fs.readFile(registryPath, 'utf8');
       const registry = JSON.parse(registryData);
 
-      console.log(`\n📦 Loading ${registry.models?.length || 0} models from registry...`);
+      logger.info(`\n📦 Loading ${registry.models?.length || 0} models from registry...`);
 
       for (const modelConfig of registry.models || []) {
         try {
@@ -180,7 +182,7 @@ async function initializeRouter() {
           const exists = await fs.access(modelPath).then(() => true).catch(() => false);
 
           if (exists) {
-            console.log(`  🔄 Loading: ${modelConfig.name}`);
+            logger.info(`  🔄 Loading: ${modelConfig.name}`);
             const model = await router.load({
               source: modelPath,
               format: modelConfig.format,
@@ -188,17 +190,17 @@ async function initializeRouter() {
               name: modelConfig.name,
               ...modelConfig.parameters
             });
-            console.log(`  ✅ Loaded: ${modelConfig.name} (${model.id})`);
+            logger.success(`  ✅ Loaded: ${modelConfig.name} (${model.id})`);
             modelsLoaded++;
           } else {
-            console.log(`  ⚠️  Skipped: ${modelConfig.name} (file not found at ${modelPath})`);
+            logger.warn(`  ⚠️  Skipped: ${modelConfig.name} (file not found at ${modelPath})`);
           }
         } catch (error) {
-          console.log(`  ❌ Failed to load ${modelConfig.name}: ${error.message}`);
+          logger.error(`  ❌ Failed to load ${modelConfig.name}: ${error.message}`);
         }
       }
     } catch (error) {
-      console.log('  ⚠️  No registry file found or invalid JSON');
+      logger.warn('  ⚠️  No registry file found or invalid JSON');
     }
 
     // Load Simple fallback model for VPS environments
@@ -206,31 +208,31 @@ async function initializeRouter() {
     const simpleModelPath = path.join(projectRoot, 'models', 'smollm3-3b');
     if (fsSync.existsSync(simpleModelPath)) {
       try {
-        console.log('\n🤖 Loading Simple SmolLM3 model for VPS...');
+        logger.info('\n🤖 Loading Simple SmolLM3 model for VPS...');
         const simpleModel = await router.load({
           source: simpleModelPath,
           format: 'smollm3',
           id: 'simple-smollm3',
           name: 'SmolLM3-3B Simple'
         });
-        console.log('  ✅ Simple fallback model loaded successfully');
+        logger.success(' ✅ Simple fallback model loaded successfully');
         modelsLoaded++;
       } catch (error) {
-        console.log('  ⚠️  Could not load simple fallback:', error.message);
+        logger.warn('  ⚠️  Could not load simple fallback:', error.message);
       }
     } else {
-      console.log(`  ⚠️  SmolLM3-3B model directory not found at ${simpleModelPath}, skipping load`);
+      logger.warn(`  ⚠️  SmolLM3-3B model directory not found at ${simpleModelPath}, skipping load`);
     }
     
     const status = router.getStatus();
-    console.log(`\n✅ Server ready!`);
-    console.log(`  Models loaded: ${status.modelsLoaded}`);
-    console.log(`  Engine: ${status.engine}`);
-    console.log(`  Strategy: ${router.router.config.strategy}`);
+    logger.success(`\n✅ Server ready!`);
+    logger.info(`  Models loaded: ${status.modelsLoaded}`);
+    logger.info(`  Engine: ${status.engine}`);
+    logger.info(`  Strategy: ${router.router.config.strategy}`);
     
     isReady = true;
   } catch (error) {
-    console.error('❌ Initialization failed:', error);
+    logger.error('❌ Initialization failed:', error);
     loadError = error.message;
   }
 }
@@ -463,14 +465,14 @@ app.post('/api/chat', requireAPIKey, checkRateLimit, recordUsage, async (req, re
       });
     } catch (inferenceError) {
       // If inference fails, return a helpful message
-      console.error('Inference error:', inferenceError);
-      console.error('Stack:', inferenceError.stack);
+      logger.error('Inference error:', inferenceError);
+      logger.error('Stack:', inferenceError.stack);
       
       // NO SIMULATION MODE - throw error instead
       throw new Error('No models loaded. Cannot process request without AI models.');
     }
   } catch (error) {
-    console.error('Chat error:', error);
+    logger.error('Chat error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -494,21 +496,21 @@ app.post('/api/inference', async (req, res) => {
     
     try {
       // Try to get response from SmolLM3 using the loader directly
-      console.log(`🤖 Processing message with SmolLM3: "${inputText.substring(0, 50)}${inputText.length > 50 ? '...' : ''}"`);
+      logger.info(`🤖 Processing message with SmolLM3: "${inputText.substring(0, 50)}${inputText.length > 50 ? '...' : ''}"`);
       
       let response;
       
       // Use SmolLM3 loader with Transformers.js - REAL AI INFERENCE
-      console.log('🚀 Using SmolLM3 loader with Transformers.js - REAL AI INFERENCE');
+      logger.info('🚀 Using SmolLM3 loader with Transformers.js - REAL AI INFERENCE');
       let smolLoader = router.registry.getLoader('smollm3');
       if (!smolLoader) {
-        console.log('📦 SmolLM3 loader not found, registering...');
+        logger.info('📦 SmolLM3 loader not found, registering...');
         smolLoader = new SimpleSmolLM3Loader();
         router.registry.registerLoader('smollm3', smolLoader);
       }
       
       try {
-        console.log('🔄 Loading SmolLM3 model for inference...');
+        logger.info('🔄 Loading SmolLM3 model for inference...');
         
         // Load the SmolLM3 model using Transformers.js
         const model = await smolLoader.load({
@@ -540,13 +542,13 @@ app.post('/api/inference', async (req, res) => {
           strategy: 'balanced'
         };
         
-        console.log(`✅ SmolLM3 REAL AI inference completed in ${inferenceTime}ms`);
+        logger.success(`✅ SmolLM3 REAL AI inference completed in ${inferenceTime}ms`);
         
       } catch (modelError) {
-        console.error('SmolLM3 model error:', modelError);
+        logger.error('SmolLM3 model error:', modelError);
         
         // Fallback to Ollama with Qwen model
-        console.log('🦙 Attempting Ollama fallback with Qwen2.5...');
+        logger.info('🦙 Attempting Ollama fallback with Qwen2.5...');
         try {
           const ollamaAdapter = router.registry.getLoader('ollama');
           if (!ollamaAdapter) {
@@ -570,10 +572,10 @@ app.post('/api/inference', async (req, res) => {
             note: 'Using Ollama Qwen model as fallback'
           };
           
-          console.log('✅ Ollama inference successful');
+          logger.success(' ✅ Ollama inference successful');
           
         } catch (ollamaError) {
-          console.error('Ollama fallback error:', ollamaError);
+          logger.error('Ollama fallback error:', ollamaError);
           
           // Try router's quick method as last resort
           try {
@@ -591,10 +593,10 @@ app.post('/api/inference', async (req, res) => {
             };
             
           } catch (routerError) {
-            console.error('Router fallback error:', routerError);
+            logger.error('Router fallback error:', routerError);
             
             // NO FAKE FALLBACKS - throw error instead
-            console.error('❌ CRITICAL: All inference methods failed');
+            logger.error('❌ CRITICAL: All inference methods failed');
             throw new Error(`All AI inference methods failed. Input: "${inputText}". Check logs for details.`);
           }
         }
@@ -603,7 +605,7 @@ app.post('/api/inference', async (req, res) => {
       res.json(response);
       
     } catch (inferenceError) {
-      console.error('Complete inference failure:', inferenceError);
+      logger.error('Complete inference failure:', inferenceError);
       
       // Return error instead of fake response
       res.status(500).json({
@@ -614,7 +616,7 @@ app.post('/api/inference', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Inference endpoint error:', error);
+    logger.error('Inference endpoint error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -730,7 +732,7 @@ app.get('/', (req, res) => {
 if (process.env.NODE_ENV !== 'test') {
   // Start server - bind to specified host
   server.listen(PORT, HOST, async () => {
-    console.log(`\n🌐 Server listening on http://${HOST}:${PORT}\n`);
+    logger.info(`\n🌐 Server listening on http://${HOST}:${PORT}\n`);
     
     // Initialize router after server starts
     await initializeRouter();
@@ -741,20 +743,20 @@ if (process.env.NODE_ENV !== 'test') {
     authEnabled: false
   });
   await wsAPI.initialize(server, router);
-  console.log('  ✅ WebSocket API initialized');
+  logger.success(' ✅ WebSocket API initialized');
   
-  console.log('\n📡 SaaS API Endpoints:');
-  console.log(`  http://${HOST}:${PORT}/api/health - Health check (public)`);
-  console.log(`  http://${HOST}:${PORT}/api/models - List models (auth required)`);
-  console.log(`  http://${HOST}:${PORT}/api/quick - Quick inference (auth required)`);
-  console.log(`  http://${HOST}:${PORT}/api/chat - Chat completion (auth required)`);
-  console.log(`  http://${HOST}:${PORT}/api/inference - Main inference endpoint (auth required)`);
-  console.log(`  ws://${HOST}:${PORT}/ws - WebSocket streaming`);
-  console.log('\n🔧 Admin Endpoints:');
-  console.log(`  http://${HOST}:${PORT}/api/admin/keys - Manage API keys`);
-  console.log(`  http://${HOST}:${PORT}/api/admin/stats - System statistics`);
-  console.log('\n🔑 Authentication: Include "Authorization: Bearer <api-key>" header');
-  console.log(`💡 Ready for ${HOST === '127.0.0.1' ? 'SECURE LOCAL' : 'SaaS'} requests!\n`);
+  logger.info('\n📡 SaaS API Endpoints:');
+  logger.info(`  http://${HOST}:${PORT}/api/health - Health check (public)`);
+  logger.info(`  http://${HOST}:${PORT}/api/models - List models (auth required)`);
+  logger.info(`  http://${HOST}:${PORT}/api/quick - Quick inference (auth required)`);
+  logger.info(`  http://${HOST}:${PORT}/api/chat - Chat completion (auth required)`);
+  logger.info(`  http://${HOST}:${PORT}/api/inference - Main inference endpoint (auth required)`);
+  logger.info(`  ws://${HOST}:${PORT}/ws - WebSocket streaming`);
+  logger.info('\n🔧 Admin Endpoints:');
+  logger.info(`  http://${HOST}:${PORT}/api/admin/keys - Manage API keys`);
+  logger.info(`  http://${HOST}:${PORT}/api/admin/stats - System statistics`);
+  logger.info('\n🔑 Authentication: Include "Authorization: Bearer <api-key>" header');
+  logger.info(`💡 Ready for ${HOST === '127.0.0.1' ? 'SECURE LOCAL' : 'SaaS'} requests!\n`);
   });
 }
 
@@ -764,7 +766,7 @@ app.use(sanitizeErrors);
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('\n🛑 Shutting down gracefully...');
+  logger.info('\n🛑 Shutting down gracefully...');
   if (wsAPI) {
     await wsAPI.cleanup();
   }
