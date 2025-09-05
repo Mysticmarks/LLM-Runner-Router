@@ -22,6 +22,7 @@ import SafetensorsLoader from './src/loaders/SafetensorsLoader.js';
 import SimpleSmolLM3Loader from './src/loaders/SimpleSmolLM3Loader.js';
 import OllamaAdapter from './src/loaders/adapters/OllamaAdapter.js';
 import HFLoader from './src/loaders/HFLoader.js';
+import SimpleInferenceServer from './src/loaders/SimpleInferenceServer.js';
 import WebSocketAPI from './src/api/WebSocket.js';
 import fs from 'fs/promises';
 import path from 'path';
@@ -98,6 +99,9 @@ let loadError = null;
 
 // WebSocket API instance
 let wsAPI = null;
+
+// Simple inference server instance
+let inferenceServer = null;
 
 // Authentication system
 let authSystem = null;
@@ -491,34 +495,25 @@ app.post('/api/inference', async (req, res) => {
     }
     
     try {
-      // Try to get response from SmolLM3 using the loader directly
-      console.log(`🤖 Processing message with SmolLM3: "${inputText.substring(0, 50)}${inputText.length > 50 ? '...' : ''}"`);
+      // Try to get response using Simple Inference Server
+      console.log(`🤖 Processing message: "${inputText.substring(0, 50)}${inputText.length > 50 ? '...' : ''}"`);
       
       let response;
       
-      // Use SmolLM3 loader with Transformers.js - REAL AI INFERENCE
-      console.log('🚀 Using SmolLM3 loader with Transformers.js - REAL AI INFERENCE');
-      let smolLoader = router.registry.getLoader('smollm3');
-      if (!smolLoader) {
-        console.log('📦 SmolLM3 loader not found, registering...');
-        smolLoader = new SimpleSmolLM3Loader();
-        router.registry.registerLoader('smollm3', smolLoader);
+      // Initialize inference server if needed
+      if (!inferenceServer) {
+        console.log('🚀 Initializing Simple Inference Server...');
+        inferenceServer = new SimpleInferenceServer();
+        await inferenceServer.start();
       }
       
       try {
-        console.log('🔄 Loading SmolLM3 model for inference...');
-        
-        // Load the SmolLM3 model using Transformers.js
-        const model = await smolLoader.load({
-          source: 'smollm3',
-          name: 'SmolLM3-3B',
-          id: 'smollm3-chat'
-        });
+        console.log('🔄 Generating response using inference server...');
         
         const startTime = Date.now();
         
-        // Use the model's predict method (not generate)
-        const result = await model.predict(inputText, {
+        // Use the simple inference server
+        const result = await inferenceServer.generate(inputText, {
           maxTokens: maxTokens,
           temperature: temperature
         });
@@ -526,76 +521,24 @@ app.post('/api/inference', async (req, res) => {
         const inferenceTime = Date.now() - startTime;
         
         response = {
-          response: result.text || result.response || result.generated_text || result,
-          text: result.text || result.response || result.generated_text || result,
-          model: 'SmolLM3-3B',
-          provider: 'SmolLM3Loader (Transformers.js)',
+          response: result.response || result.text || result,
+          text: result.response || result.text || result,
+          model: result.model || 'simple-inference',
+          provider: 'SimpleInferenceServer',
           processingTime: inferenceTime,
           usage: { 
-            totalTokens: result.tokens || Math.floor((result.text || result.response || '').length / 4),
+            totalTokens: Math.floor((result.response || '').length / 4),
             inference_time_ms: inferenceTime
           },
           strategy: 'balanced'
         };
         
-        console.log(`✅ SmolLM3 REAL AI inference completed in ${inferenceTime}ms`);
+        console.log(`✅ Inference completed in ${inferenceTime}ms`);
         
       } catch (modelError) {
-        console.error('SmolLM3 model error:', modelError);
-        
-        // Fallback to Ollama with Qwen model
-        console.log('🦙 Attempting Ollama fallback with Qwen2.5...');
-        try {
-          const ollamaAdapter = router.registry.getLoader('ollama');
-          if (!ollamaAdapter) {
-            throw new Error('Ollama adapter not registered');
-          }
-          
-          // Use Ollama with Qwen2.5:0.5b model
-          const ollamaModel = await ollamaAdapter.load('qwen2.5:0.5b');
-          const ollamaResult = await ollamaModel.generate(inputText, {
-            maxTokens,
-            temperature
-          });
-          
-          response = {
-            response: ollamaResult.text,
-            text: ollamaResult.text,
-            model: 'qwen2.5:0.5b',
-            provider: 'Ollama',
-            usage: ollamaResult.usage || { total_tokens: maxTokens },
-            fallback: true,
-            note: 'Using Ollama Qwen model as fallback'
-          };
-          
-          console.log('✅ Ollama inference successful');
-          
-        } catch (ollamaError) {
-          console.error('Ollama fallback error:', ollamaError);
-          
-          // Try router's quick method as last resort
-          try {
-            const routerResponse = await router.quick(inputText, {
-              maxTokens,
-              temperature,
-              modelId: model || 'mock'
-            });
-            
-            response = {
-              response: routerResponse.text || routerResponse,
-              model: routerResponse.model || 'Mock Model',
-              provider: 'LLM Router Fallback',
-              usage: routerResponse.usage || { tokens: maxTokens }
-            };
-            
-          } catch (routerError) {
-            console.error('Router fallback error:', routerError);
-            
-            // NO FAKE FALLBACKS - throw error instead
-            console.error('❌ CRITICAL: All inference methods failed');
-            throw new Error(`All AI inference methods failed. Input: "${inputText}". Check logs for details.`);
-          }
-        }
+        console.error('Inference server error:', modelError);
+        // NO FAKE FALLBACKS - throw error instead
+        throw new Error(`Inference failed: ${modelError.message}`);
       }
       
       res.json(response);

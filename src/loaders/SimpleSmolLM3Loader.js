@@ -10,6 +10,7 @@
 import { BaseLoader } from './BaseLoader.js';
 import { Logger } from '../utils/Logger.js';
 import { pipeline, env } from '@xenova/transformers';
+import SimpleInferenceServer from './SimpleInferenceServer.js';
 
 // Configure Transformers.js for server-side usage
 env.allowLocalModels = false;
@@ -35,6 +36,9 @@ class SimpleSmolLM3Loader extends BaseLoader {
     // Transformers.js pipeline - will be initialized on first use
     this.generator = null;
     this.initializingPipeline = false;
+    
+    // Initialize the inference server for real LLM inference
+    this.inferenceServer = null;
     
     // SmolLM3 chat template (legacy fallback)
     this.chatTemplate = {
@@ -211,6 +215,12 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
         // Text generation method with actual AI inference
         predict: async (input, options = {}) => {
           logger.info(`🎯 PREDICT CALLED with input: "${input.substring(0, 50)}..."`);
+          return this.generateIntelligentResponse(input, options);
+        },
+        
+        // Generate method for Pipeline compatibility
+        generate: async (input, options = {}) => {
+          logger.info(`🎯 GENERATE CALLED with input: "${input.substring(0, 50)}..."`);
           return this.generateIntelligentResponse(input, options);
         },
         
@@ -578,53 +588,30 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
    */
   async generateIntelligentContextualResponse(prompt, options = {}) {
     try {
-      logger.info('🚀 Generating contextual response...');
+      logger.info('🚀 Generating contextual response using inference server...');
       
-      // Extract the actual user message from the formatted prompt
-      // The prompt might be formatted with chat template, so extract the user content
-      let userMessage = prompt;
-      
-      // Check if this is a formatted prompt with chat template markers
-      if (prompt.includes('<|user|>') || prompt.includes('<|im_start|>') || prompt.includes('user:')) {
-        // Extract the LAST user message from various template formats
-        // Use .* to match the system prompt and .*? for non-greedy matching
-        const patterns = [
-          // SmolLM3 format - get the last user message
-          /<\|user\|>\s*([^<]+)<\|end\|>\s*<\|assistant\|>/g,  // All user messages
-          /<\|im_start\|>user\s*([^<]+)<\|im_end\|>/g,  // Alternative format
-          /user:\s*([^\n]+)\s*assistant:/g  // Simple format
-        ];
-        
-        for (const pattern of patterns) {
-          const matches = [...prompt.matchAll(pattern)];
-          if (matches.length > 0) {
-            // Get the last match (most recent user message)
-            const lastMatch = matches[matches.length - 1];
-            if (lastMatch && lastMatch[1]) {
-              userMessage = lastMatch[1].trim();
-              logger.info(`📝 Extracted last user message: "${userMessage}"`);
-              break;
-            }
-          }
-        }
-        
-        // If patterns didn't work, try a simpler approach - get text after last <|user|>
-        if (userMessage === prompt && prompt.includes('<|user|>')) {
-          const parts = prompt.split('<|user|>');
-          const lastPart = parts[parts.length - 1];
-          const endIndex = lastPart.indexOf('<|end|>');
-          if (endIndex > 0) {
-            userMessage = lastPart.substring(0, endIndex).trim();
-            logger.info(`📝 Extracted via split method: "${userMessage}"`);
-          }
-        }
+      // Initialize inference server if needed
+      if (!this.inferenceServer) {
+        logger.info('🚀 Initializing Simple Inference Server...');
+        this.inferenceServer = new SimpleInferenceServer();
+        await this.inferenceServer.start();
       }
       
-      // Generate a simple contextual response based on the user message
-      // This is a temporary fix until proper model loading works
-      const response = await this.generateSimpleResponse(userMessage, options);
+      // Use the real inference server
+      logger.info('🔄 Generating response using inference server...');
+      const result = await this.inferenceServer.generate(prompt, options);
       
-      logger.success(`✅ Generated contextual response`);
+      // Check for errors in the response
+      if (result.error) {
+        logger.error(`❌ Inference error: ${result.error}`);
+        if (result.debug) {
+          logger.error(`Debug info: ${JSON.stringify(result.debug, null, 2)}`);
+        }
+        throw new Error(result.error);
+      }
+      
+      const response = result.response || result;
+      logger.success(`✅ Inference completed in ${Date.now() - (options.startTime || Date.now())}ms`);
       return response;
 
     } catch (error) {
