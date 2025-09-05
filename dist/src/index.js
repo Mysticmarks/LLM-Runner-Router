@@ -441,16 +441,11 @@ export const advanced = (config) => defaultRouter.advanced(config);
 export const stream = (prompt, options) => defaultRouter.stream(prompt, options);
 export const ensemble = (models, prompt, options) => defaultRouter.ensemble(models, prompt, options);
 
+// Explicit initialization for environments that need manual setup
+export const initialize = () => defaultRouter.initialize();
+
 // Ollama convenience methods
 export const setupOllama = (config = {}) => defaultRouter.setupOllama(config);
 export const addOllamaModel = (modelId, config = {}) => defaultRouter.addOllamaModel(modelId, config);
-
-// Auto-initialize on import for convenience (disabled in test environment)
-if (typeof process !== 'undefined' && 
-    process.env.AUTO_INIT !== 'false' && 
-    process.env.NODE_ENV !== 'test') {
-  // Initialize once
-  defaultRouter.initialize().catch(console.error);
-}
 
 export default LLMRouter;

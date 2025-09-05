@@ -622,4 +622,5 @@ declare module 'llm-runner-router' {
   export function stream(prompt: string, options?: StreamOptions): AsyncGenerator<string>;
   export function load(options: LoadOptions): Promise<Model>;
   export function unload(modelId: string): Promise<boolean>;
+  export function initialize(): Promise<boolean>;
 }
