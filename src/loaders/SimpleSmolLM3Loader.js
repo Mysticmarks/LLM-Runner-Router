@@ -422,10 +422,9 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
         // Clean up response - remove any leftover template markers
         response = response.replace(/^Assistant:\s*/i, '').trim();
         
-        // If response is empty or contains only template tags, there's an issue with generation
+        // If response is empty or contains only template tags, throw error
         if (!response || response.match(/^(<\|[^>]+\|>\s*)+$/)) {
-          logger.warn('Empty or malformed response from model');
-          response = "I apologize, but I'm having trouble generating a response. Please try again.";
+          throw new Error('Model generated empty or malformed response - real inference failed');
         }
         
         return response;
@@ -445,8 +444,14 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
       
     } catch (error) {
       logger.error(`❌ AI generation failed: ${error.message}`);
-      // Throw error instead of returning fake apology
-      throw new Error(`AI generation completely failed: ${error.message}`);
+      // Throw full error with stack trace for debugging
+      error.debugInfo = {
+        method: 'generateActualResponse',
+        input: input.substring(0, 200),
+        generatorType: typeof this.generator,
+        generatorExists: !!this.generator
+      };
+      throw error;
     }
   }
 
@@ -516,46 +521,26 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
   }
 
   /**
-   * Generate a simple response for basic queries
-   * This is a temporary solution until proper model loading works
+   * NO HARDCODED RESPONSES - REAL LLM INFERENCE ONLY
    */
   async generateSimpleResponse(prompt, options = {}) {
-    logger.info(`🤖 Generating simple response for: "${prompt.substring(0, 50)}..."`);
+    logger.error(`❌ CRITICAL: generateSimpleResponse called - NO HARDCODED RESPONSES ALLOWED`);
+    logger.error(`Input prompt: "${prompt}"`);
     
-    // Convert prompt to lowercase for case-insensitive matching
-    const lowerPrompt = prompt.toLowerCase();
-    
-    // Basic Q&A responses for common queries
-    const responses = {
-      'capital of france': 'The capital of France is Paris.',
-      'hello': 'Hello! How can I help you today?',
-      'hi': 'Hi there! What can I assist you with?',
-      'how are you': "I'm functioning well, thank you! I'm SmolLM3, a language model running locally on your system. How can I help you?",
-      'what is 2+2': '2 + 2 equals 4.',
-      'who are you': "I'm SmolLM3, a 3B parameter language model running locally through the LLM Runner Router system. I provide AI assistance without requiring external API calls.",
-      'what can you do': 'I can help with various tasks including answering questions, providing information, assisting with coding, and having conversations. All processing happens locally on your system for privacy and speed.',
-      'test': 'Test successful! The local AI inference system is working.',
-      'what is ai': 'AI (Artificial Intelligence) refers to computer systems that can perform tasks typically requiring human intelligence, such as understanding language, recognizing patterns, solving problems, and learning from experience.',
-      'what is llm': 'LLM stands for Large Language Model - a type of AI model trained on vast amounts of text data to understand and generate human-like text. I am an LLM running locally on your system.',
-      'weather': "I don't have access to real-time weather data as I run locally without internet access. Please check a weather website or app for current conditions.",
-      'time': "I don't have access to real-time information. Please check your system clock for the current time.",
-      'date': "I don't have access to real-time information. Please check your system calendar for today's date."
+    // Throw detailed error with debugging info
+    const error = new Error('NO HARDCODED RESPONSES ALLOWED - Real LLM inference required');
+    error.details = {
+      method: 'generateSimpleResponse',
+      prompt: prompt,
+      issue: 'This method contains hardcoded responses which are forbidden',
+      solution: 'Configure a real LLM (Ollama, OpenAI API, or working Transformers.js model)',
+      modelStatus: {
+        generator: this.generator ? 'loaded' : 'not loaded',
+        type: typeof this.generator
+      }
     };
     
-    // Check for matches in our response database
-    for (const [key, response] of Object.entries(responses)) {
-      if (lowerPrompt.includes(key)) {
-        return response;
-      }
-    }
-    
-    // For other queries, provide a generic but helpful response
-    if (lowerPrompt.includes('?')) {
-      return "That's an interesting question. While I'm currently running with limited capabilities due to model loading constraints, I'm designed to help with various tasks including answering questions, providing explanations, and assisting with technical topics. Could you provide more context or try rephrasing your question?";
-    }
-    
-    // Default conversational response
-    return "I understand you're asking about '" + prompt.substring(0, 100) + "'. I'm SmolLM3, running locally on your system through the LLM Runner Router. While I'm currently operating with basic response generation, I'm designed to provide helpful assistance with various topics. How can I help you further?";
+    throw error;
   }
   
   /**
