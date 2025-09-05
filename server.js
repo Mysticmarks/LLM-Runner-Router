@@ -24,6 +24,7 @@ import OllamaAdapter from './src/loaders/adapters/OllamaAdapter.js';
 import HFLoader from './src/loaders/HFLoader.js';
 import WebSocketAPI from './src/api/WebSocket.js';
 import fs from 'fs/promises';
+import fsSync from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Config from './src/config/Config.js';
@@ -202,18 +203,23 @@ async function initializeRouter() {
 
     // Load Simple fallback model for VPS environments
     // This ensures we always have at least one working model
-    try {
-      console.log('\n🤖 Loading Simple SmolLM3 model for VPS...');
-      const simpleModel = await router.load({
-        source: path.join(projectRoot, 'models', 'smollm3-3b'),
-        format: 'smollm3',
-        id: 'simple-smollm3',
-        name: 'SmolLM3-3B Simple'
-      });
-      console.log('  ✅ Simple fallback model loaded successfully');
-      modelsLoaded++;
-    } catch (error) {
-      console.log('  ⚠️  Could not load simple fallback:', error.message);
+    const simpleModelPath = path.join(projectRoot, 'models', 'smollm3-3b');
+    if (fsSync.existsSync(simpleModelPath)) {
+      try {
+        console.log('\n🤖 Loading Simple SmolLM3 model for VPS...');
+        const simpleModel = await router.load({
+          source: simpleModelPath,
+          format: 'smollm3',
+          id: 'simple-smollm3',
+          name: 'SmolLM3-3B Simple'
+        });
+        console.log('  ✅ Simple fallback model loaded successfully');
+        modelsLoaded++;
+      } catch (error) {
+        console.log('  ⚠️  Could not load simple fallback:', error.message);
+      }
+    } else {
+      console.log(`  ⚠️  SmolLM3-3B model directory not found at ${simpleModelPath}, skipping load`);
     }
     
     const status = router.getStatus();
@@ -312,25 +318,15 @@ app.get('/api/models/public', enableCORS, (req, res) => {
     return res.status(503).json({ error: 'Server initializing' });
   }
   
-  // Include SmolLM3 model information
-  const models = [
-    {
-      id: 'smollm3-3b',
-      name: 'SmolLM3-3B Local',
-      format: 'safetensors',
-      loaded: true,
-      local: true,
-      size: '6.2GB',
-      parameters: '3B',
-      description: 'SmolLM3-3B running locally with LLM Router knowledge',
-      capabilities: ['chat', 'instruct', 'local'],
-      provider: 'SimpleSmolLM3Loader'
-    }
-  ];
-  
+  const models = router.registry.getAll();
   res.json({
     count: models.length,
-    models: models
+    models: models.map(m => ({
+      id: m.id,
+      name: m.name,
+      format: m.format,
+      loaded: m.loaded || false
+    }))
   });
 });
 
@@ -775,3 +771,5 @@ process.on('SIGINT', async () => {
   await router.cleanup();
   process.exit(0);
 });
+
+export { initializeRouter, router };
