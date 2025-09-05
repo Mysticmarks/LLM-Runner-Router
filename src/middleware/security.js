@@ -42,9 +42,6 @@ export function securityHeaders() {
     // Prevent MIME sniffing
     noSniff: true,
     
-    // XSS Protection
-    xssFilter: true,
-    
     // Referrer Policy
     referrerPolicy: { policy: 'same-origin' }
   });
