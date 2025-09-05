@@ -160,6 +160,8 @@ api-keys.txt
 # Environment files (all variants)
 .env.vps
 .env.production
+.env.staging
+.env.test
 
 # Netlify
 .netlify/.env.test
