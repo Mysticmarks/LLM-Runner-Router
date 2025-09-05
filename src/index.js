@@ -117,8 +117,8 @@ class LLMRouter {
       logger.info('🧠 Registered SimpleSmolLM3 loader for local inference');
       
       const nodeLlamaCppLoader = new NodeLlamaCppLoader();
-      this.registry.registerLoader('gguf', nodeLlamaCppLoader);
-      this.loaders.set('gguf', nodeLlamaCppLoader);
+      this.registry.registerLoader('gguf-node', nodeLlamaCppLoader);
+      this.loaders.set('gguf-node', nodeLlamaCppLoader);
       logger.info('🦙 Registered NodeLlamaCpp loader for REAL GGUF inference');
       
       // Register BitNet loader with graceful fallback
