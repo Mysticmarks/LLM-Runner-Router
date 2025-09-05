@@ -83,7 +83,7 @@ chmod +x setup.sh
 | Environment | File | Purpose | Port | Features |
 |-------------|------|---------|------|----------|
 | Development | `.env.example` | Local development | 3000 | Debug logging, test endpoints |
-| Staging | `.env.staging` | Testing/preview | 3001 | Production-like, more logging |
+| Staging | `.env.staging.example` | Testing/preview | 3001 | Production-like, more logging |
 | Production | `.env.production` | Live deployment | 3000 | Optimized, secure, minimal logging |
 | VPS | `.env.vps` | VPS-optimized | 3000 | Resource-constrained optimization |
 
