@@ -78,7 +78,7 @@ cd LLM-Runner-Router
 ### Ready-to-Use Environments
 
 1. **Development** (`.env.example`): Local development with debug features
-2. **Staging** (`.env.staging`): Production-like testing environment
+2. **Staging** (`.env.staging.example`): Production-like testing environment
 3. **Production** (`.env.production`): Secure production configuration
 4. **VPS** (`.env.vps`): Resource-optimized for virtual servers
 

@@ -105,13 +105,22 @@ The project supports multiple environment files:
 3. `.env` (default environment file)
 
 ### Available Environment Files:
-- `.env` - Default configuration
+
+Sample configurations included in the repository:
+
+- `.env.example` - Base template for local and production setup
+- `.env.staging.example` - Example staging environment configuration
+- `.env.test.example` - Template for test runs
+
+Files that should be created locally (all gitignored):
+
+- `.env` - Default configuration copied from `.env.example`
 - `.env.production` - Production settings
 - `.env.development` - Development settings
 - `.env.test` - Test environment
-- `.env.secure` - Enhanced security mode
-- `.env.resilient` - Self-healing mode
-- `.env.local` - Local overrides (gitignored)
+- `.env.local` - Local overrides
+
+Other specialized modes (e.g., `.env.secure`, `.env.resilient`) can be created if required but are not included in the repository.
 
 ## Usage Examples
 
