@@ -1,0 +1,74 @@
+
+> llm-runner-router@2.0.0 start
+> node server.js
+
+[34m[2025-09-05T16:41:24.093Z] 💡 [Config] 🎛️ Configuration initialized:[0m { environment: 'development', strategy: 'balanced' }
+[34m[2025-09-05T16:41:24.097Z] 💡 [Router] 🧭 Router initialized with strategy:[0m balanced
+[34m[2025-09-05T16:41:24.097Z] 💡 [LLMRouter] 🚀 LLM-Runner-Router initializing...[0m { version: '2.0.0', environment: 'node' }
+[dotenv@17.2.1] injecting env (8) from .env -- tip: ⚙️  override existing env vars with { override: true }
+🚀 LLM Router Server Starting...
+
+[34m[2025-09-05T16:41:24.100Z] 💡 [Config] 🎛️ Configuration initialized:[0m { environment: 'development', strategy: 'balanced' }
+[34m[2025-09-05T16:41:24.100Z] 💡 [Router] 🧭 Router initialized with strategy:[0m balanced
+[34m[2025-09-05T16:41:24.101Z] 💡 [LLMRouter] 🚀 LLM-Runner-Router initializing...[0m { version: '2.0.0', environment: 'node' }
+[34m[2025-09-05T16:41:24.101Z] 💡 [Config] 🎛️ Configuration initialized:[0m { environment: 'development', strategy: 'balanced' }
+[31m[2025-09-05T16:41:24.105Z] ❌ [ErrorHandler] 🚨 CRITICAL: Uncaught Exception:[0m Error: listen EADDRINUSE: address already in use 0.0.0.0:3006
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at doListen (node:net:2139:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:83:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 3006
+}
+[31m[2025-09-05T16:41:24.106Z] ❌ [ErrorHandler] 🚨 CRITICAL ERROR from uncaughtException:[0m {
+  message: 'listen EADDRINUSE: address already in use 0.0.0.0:3006',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:3006\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1908:16)\n' +
+    '    at listenInCluster (node:net:1965:12)\n' +
+    '    at doListen (node:net:2139:7)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:83:21)',
+  source: 'uncaughtException',
+  timestamp: '2025-09-05T16:41:24.106Z',
+  memoryUsage: {
+    rss: 121331712,
+    heapTotal: 57212928,
+    heapUsed: 32474552,
+    external: 3640223,
+    arrayBuffers: 1157417
+  },
+  uptime: 0.695560451
+}
+[31m[2025-09-05T16:41:24.106Z] ❌ [LLMRouter] 🚨 Critical system error detected:[0m {
+  error: Error: listen EADDRINUSE: address already in use 0.0.0.0:3006
+      at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+      at listenInCluster (node:net:1965:12)
+      at doListen (node:net:2139:7)
+      at process.processTicksAndRejections (node:internal/process/task_queues:83:21) {
+    code: 'EADDRINUSE',
+    errno: -98,
+    syscall: 'listen',
+    address: '0.0.0.0',
+    port: 3006
+  },
+  source: 'uncaughtException'
+}
+[31m[2025-09-05T16:41:24.107Z] ❌ [LLMRouter] 🚨 Critical system error detected:[0m {
+  error: Error: listen EADDRINUSE: address already in use 0.0.0.0:3006
+      at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+      at listenInCluster (node:net:1965:12)
+      at doListen (node:net:2139:7)
+      at process.processTicksAndRejections (node:internal/process/task_queues:83:21) {
+    code: 'EADDRINUSE',
+    errno: -98,
+    syscall: 'listen',
+    address: '0.0.0.0',
+    port: 3006
+  },
+  source: 'uncaughtException'
+}
+[31m[2025-09-05T16:41:25.108Z] ❌ [ErrorHandler] 🛑 Performing emergency graceful shutdown...[0m
+[34m[2025-09-05T16:41:25.109Z] 💡 [ErrorHandler] 🛑 Initiating graceful shutdown...[0m
+[34m[2025-09-05T16:41:30.113Z] 💡 [ErrorHandler] ✅ Graceful shutdown completed[0m

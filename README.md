@@ -47,7 +47,8 @@ cd LLM-Runner-Router
 npm install
 
 # Download a model (optional - uses mock by default)
-npx huggingface-cli download HuggingFaceTB/SmolLM3-3B-Base --local-dir ./models/smollm3-3b
+pip install huggingface_hub
+huggingface-cli download HuggingFaceTB/SmolLM3-3B-Base --local-dir ./models/smollm3-3b
 
 # Start the server
 npm start
