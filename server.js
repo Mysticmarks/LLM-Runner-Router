@@ -70,11 +70,17 @@ console.log('🚀 LLM Router Server Starting...\n');
 const app = express();
 const server = createServer(app);
 
-// Basic security (simplified for now)
+// Basic security middleware
+app.use(securityHeaders());
+app.use(globalRateLimit());
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Input validation and security logging
+app.use(validateInput);
+app.use(securityLogger);
 
 // Enable CORS for SaaS API
 app.use(enableCORS);
@@ -223,8 +229,8 @@ async function initializeRouter() {
   }
 }
 
-// Mount admin routes
-app.use('/api/admin', adminRouter);
+// Mount admin routes with dedicated auth rate limit
+app.use('/api/admin', authRateLimit(), adminRouter);
 
 // Mount BYOK routes
 const byokRouter = express.Router();
