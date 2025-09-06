@@ -101,6 +101,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for production setup.
 - **BYOK System**: Complete with web interface and encryption
 - **Streaming**: StreamProcessor with async token generation
 - **Runtime Features**: Memory Manager, Cache Manager, Thread Pool
+- **WASM Engine**: Universal WebAssembly runtime for broad compatibility
 
 #### ⚠️ Partially Implemented
 - **Cloud Providers**: Basic configs exist but need full integration:
@@ -113,7 +114,6 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for production setup.
 #### ❌ Not Yet Implemented
 - **Ollama Integration**: Loader exists but not complete
 - **WebGPU Engine**: Planned but not implemented
-- **WASM Engine**: Mentioned but no implementation
 - **Edge Computing**: No specific optimizations yet
 - **WebSocket/SSE**: StreamProcessor exists but not full bidirectional support
 - **Enterprise Features**: Compliance features not implemented
@@ -176,8 +176,8 @@ Perfect for developers building AI applications, researchers comparing models, a
 
 ### ⚡ Multi-Engine Runtime Architecture
 - **Node.js Engine**: ✅ High-performance server-side inference
+- **WASM Engine**: ✅ WebAssembly fallback for universal deployment
 - **WebGPU Engine**: ✅ Hardware-accelerated browser inference
-- **WASM Engine**: ❌ Planned but not yet implemented
 - **Edge Computing**: ❌ No specific optimizations implemented yet
 
 ### 🧭 Intelligent Model Routing Strategies
