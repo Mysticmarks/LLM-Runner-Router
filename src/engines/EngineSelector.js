@@ -19,7 +19,25 @@ class EngineSelector {
     
     // In test environment, use simplified loading
     if (process.env.NODE_ENV === 'test') {
-      // Just register WASM engine for testing
+      // Register WebGPU if available for tests
+      try {
+        if (typeof navigator !== 'undefined' && navigator.gpu) {
+          const WebGPUEngine = (await import('./WebGPUEngine.js')).default;
+          const instance = new WebGPUEngine();
+          if (await instance.isSupported()) {
+            this.engines.set('webgpu', {
+              instance,
+              priority: 100,
+              supported: true
+            });
+            logger.success('✅ WebGPU engine available (test mode)');
+          }
+        }
+      } catch (error) {
+        logger.debug('❌ WebGPU not available in test');
+      }
+
+      // Always try WASM engine as fallback
       try {
         const WASMEngine = (await import('./WASMEngine.js')).default;
         const instance = new WASMEngine();
