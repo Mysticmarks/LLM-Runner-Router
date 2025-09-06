@@ -87,6 +87,24 @@ class ConfigManager {
                 cacheTTL: 300,
                 maxConcurrent: 10
             },
+            monitoring: {
+                enabled: true,
+                showHealthStatus: true,
+                showPerformanceMetrics: true,
+                autoRefreshInterval: 5000,
+                alertThresholds: {
+                    errorRate: 0.05,
+                    responseTime: 2000,
+                    cpuUsage: 80,
+                    memoryUsage: 85
+                }
+            },
+            logging: {
+                level: 'info',
+                showLogs: false,
+                maxLogEntries: 100,
+                enableConsole: false
+            },
             templateSettings: {
                 systemPrefix: '### System:',
                 userPrefix: '### User:',
@@ -237,6 +255,69 @@ class ConfigManager {
                 callback(this.config);
             }
         });
+    }
+
+    /**
+     * Check if monitoring is enabled
+     */
+    isMonitoringEnabled() {
+        return this.config?.monitoring?.enabled !== false;
+    }
+
+    /**
+     * Check if health status should be shown
+     */
+    shouldShowHealthStatus() {
+        return this.config?.monitoring?.showHealthStatus !== false;
+    }
+
+    /**
+     * Check if performance metrics should be shown
+     */
+    shouldShowPerformanceMetrics() {
+        return this.config?.monitoring?.showPerformanceMetrics !== false;
+    }
+
+    /**
+     * Get monitoring refresh interval
+     */
+    getMonitoringRefreshInterval() {
+        return this.config?.monitoring?.autoRefreshInterval || 5000;
+    }
+
+    /**
+     * Get alert thresholds
+     */
+    getAlertThresholds() {
+        return this.config?.monitoring?.alertThresholds || this.getDefaultConfig().monitoring.alertThresholds;
+    }
+
+    /**
+     * Get logging configuration
+     */
+    getLoggingConfig() {
+        return this.config?.logging || this.getDefaultConfig().logging;
+    }
+
+    /**
+     * Check if logs should be shown
+     */
+    shouldShowLogs() {
+        return this.config?.logging?.showLogs === true;
+    }
+
+    /**
+     * Get log level
+     */
+    getLogLevel() {
+        return this.config?.logging?.level || 'info';
+    }
+
+    /**
+     * Get max log entries
+     */
+    getMaxLogEntries() {
+        return this.config?.logging?.maxLogEntries || 100;
     }
 }
 

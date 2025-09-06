@@ -20,10 +20,14 @@ class LLMRouterChat {
         // Initialize config manager
         this.configManager = new ConfigManager();
         
+        // Initialize monitoring dashboard
+        this.monitoringDashboard = null;
+        
         this.initializeUI();
         this.bindEvents();
         this.checkServerStatus();
         this.loadConfigSettings();
+        this.initializeMonitoring();
     }
 
     getApiUrl() {
@@ -100,6 +104,14 @@ class LLMRouterChat {
         document.getElementById('maxTokensSlider').addEventListener('input', () => {
             this.updateSliderValue('maxTokensSlider', 'tokensValue');
         });
+
+        // Monitoring toggle button
+        const monitoringToggle = document.getElementById('monitoring-toggle');
+        if (monitoringToggle) {
+            monitoringToggle.addEventListener('click', () => {
+                this.toggleMonitoringDashboard();
+            });
+        }
     }
 
     async sendMessage() {
@@ -149,6 +161,8 @@ class LLMRouterChat {
     }
 
     async callAPI(prompt) {
+        const startTime = Date.now();
+        
         // Get parameters from config manager (which loads from admin panel settings)
         const params = this.configManager.getGenerationParams();
         const systemPrompt = this.configManager.getSystemPrompt();
@@ -211,12 +225,23 @@ class LLMRouterChat {
         
         const result = await response.json();
         
+        // Calculate total response time and update indicator
+        const responseTime = Date.now() - startTime;
+        this.updateResponseTimeIndicator(responseTime);
+        
+        // Update stats
+        this.stats.responseTimes.push(responseTime);
+        if (this.stats.responseTimes.length > 10) {
+            this.stats.responseTimes.shift(); // Keep only last 10 response times
+        }
+        
         return {
             text: result.response || result.text || 'No response generated',
             model: result.model || 'Unknown',
             processingTime: result.processingTime || 0,
             tokens: result.usage?.totalTokens || Math.floor((result.response || '').length / 4),
-            strategy: result.strategy || this.currentStrategy
+            strategy: result.strategy || this.currentStrategy,
+            responseTime: responseTime
         };
     }
 
@@ -474,6 +499,122 @@ class LLMRouterChat {
         // Show system prompt status
         if (this.configManager.isSystemPromptEnabled() && this.configManager.getSystemPrompt()) {
             console.log('System prompt active:', this.configManager.getSystemPrompt().substring(0, 50) + '...');
+        }
+    }
+
+    /**
+     * Initialize monitoring system
+     */
+    initializeMonitoring() {
+        if (this.configManager.isMonitoringEnabled() && typeof MonitoringDashboard !== 'undefined') {
+            this.monitoringDashboard = new MonitoringDashboard(this.configManager);
+            
+            // Start health monitoring
+            this.startHealthMonitoring();
+        }
+    }
+
+    /**
+     * Start health monitoring for header indicators
+     */
+    startHealthMonitoring() {
+        // Initial health check
+        this.updateHealthIndicators();
+        
+        // Set up periodic health updates
+        if (this.configManager.shouldShowHealthStatus()) {
+            setInterval(() => {
+                this.updateHealthIndicators();
+            }, this.configManager.getMonitoringRefreshInterval());
+        }
+    }
+
+    /**
+     * Update health indicators in header
+     */
+    async updateHealthIndicators() {
+        try {
+            const response = await fetch(`${this.apiUrl}/health`);
+            const health = await response.json();
+            
+            if (health && health.checks) {
+                // Update CPU indicator
+                if (health.checks.cpu_usage) {
+                    const cpuElement = document.getElementById('cpuIndicator');
+                    const cpuValue = Math.round(health.checks.cpu_usage.value || 0);
+                    if (cpuElement) {
+                        cpuElement.textContent = `${cpuValue}%`;
+                        cpuElement.parentElement.className = 'health-metric ' + this.getHealthClass(cpuValue, 70, 85);
+                    }
+                }
+                
+                // Update Memory indicator
+                if (health.checks.memory_usage) {
+                    const memoryElement = document.getElementById('memoryIndicator');
+                    const memoryValue = Math.round(health.checks.memory_usage.value || 0);
+                    if (memoryElement) {
+                        memoryElement.textContent = `${memoryValue}%`;
+                        memoryElement.parentElement.className = 'health-metric ' + this.getHealthClass(memoryValue, 75, 90);
+                    }
+                }
+            }
+            
+            // Show health indicators if configured
+            if (this.configManager.shouldShowHealthStatus()) {
+                const healthIndicators = document.getElementById('healthIndicators');
+                if (healthIndicators) {
+                    healthIndicators.style.display = 'flex';
+                }
+            }
+            
+        } catch (error) {
+            console.warn('Health check failed:', error.message);
+        }
+    }
+
+    /**
+     * Get health status class based on value and thresholds
+     */
+    getHealthClass(value, warningThreshold, criticalThreshold) {
+        if (value >= criticalThreshold) return 'critical';
+        if (value >= warningThreshold) return 'warning';
+        return '';
+    }
+
+    /**
+     * Update response time indicator
+     */
+    updateResponseTimeIndicator(responseTime) {
+        const latencyElement = document.getElementById('latencyIndicator');
+        if (latencyElement) {
+            latencyElement.textContent = `${Math.round(responseTime)}ms`;
+            latencyElement.parentElement.className = 'health-metric ' + this.getHealthClass(responseTime, 1000, 2000);
+        }
+    }
+
+    /**
+     * Toggle monitoring dashboard visibility
+     */
+    toggleMonitoringDashboard() {
+        if (!this.monitoringDashboard) {
+            if (typeof MonitoringDashboard !== 'undefined') {
+                this.monitoringDashboard = new MonitoringDashboard(this.configManager);
+            } else {
+                this.showNotification('Monitoring dashboard not available', 'error');
+                return;
+            }
+        }
+        
+        this.monitoringDashboard.toggle();
+        
+        // Update button state
+        const button = document.getElementById('monitoring-toggle');
+        if (button && this.monitoringDashboard.isVisible) {
+            button.style.background = 'rgba(34, 197, 94, 0.2)';
+            button.style.color = '#22c55e';
+        } else if (button) {
+            button.style.background = 'none';
+            button.style.color = 'inherit';
         }
     }
 }

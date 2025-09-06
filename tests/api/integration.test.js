@@ -383,7 +383,7 @@ describe('API Integration', () => {
     });
 
     // 404 handler
-    app.use('*', (req, res) => {
+    app.use((req, res) => {
       res.status(404).json({
         error: 'Not Found',
         message: `Route ${req.method} ${req.originalUrl} not found`,

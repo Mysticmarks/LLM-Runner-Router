@@ -1,0 +1,57 @@
+{
+  "ab983951-8963-42bc-b41a-688a66853019": {
+    "id": "ab983951-8963-42bc-b41a-688a66853019",
+    "username": "admin",
+    "password": "$2b$04$nN0MLPsWWcGNbsnoc6K01OhPHyZYtxCT2jwAHjPTntmstX526phTK",
+    "email": "admin@llm-router.com",
+    "name": "Administrator",
+    "role": "admin",
+    "permissions": [
+      "*"
+    ],
+    "verified": true,
+    "createdAt": "2025-09-06T16:39:38.561Z",
+    "lastLogin": null,
+    "loginCount": 0,
+    "active": true,
+    "metadata": {}
+  },
+  "acdc241f-1bca-48db-b3c9-0d6c8fe375fc": {
+    "id": "acdc241f-1bca-48db-b3c9-0d6c8fe375fc",
+    "username": "user",
+    "password": "$2b$04$rQo3QN7YRALY9oPhCKh88OQXec7YlfnQFpd5lBzpQxecCuy6ujLXe",
+    "email": "user@llm-router.com",
+    "name": "Regular User",
+    "role": "user",
+    "permissions": [
+      "model:read",
+      "inference:create",
+      "chat:create"
+    ],
+    "verified": true,
+    "createdAt": "2025-09-06T16:39:38.561Z",
+    "lastLogin": null,
+    "loginCount": 0,
+    "active": true,
+    "metadata": {}
+  },
+  "f4856007-aaa6-46dd-afe0-b91e44fb7164": {
+    "id": "f4856007-aaa6-46dd-afe0-b91e44fb7164",
+    "username": "api",
+    "password": "$2b$04$1VeYVjFo3XdmJHzjeeWT7uSDU8fETOoT42viKiaITVjaZIFqRMOhO",
+    "email": "api@llm-router.com",
+    "name": "API User",
+    "role": "api",
+    "permissions": [
+      "inference:create",
+      "chat:create",
+      "model:read"
+    ],
+    "verified": true,
+    "createdAt": "2025-09-06T16:39:38.561Z",
+    "lastLogin": null,
+    "loginCount": 0,
+    "active": true,
+    "metadata": {}
+  }
+}

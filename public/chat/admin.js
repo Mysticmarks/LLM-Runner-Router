@@ -179,6 +179,43 @@ class AdminPanel {
         document.getElementById('downloadLogs').addEventListener('click', () => {
             this.downloadLogs();
         });
+
+        // Logging configuration controls
+        document.getElementById('logLevel').addEventListener('change', (e) => {
+            this.updateLoggingConfig('logging.level', e.target.value);
+        });
+
+        document.getElementById('maxLogEntries').addEventListener('change', (e) => {
+            this.updateLoggingConfig('logging.maxLogEntries', parseInt(e.target.value));
+        });
+
+        document.getElementById('showLogs').addEventListener('change', (e) => {
+            this.updateLoggingConfig('logging.showLogs', e.target.checked);
+        });
+
+        document.getElementById('enableConsoleLogging').addEventListener('change', (e) => {
+            this.updateLoggingConfig('logging.enableConsole', e.target.checked);
+        });
+    }
+
+    updateLoggingConfig(path, value) {
+        const keys = path.split('.');
+        let current = this.config;
+        
+        // Ensure nested objects exist
+        for (let i = 0; i < keys.length - 1; i++) {
+            if (!current[keys[i]]) {
+                current[keys[i]] = {};
+            }
+            current = current[keys[i]];
+        }
+        
+        // Set the value
+        current[keys[keys.length - 1]] = value;
+        
+        // Save configuration
+        this.saveConfig();
+        this.showNotification(`Logging ${keys[keys.length - 1]} updated`, 'success');
     }
 
     // Import/Export
@@ -601,6 +638,29 @@ class AdminPanel {
                 input.value = config.memory[key];
             }
         });
+        
+        // Logging configuration
+        if (config.logging) {
+            const logLevelSelect = document.getElementById('logLevel');
+            if (logLevelSelect && config.logging.level) {
+                logLevelSelect.value = config.logging.level;
+            }
+            
+            const maxLogEntriesInput = document.getElementById('maxLogEntries');
+            if (maxLogEntriesInput && config.logging.maxLogEntries) {
+                maxLogEntriesInput.value = config.logging.maxLogEntries;
+            }
+            
+            const showLogsCheckbox = document.getElementById('showLogs');
+            if (showLogsCheckbox) {
+                showLogsCheckbox.checked = config.logging.showLogs || false;
+            }
+            
+            const enableConsoleCheckbox = document.getElementById('enableConsoleLogging');
+            if (enableConsoleCheckbox) {
+                enableConsoleCheckbox.checked = config.logging.enableConsole || false;
+            }
+        }
     }
 
     async saveConfig() {

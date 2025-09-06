@@ -395,6 +395,41 @@
                             </label>
                         </div>
                     </div>
+
+                    <div class="logging-config">
+                        <h3>Logging Configuration</h3>
+                        <div class="config-grid">
+                            <div class="config-item">
+                                <label for="logLevel">Log Level:</label>
+                                <select id="logLevel" class="form-control">
+                                    <option value="error">Error</option>
+                                    <option value="warn">Warning</option>
+                                    <option value="info" selected>Info</option>
+                                    <option value="debug">Debug</option>
+                                </select>
+                            </div>
+                            
+                            <div class="config-item">
+                                <label for="maxLogEntries">Max Log Entries:</label>
+                                <input type="number" id="maxLogEntries" class="form-control" 
+                                       value="100" min="10" max="1000" step="10">
+                            </div>
+                            
+                            <div class="config-item">
+                                <label>
+                                    <input type="checkbox" id="showLogs"> 
+                                    Show Logs in Chat Interface
+                                </label>
+                            </div>
+                            
+                            <div class="config-item">
+                                <label>
+                                    <input type="checkbox" id="enableConsoleLogging"> 
+                                    Enable Console Logging
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- Analytics Section -->

@@ -66,11 +66,28 @@
             <div class="status-indicator">
                 <div class="status-dot offline" id="statusDot"></div>
                 <span id="statusText">Initializing...</span>
+                <div class="health-indicators" id="healthIndicators" style="display: none;">
+                    <div class="health-metric" title="CPU Usage">
+                        <span class="metric-icon">🖥️</span>
+                        <span id="cpuIndicator">0%</span>
+                    </div>
+                    <div class="health-metric" title="Memory Usage">
+                        <span class="metric-icon">💾</span>
+                        <span id="memoryIndicator">0%</span>
+                    </div>
+                    <div class="health-metric" title="Response Time">
+                        <span class="metric-icon">⚡</span>
+                        <span id="latencyIndicator">0ms</span>
+                    </div>
+                </div>
             </div>
             <div class="header-actions">
                 <a href="/chat/model-selector.html" class="admin-btn" title="Model Manager">
                     🤖 Models
                 </a>
+                <button id="monitoring-toggle" class="admin-btn" title="System Monitoring" style="background: none; border: none; color: inherit; cursor: pointer;">
+                    📊 Monitor
+                </button>
                 <a href="/chat/admin.html" class="admin-btn" title="Admin Settings">
                     ⚙️ Settings
                 </a>
@@ -183,6 +200,7 @@
     <div class="floating-notifications" id="notifications"></div>
 
     <script src="/chat/config-manager.js"></script>
+    <script src="/chat/monitoring-dashboard.js"></script>
     <script src="/chat/chat-production.js"></script>
 </body>
 </html>

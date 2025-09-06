@@ -57,7 +57,7 @@ class EngineSelector {
     // Register all engines with priority
     const engines = [
       { name: 'webgpu', module: './WebGPUEngine.js', priority: 100 },
-      { name: 'node', module: './NodeNativeEngine.js', priority: 90 },
+      { name: 'node', module: './NodeEngine.js', priority: 90 },
       { name: 'wasm', module: './WASMEngine.js', priority: 80 },
       { name: 'worker', module: './WorkerEngine.js', priority: 70 },
       { name: 'edge', module: './EdgeEngine.js', priority: 10 }
