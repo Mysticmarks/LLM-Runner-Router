@@ -8,9 +8,11 @@ import bcrypt from 'bcrypt';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Logger } from '../utils/Logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const logger = new Logger('APIKeyManager');
 
 export class APIKeyManager {
   constructor(options = {}) {
@@ -48,9 +50,9 @@ export class APIKeyManager {
   async initialize() {
     try {
       await this.loadKeys();
-      console.log(`🔑 API Key Manager initialized with ${this.keys.size} keys`);
+      logger.info(`🔑 API Key Manager initialized with ${this.keys.size} keys`);
     } catch (error) {
-      console.log('🔑 Creating new API keys database');
+      logger.info('🔑 Creating new API keys database');
       await this.saveKeys();
     }
   }
@@ -119,7 +121,7 @@ export class APIKeyManager {
     // Return the full key (prefix + secret) - only shown once
     const fullKey = `${keyId}.${keySecret}`;
     
-    console.log(`🔑 Created API key for ${customerInfo.name || 'customer'}: ${keyId}`);
+    logger.info(`🔑 Created API key for ${customerInfo.name || 'customer'}: ${keyId}`);
     
     return {
       keyId,
@@ -325,7 +327,7 @@ export class APIKeyManager {
     keyData.active = false;
     await this.saveKeys();
     
-    console.log(`🔑 Deactivated API key: ${keyId}`);
+    logger.info(`🔑 Deactivated API key: ${keyId}`);
   }
 
   /**

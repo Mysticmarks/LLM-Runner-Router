@@ -5,9 +5,11 @@
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Logger } from '../utils/Logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const logger = new Logger('SimpleInferenceServer');
 
 class SimpleInferenceServer {
   constructor() {
@@ -22,7 +24,7 @@ class SimpleInferenceServer {
       return; // Already started
     }
 
-    console.log('🚀 Starting Simple Inference Server...');
+    logger.info('🚀 Starting Simple Inference Server...');
     
     // Use a simple Python script with basic generation
     const scriptPath = path.join(__dirname, '..', '..', 'simple_inference.py');
@@ -44,7 +46,7 @@ class SimpleInferenceServer {
               resolve(response);
             }
           } catch (e) {
-            console.log('Server output:', line);
+            logger.debug('Server output:', line);
           }
         }
       }
@@ -54,14 +56,14 @@ class SimpleInferenceServer {
       const msg = data.toString();
       if (msg.includes('Ready for inference')) {
         this.ready = true;
-        console.log('✅ Inference server ready');
+        logger.success('✅ Inference server ready');
       } else {
-        console.error('Server error:', msg);
+        logger.error('Server error:', msg);
       }
     });
 
     this.process.on('exit', (code) => {
-      console.log(`Inference server exited with code ${code}`);
+      logger.info(`Inference server exited with code ${code}`);
       this.ready = false;
       this.process = null;
       // Reject all pending requests

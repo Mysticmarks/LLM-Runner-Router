@@ -7,6 +7,9 @@ import RateLimiterFlexiblePkg from 'rate-limiter-flexible';
 const { RateLimiterMemory, RateLimiterRedis } = RateLimiterFlexiblePkg;
 import Redis from 'ioredis';
 import { EventEmitter } from 'events';
+import { Logger } from '../utils/Logger.js';
+
+const logger = new Logger('RateLimiter');
 
 export class RateLimitManager extends EventEmitter {
   constructor(options = {}) {
@@ -180,7 +183,7 @@ export class RateLimitManager extends EventEmitter {
       
       this.redis.on('error', (error) => {
         this.emit('redisError', error);
-        console.warn('Redis connection error:', error.message);
+        logger.warn('Redis connection error:', error.message);
       });
 
       this.redis.on('connect', () => {
@@ -190,7 +193,7 @@ export class RateLimitManager extends EventEmitter {
       // Test connection
       await this.redis.ping();
     } catch (error) {
-      console.warn('Redis initialization failed, falling back to memory:', error.message);
+      logger.warn('Redis initialization failed, falling back to memory:', error.message);
       this.redis = null;
       this.options.useRedis = false;
     }

@@ -5,6 +5,9 @@
 
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { Logger } from '../utils/Logger.js';
+
+const logger = new Logger('Security');
 
 /**
  * Apply security headers using Helmet
@@ -156,7 +159,7 @@ export function securityLogger(req, res, next) {
   const suspicious = checkSuspiciousRequest(req);
   
   if (suspicious.isSuspicious) {
-    console.warn(`🚨 SUSPICIOUS REQUEST: ${timestamp}`, {
+    logger.warn(`🚨 SUSPICIOUS REQUEST: ${timestamp}`, {
       ip,
       method: req.method,
       url: req.url,
@@ -168,7 +171,7 @@ export function securityLogger(req, res, next) {
   
   // Log all admin requests
   if (req.path.startsWith('/api/admin/')) {
-    console.log(`🔐 ADMIN REQUEST: ${timestamp}`, {
+    logger.info(`🔐 ADMIN REQUEST: ${timestamp}`, {
       ip,
       method: req.method,
       url: req.url,
@@ -228,7 +231,7 @@ export function sanitizeErrors(err, req, res, next) {
   };
   
   // Log full error internally
-  console.error('🚨 Internal Error:', {
+  logger.error('🚨 Internal Error:', {
     error: err.message,
     stack: err.stack,
     url: req.url,

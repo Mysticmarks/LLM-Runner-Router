@@ -8,9 +8,11 @@ import bcrypt from 'bcrypt';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Logger } from '../utils/Logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const logger = new Logger('PersistentTestKey');
 
 export class PersistentTestKey {
   constructor(options = {}) {
@@ -71,7 +73,7 @@ export class PersistentTestKey {
    */
   async installPersistentTestKey() {
     try {
-      console.log('🔑 Installing persistent test API key...');
+      logger.info('🔑 Installing persistent test API key...');
       
       // Generate the test key configuration
       const testConfig = await this.generatePersistentTestKey();
@@ -87,7 +89,7 @@ export class PersistentTestKey {
         const existingData = await fs.readFile(this.keysFile, 'utf8');
         apiKeysData = JSON.parse(existingData);
       } catch (error) {
-        console.log('  📝 Creating new API keys file...');
+        logger.info('  📝 Creating new API keys file...');
         // Ensure data directory exists
         const dataDir = path.dirname(this.keysFile);
         await fs.mkdir(dataDir, { recursive: true });
@@ -118,16 +120,16 @@ export class PersistentTestKey {
 
       await fs.writeFile(this.configFile, JSON.stringify(testKeyConfig, null, 2));
 
-      console.log('  ✅ Persistent test key installed successfully');
-      console.log(`  🔑 Key ID: ${this.FIXED_TEST_KEY_ID}`);
-      console.log(`  🎯 Full Key: ${testConfig.fullKey}`);
-      console.log(`  📊 Tier: ${testConfig.keyData.tier}`);
-      console.log(`  💾 Config saved to: ${this.configFile}`);
+      logger.success('  ✅ Persistent test key installed successfully');
+      logger.info(`  🔑 Key ID: ${this.FIXED_TEST_KEY_ID}`);
+      logger.info(`  🎯 Full Key: ${testConfig.fullKey}`);
+      logger.info(`  📊 Tier: ${testConfig.keyData.tier}`);
+      logger.info(`  💾 Config saved to: ${this.configFile}`);
 
       return testConfig.fullKey;
 
     } catch (error) {
-      console.error('❌ Failed to install persistent test key:', error);
+      logger.error('❌ Failed to install persistent test key:', error);
       throw error;
     }
   }
@@ -177,17 +179,17 @@ export class PersistentTestKey {
    * Ensure the persistent test key is always available
    */
   async ensurePersistentTestKey() {
-    console.log('🔍 Checking persistent test key...');
+    logger.info('🔍 Checking persistent test key...');
     
     const check = await this.checkPersistentTestKey();
     
     if (check.exists) {
-      console.log('  ✅ Persistent test key is already installed and valid');
-      console.log(`  🔑 Full Key: ${check.fullKey}`);
+      logger.success('  ✅ Persistent test key is already installed and valid');
+      logger.info(`  🔑 Full Key: ${check.fullKey}`);
       return check.fullKey;
     } else {
-      console.log(`  ⚠️  Persistent test key not valid: ${check.reason}`);
-      console.log('  🔄 Installing persistent test key...');
+      logger.warn(`  ⚠️  Persistent test key not valid: ${check.reason}`);
+      logger.info('  🔄 Installing persistent test key...');
       return await this.installPersistentTestKey();
     }
   }

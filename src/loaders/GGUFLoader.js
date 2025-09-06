@@ -9,6 +9,17 @@ import { Logger } from '../utils/Logger.js';
 import path from 'path';
 import fs from 'fs/promises';
 
+const logger = new Logger('GGUFLoader');
+
+// VPS Fallback - Import SimpleSmolLM3Loader for when node-llama-cpp is unavailable
+let SimpleSmolLM3Loader;
+try {
+  const { default: Loader } = await import('./SimpleSmolLM3Loader.js');
+  SimpleSmolLM3Loader = Loader;
+} catch (error) {
+  logger.warn('SimpleSmolLM3Loader fallback not available');
+}
+
 // Make node-llama-cpp optional
 let getLlama, LlamaChatSession;
 try {
@@ -16,10 +27,8 @@ try {
   getLlama = llamaCpp.getLlama;
   LlamaChatSession = llamaCpp.LlamaChatSession;
 } catch (error) {
-  console.warn('node-llama-cpp not available - GGUF models will not be functional');
+  logger.warn('node-llama-cpp not available - GGUF models will not be functional');
 }
-
-const logger = new Logger('GGUFLoader');
 
 /**
  * GGUF Model - Production implementation with real inference
@@ -82,10 +91,16 @@ class GGUFModel extends ModelInterface {
     try {
       // Check if node-llama-cpp is available
       if (!getLlama) {
-        // In VPS/test environments, gracefully handle missing dependency
-        const error = new Error('node-llama-cpp is not available. GGUF models disabled in VPS environment.');
-        error.code = 'GGUF_NOT_AVAILABLE';
-        throw error;
+        // VPS Fallback: Use SimpleSmolLM3Loader if available
+        if (SimpleSmolLM3Loader) {
+          logger.warn('node-llama-cpp not available, falling back to SimpleSmolLM3Loader for VPS compatibility');
+          return await this.loadWithFallback();
+        } else {
+          // If no fallback available, fail gracefully
+          const error = new Error('node-llama-cpp is not available and no fallback loader found. GGUF models disabled in VPS environment.');
+          error.code = 'GGUF_NOT_AVAILABLE';
+          throw error;
+        }
       }
       
       // Get llama instance
@@ -140,6 +155,44 @@ class GGUFModel extends ModelInterface {
   }
 
   /**
+   * VPS Fallback: Load using SimpleSmolLM3Loader when node-llama-cpp is unavailable
+   */
+  async loadWithFallback() {
+    logger.info('🔄 Initializing VPS fallback using SimpleSmolLM3 model');
+    
+    try {
+      // Create fallback loader instance
+      this.fallbackLoader = new SimpleSmolLM3Loader();
+      
+      // Configure fallback to use local SmolLM3 model
+      const fallbackConfig = {
+        id: this.id || 'gguf-fallback',
+        name: `${this.name} (VPS Fallback)`,
+        format: 'safetensors', // SimpleSmolLM3Loader uses safetensors
+        source: './models/smollm3-3b', // Local SmolLM3 model path
+        type: 'text-generation'
+      };
+      
+      // Load a model using the fallback (SimpleSmolLM3Loader doesn't have initialize method)
+      this.fallbackModel = await this.fallbackLoader.load(fallbackConfig);
+      
+      // Mark as loaded with fallback
+      this.loaded = true;
+      this.loading = false;
+      this.isFallbackMode = true;
+      this.metrics.loadTime = Date.now();
+      
+      logger.success(`✅ GGUF fallback model loaded using SmolLM3: ${this.name}`);
+      
+    } catch (error) {
+      this.error = error;
+      this.loading = false;
+      logger.error(`Failed to load GGUF fallback: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
    * Generate text response from a prompt with GGUF model
    * 
    * @param {string} prompt - Input text prompt
@@ -181,8 +234,17 @@ class GGUFModel extends ModelInterface {
       this.metrics.inferenceCount++;
       this.metrics.lastUsed = new Date();
       
-      // Generate response
-      const response = await this.session.prompt(prompt, {
+      let response;
+      
+      // Use fallback model if in fallback mode
+      if (this.isFallbackMode && this.fallbackModel) {
+        logger.debug('Using VPS fallback model for generation');
+        response = await this.fallbackModel.generate(prompt, options);
+        return response; // Fallback model handles its own response formatting
+      }
+      
+      // Generate response using node-llama-cpp
+      response = await this.session.prompt(prompt, {
         maxTokens: options.maxTokens || 500,
         temperature: options.temperature || 0.7,
         topK: options.topK || 40,
@@ -268,6 +330,13 @@ class GGUFModel extends ModelInterface {
    */
   async *stream(prompt, options = {}) {
     if (!this.loaded) await this.load();
+    
+    // Use fallback streaming if in fallback mode
+    if (this.isFallbackMode && this.fallbackModel) {
+      logger.debug('Using VPS fallback model for streaming');
+      yield* this.fallbackModel.stream(prompt, options);
+      return;
+    }
     
     const startTime = Date.now();
     let totalTokens = 0;

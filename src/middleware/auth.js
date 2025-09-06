@@ -5,9 +5,11 @@
 
 import { APIKeyManager } from '../auth/APIKeyManager.js';
 import rateLimit from 'express-rate-limit';
+import { Logger } from '../utils/Logger.js';
 
 // Global API key manager instance
 let apiKeyManager = null;
+const logger = new Logger('AuthMiddleware');
 
 /**
  * Initialize authentication system
@@ -15,7 +17,7 @@ let apiKeyManager = null;
 export async function initializeAuth(options = {}) {
   apiKeyManager = new APIKeyManager(options);
   await apiKeyManager.initialize();
-  console.log('🛡️ Authentication system initialized');
+  logger.success('🛡️ Authentication system initialized');
   return apiKeyManager;
 }
 
@@ -64,7 +66,7 @@ export function requireAPIKey(req, res, next) {
       next();
     })
     .catch(error => {
-      console.error('Auth validation error:', error);
+      logger.error('Auth validation error:', error);
       res.status(500).json({
         error: 'Authentication error',
         message: 'Internal server error during authentication'
@@ -112,7 +114,7 @@ export function checkRateLimit(req, res, next) {
       next();
     })
     .catch(error => {
-      console.error('Rate limit check error:', error);
+      logger.error('Rate limit check error:', error);
       next(); // Continue on error
     });
 }

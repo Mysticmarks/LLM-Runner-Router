@@ -24,6 +24,8 @@ import OllamaAdapter from './src/loaders/adapters/OllamaAdapter.js';
 import HFLoader from './src/loaders/HFLoader.js';
 import SimpleInferenceServer from './src/loaders/SimpleInferenceServer.js';
 import WebSocketAPI from './src/api/WebSocket.js';
+import MonitoringSystem from './src/monitoring/index.js';
+import { httpMonitoringMiddleware } from './src/monitoring/middleware.js';
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
@@ -77,6 +79,16 @@ const server = createServer(app);
 // Basic security middleware
 app.use(securityHeaders());
 app.use(globalRateLimit());
+
+// Production monitoring middleware (before other middleware for accurate metrics)
+if (process.env.NODE_ENV === 'production' || process.env.MONITORING_ENABLED === 'true') {
+  app.use(httpMonitoringMiddleware({
+    enabled: true,
+    excludePaths: ['/favicon.ico', '/health', '/metrics'],
+    includeBody: false, // For security
+    sampling: 1.0 // Monitor 100% of requests in production
+  }));
+}
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
@@ -737,6 +749,40 @@ if (process.env.NODE_ENV !== 'test') {
   // Start server - bind to specified host
   server.listen(PORT, HOST, async () => {
     logger.info(`\n🌐 Server listening on http://${HOST}:${PORT}\n`);
+    
+    // Initialize monitoring system
+    const monitoring = new MonitoringSystem({
+      enabled: process.env.MONITORING_ENABLED !== 'false',
+      components: {
+        prometheus: true,
+        health: true,
+        alerting: true,
+        profiler: process.env.PROFILER_ENABLED === 'true'
+      }
+    });
+    
+    try {
+      await monitoring.start();
+      logger.success('📊 Monitoring system initialized');
+      
+      // Expose metrics endpoint
+      app.get('/metrics', (req, res) => {
+        monitoring.getMetrics().then(metrics => {
+          res.set('Content-Type', 'text/plain');
+          res.send(metrics);
+        });
+      });
+      
+      // Expose health check endpoint
+      app.get('/health', (req, res) => {
+        monitoring.getHealth().then(health => {
+          res.status(health.status === 'healthy' ? 200 : 503).json(health);
+        });
+      });
+      
+    } catch (error) {
+      logger.warn(`Monitoring system failed to initialize: ${error.message}`);
+    }
     
     // Initialize router after server starts
     await initializeRouter();

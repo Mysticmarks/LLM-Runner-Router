@@ -8,9 +8,11 @@ import protoLoader from '@grpc/proto-loader';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { EventEmitter } from 'events';
+import { Logger } from '../utils/Logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const logger = new Logger('gRPC');
 
 export class GRPCServer extends EventEmitter {
   constructor(options = {}) {
@@ -137,14 +139,14 @@ export class GRPCServer extends EventEmitter {
             session.call.end();
           }
         } catch (error) {
-          console.warn(`Error closing session ${sessionId}:`, error.message);
+          logger.warn(`Error closing session ${sessionId}:`, error.message);
         }
       }
       this.activeSessions.clear();
 
       this.server.tryShutdown((error) => {
         if (error) {
-          console.warn('gRPC server shutdown error:', error.message);
+          logger.warn('gRPC server shutdown error:', error.message);
           this.server.forceShutdown();
         }
         this.emit('stopped');

@@ -5,8 +5,10 @@
 
 import express from 'express';
 import { getAPIKeyManager, requireAdmin } from '../middleware/auth.js';
+import { Logger } from '../utils/Logger.js';
 
 const router = express.Router();
+const logger = new Logger('AdminAPI');
 
 /**
  * Get all API keys (admin only)
@@ -27,7 +29,7 @@ router.get('/keys', requireAdmin, async (req, res) => {
       keys
     });
   } catch (error) {
-    console.error('Admin keys list error:', error);
+    logger.error('Admin keys list error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -62,7 +64,7 @@ router.post('/keys', requireAdmin, async (req, res) => {
       warning: 'This is the only time the full key will be shown'
     });
   } catch (error) {
-    console.error('Admin key creation error:', error);
+    logger.error('Admin key creation error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -90,7 +92,7 @@ router.get('/keys/:keyId/usage', requireAdmin, async (req, res) => {
       usage: stats
     });
   } catch (error) {
-    console.error('Admin usage stats error:', error);
+    logger.error('Admin usage stats error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -114,7 +116,7 @@ router.delete('/keys/:keyId', requireAdmin, async (req, res) => {
       message: `API key ${keyId} deactivated`
     });
   } catch (error) {
-    console.error('Admin key deactivation error:', error);
+    logger.error('Admin key deactivation error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -158,7 +160,7 @@ router.get('/stats', requireAdmin, async (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Admin stats error:', error);
+    logger.error('Admin stats error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -207,7 +209,7 @@ router.patch('/keys/:keyId/tier', requireAdmin, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Admin tier update error:', error);
+    logger.error('Admin tier update error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -245,7 +247,7 @@ router.post('/keys/:keyId/reset-usage', requireAdmin, async (req, res) => {
       message: `Usage statistics reset for key ${keyId}`
     });
   } catch (error) {
-    console.error('Admin usage reset error:', error);
+    logger.error('Admin usage reset error:', error);
     res.status(500).json({ error: error.message });
   }
 });
