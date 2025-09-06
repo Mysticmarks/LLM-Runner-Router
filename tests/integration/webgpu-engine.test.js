@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 
 const skipIfNoWebGPU = () => {
   if (typeof navigator === 'undefined' || !navigator.gpu) {
@@ -9,17 +9,27 @@ const skipIfNoWebGPU = () => {
 };
 
 describe('WebGPU Engine Integration', () => {
-  beforeAll(() => {
+  let originalEnv;
+
+  beforeEach(async () => {
     // Ensure production mode so EngineSelector loads full engines
+    originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
+    const { EngineSelector } = await import('../../src/engines/EngineSelector.js');
+    EngineSelector.engines.clear();
+    EngineSelector.initialized = false;
+  });
+
+  afterEach(async () => {
+    const { EngineSelector } = await import('../../src/engines/EngineSelector.js');
+    EngineSelector.engines.clear();
+    EngineSelector.initialized = false;
+    process.env.NODE_ENV = originalEnv;
   });
 
   it('selects WebGPU engine when available', async () => {
     if (skipIfNoWebGPU()) return;
     const { EngineSelector } = await import('../../src/engines/EngineSelector.js');
-    // reset selector state for clean test
-    EngineSelector.engines.clear();
-    EngineSelector.initialized = false;
     const engine = await EngineSelector.getBest();
     expect(engine.name).toBe('WebGPU');
     await engine.cleanup();
