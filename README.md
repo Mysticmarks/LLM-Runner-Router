@@ -176,7 +176,7 @@ Perfect for developers building AI applications, researchers comparing models, a
 
 ### ⚡ Multi-Engine Runtime Architecture
 - **Node.js Engine**: ✅ High-performance server-side inference
-- **WebGPU Engine**: ❌ Planned but not yet implemented
+- **WebGPU Engine**: ✅ Hardware-accelerated browser inference
 - **WASM Engine**: ❌ Planned but not yet implemented
 - **Edge Computing**: ❌ No specific optimizations implemented yet
 
