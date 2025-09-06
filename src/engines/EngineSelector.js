@@ -42,7 +42,7 @@ class EngineSelector {
       { name: 'node', module: './NodeEngine.js', priority: 90 },
       { name: 'wasm', module: './WASMEngine.js', priority: 80 },
       { name: 'worker', module: './WorkerEngine.js', priority: 70 },
-      { name: 'edge', module: './EdgeEngine.js', priority: 60 }
+      { name: 'edge', module: './EdgeEngine.js', priority: 10 }
     ];
     
     for (const engine of engines) {

@@ -114,7 +114,6 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for production setup.
 - **Ollama Integration**: Loader exists but not complete
 - **WebGPU Engine**: Planned but not implemented
 - **WASM Engine**: Mentioned but no implementation
-- **Edge Computing**: No specific optimizations yet
 - **WebSocket/SSE**: StreamProcessor exists but not full bidirectional support
 - **Enterprise Features**: Compliance features not implemented
 - **OAuth2 Authentication**: Not implemented
@@ -178,7 +177,7 @@ Perfect for developers building AI applications, researchers comparing models, a
 - **Node.js Engine**: ✅ High-performance server-side inference
 - **WebGPU Engine**: ❌ Planned but not yet implemented
 - **WASM Engine**: ❌ Planned but not yet implemented
-- **Edge Computing**: ❌ No specific optimizations implemented yet
+- **Edge Engine**: ✅ Cloudflare Workers, Deno Deploy, Vercel Edge
 
 ### 🧭 Intelligent Model Routing Strategies
 - **Quality-First**: Route to highest-quality models for critical applications
@@ -799,7 +798,7 @@ const scores = await router.rankModelsByQuality(models, prompt);
 
 - **Browser**: Full client-side inference with WebGPU
 - **Node.js**: Server-side with native bindings
-- **Edge**: Cloudflare Workers, Deno Deploy
+- **Edge**: Cloudflare Workers, Deno Deploy, Vercel Edge
 - **Docker**: Container-ready out of the box
 - **Kubernetes**: Scale to infinity and beyond
 
