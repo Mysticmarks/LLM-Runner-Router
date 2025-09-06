@@ -12,8 +12,12 @@ import { Pipeline } from '../src/core/Pipeline.js';
 describe('Final Project Validation', () => {
   let router;
   let registry;
+  let originalNodeEnv;
+  let originalAutoInit;
 
   beforeAll(() => {
+    originalNodeEnv = process.env.NODE_ENV;
+    originalAutoInit = process.env.AUTO_INIT;
     process.env.NODE_ENV = 'test';
     process.env.AUTO_INIT = 'false';
   });
@@ -208,6 +212,12 @@ describe('Final Project Validation', () => {
     }
     if (registry) {
       registry = null;
+    }
+    process.env.NODE_ENV = originalNodeEnv;
+    if (originalAutoInit === undefined) {
+      delete process.env.AUTO_INIT;
+    } else {
+      process.env.AUTO_INIT = originalAutoInit;
     }
   });
 });

@@ -8,16 +8,20 @@ describe('LLM Runner Router', () => {
   });
   test('selects Node engine when available', async () => {
     const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = 'production';
-    jest.resetModules();
-    const { EngineSelector } = await import('../src/engines/EngineSelector.js');
-    EngineSelector.engines.clear();
-    EngineSelector.initialized = false;
-    const engine = await EngineSelector.getBest();
-    expect(engine.constructor.name).toBe('NodeEngine');
-    await engine.cleanup?.();
-    EngineSelector.engines.clear();
-    EngineSelector.initialized = false;
-    process.env.NODE_ENV = originalEnv;
+    let EngineSelector;
+    try {
+      process.env.NODE_ENV = 'production';
+      jest.resetModules();
+      ({ EngineSelector } = await import('../src/engines/EngineSelector.js'));
+      EngineSelector.engines.clear();
+      EngineSelector.initialized = false;
+      const engine = await EngineSelector.getBest();
+      expect(engine.constructor.name).toBe('NodeEngine');
+      await engine.cleanup?.();
+    } finally {
+      EngineSelector?.engines.clear();
+      if (EngineSelector) EngineSelector.initialized = false;
+      process.env.NODE_ENV = originalEnv;
+    }
   });
 });
