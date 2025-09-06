@@ -39,7 +39,7 @@ class EngineSelector {
     // Register all engines with priority
     const engines = [
       { name: 'webgpu', module: './WebGPUEngine.js', priority: 100 },
-      { name: 'node', module: './NodeEngine.js', priority: 90 },
+      { name: 'node', module: './NodeNativeEngine.js', priority: 90 },
       { name: 'wasm', module: './WASMEngine.js', priority: 80 },
       { name: 'worker', module: './WorkerEngine.js', priority: 70 },
       { name: 'edge', module: './EdgeEngine.js', priority: 60 }
@@ -49,8 +49,12 @@ class EngineSelector {
       try {
         const { default: Engine } = await import(engine.module);
         const instance = new Engine();
-        
-        if (await instance.isSupported()) {
+
+        const supported = typeof instance.isSupported === 'function'
+          ? await instance.isSupported()
+          : true;
+
+        if (supported) {
           this.engines.set(engine.name, {
             instance,
             priority: engine.priority,
@@ -68,20 +72,18 @@ class EngineSelector {
 
   static async getBest(config = {}) {
     await this.initialize();
-    
-    // Filter by requirements
-    const available = Array.from(this.engines.entries())
-      .filter(([_, eng]) => eng.supported)
-      .sort((a, b) => b[1].priority - a[1].priority);
-    
-    if (available.length === 0) {
-      throw new Error('No engines available!');
+
+    const preferredOrder = ['webgpu', 'node', 'wasm', 'worker', 'edge'];
+
+    for (const name of preferredOrder) {
+      const eng = this.engines.get(name);
+      if (eng?.supported) {
+        logger.info(`🎯 Selected engine: ${name}`);
+        return eng.instance;
+      }
     }
-    
-    // Return highest priority engine
-    const [name, engine] = available[0];
-    logger.info(`🎯 Selected engine: ${name}`);
-    return engine.instance;
+
+    throw new Error('No engines available!');
   }
 
   static async getByName(name) {
