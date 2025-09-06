@@ -76,7 +76,7 @@ describe('Comprehensive Project Validation', () => {
       const engines = [
         'WebGPUEngine',
         'WASMEngine',
-        'NodeNativeEngine',
+        'NodeEngine',
         'WorkerEngine',
         'EdgeEngine',
         'EngineSelector'

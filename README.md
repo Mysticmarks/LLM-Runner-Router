@@ -847,7 +847,7 @@ MIT License - Because sharing is caring, and AI should be for everyone.
 - [ ] GraphQL API endpoint
 - [ ] gRPC interface for high-performance RPC
 - [ ] TensorFlow.js loader
-- [ ] Node Native Engine optimizations
+- [ ] Node Engine optimizations
 - [ ] Kubernetes deployment configs
 - [ ] OpenTelemetry monitoring integration
 
