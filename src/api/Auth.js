@@ -255,6 +255,7 @@ export class AuthenticationManager extends EventEmitter {
       };
 
       this.users.set(userId, user);
+      await this.users.save();
       this.emit('userCreated', user);
       
       return { ...user, password: undefined }; // Don't return password
@@ -297,6 +298,8 @@ export class AuthenticationManager extends EventEmitter {
       // Update user login info
       user.lastLogin = new Date();
       user.loginCount++;
+      this.users.set(user.id, user);
+      await this.users.save();
 
       this.emit('userAuthenticated', user);
       return { ...user, password: undefined };
@@ -324,7 +327,7 @@ export class AuthenticationManager extends EventEmitter {
   /**
    * Generate JWT token
    */
-  generateTokens(user) {
+  async generateTokens(user) {
     const tokenId = uuidv4();
     const now = Math.floor(Date.now() / 1000);
 
@@ -362,6 +365,7 @@ export class AuthenticationManager extends EventEmitter {
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
     });
+    await this.refreshTokens.save();
 
     this.emit('tokensGenerated', { userId: user.id, tokenId, refreshTokenId });
 
@@ -393,6 +397,7 @@ export class AuthenticationManager extends EventEmitter {
 
       if (storedToken.expiresAt < new Date()) {
         this.refreshTokens.delete(decoded.jti);
+        await this.refreshTokens.save();
         throw new Error('Refresh token expired');
       }
 
@@ -402,10 +407,11 @@ export class AuthenticationManager extends EventEmitter {
       }
 
       // Generate new tokens
-      const tokens = this.generateTokens(user);
+      const tokens = await this.generateTokens(user);
       
       // Remove old refresh token
       this.refreshTokens.delete(decoded.jti);
+      await this.refreshTokens.save();
 
       this.emit('tokenRefreshed', { userId: user.id, oldTokenId: decoded.jti });
       
@@ -419,12 +425,13 @@ export class AuthenticationManager extends EventEmitter {
   /**
    * Revoke token (blacklist)
    */
-  revokeToken(token) {
+  async revokeToken(token) {
     try {
       const decoded = jwt.decode(token);
       if (decoded && decoded.jti) {
         this.blacklistedTokens.add(decoded.jti);
         this.refreshTokens.delete(decoded.jti);
+        await this.refreshTokens.save();
         this.emit('tokenRevoked', { tokenId: decoded.jti, userId: decoded.sub });
       }
     } catch (error) {
@@ -460,6 +467,7 @@ export class AuthenticationManager extends EventEmitter {
       };
 
       this.apiKeys.set(apiKeyId, apiKey);
+      await this.apiKeys.save();
       this.emit('apiKeyGenerated', { userId, apiKeyId, name });
 
       return {
@@ -605,6 +613,8 @@ export class AuthenticationManager extends EventEmitter {
     }
 
     Object.assign(user, updates);
+    this.users.set(userId, user);
+    await this.users.save();
     this.emit('userUpdated', { userId, updates });
     
     return { ...user, password: undefined };
@@ -613,7 +623,7 @@ export class AuthenticationManager extends EventEmitter {
   /**
    * Delete user
    */
-  deleteUser(userId) {
+  async deleteUser(userId) {
     const user = this.users.get(userId);
     if (!user) {
       return false;
@@ -627,13 +637,19 @@ export class AuthenticationManager extends EventEmitter {
     }
 
     // Remove all refresh tokens for this user
+    let hasChanges = false;
     for (const [tokenId, refreshToken] of this.refreshTokens) {
       if (refreshToken.userId === userId) {
         this.refreshTokens.delete(tokenId);
+        hasChanges = true;
       }
+    }
+    if (hasChanges) {
+      await this.refreshTokens.save();
     }
 
     this.users.delete(userId);
+    await this.users.save();
     this.emit('userDeleted', { userId });
     
     return true;
@@ -723,14 +739,19 @@ export class AuthenticationManager extends EventEmitter {
   /**
    * Cleanup expired tokens and sessions
    */
-  cleanup() {
+  async cleanup() {
     const now = new Date();
     
     // Remove expired refresh tokens
+    let hasChanges = false;
     for (const [tokenId, refreshToken] of this.refreshTokens) {
       if (refreshToken.expiresAt < now) {
         this.refreshTokens.delete(tokenId);
+        hasChanges = true;
       }
+    }
+    if (hasChanges) {
+      await this.refreshTokens.save();
     }
 
     // Remove expired API keys
@@ -903,6 +924,28 @@ export class AuthMiddleware {
         message: 'Authentication required (Bearer token or API key)'
       });
     };
+  }
+
+  /**
+   * Gracefully shutdown and save all data
+   */
+  async shutdown() {
+    try {
+      logger.info('Shutting down authentication manager...');
+      
+      // Force save all persistent data
+      await Promise.all([
+        this.users.close(),
+        this.apiKeys.close(),
+        this.refreshTokens.close()
+      ]);
+      
+      this.emit('shutdown');
+      logger.info('Authentication manager shutdown complete');
+    } catch (error) {
+      logger.error('Error during authentication shutdown:', error);
+      throw error;
+    }
   }
 }
 

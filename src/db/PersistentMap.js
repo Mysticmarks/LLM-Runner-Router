@@ -38,6 +38,7 @@ export class PersistentMap {
     // Cancel any pending save
     if (this.saveQueue) {
       clearTimeout(this.saveQueue);
+      this.saveQueue = null;
     }
 
     // Debounce rapid saves
@@ -56,9 +57,11 @@ export class PersistentMap {
           await fs.rename(tempFile, this.filePath);
           
           logger.debug(`Saved ${this.map.size} entries to ${this.filePath}`);
+          this.saveQueue = null;
           resolve();
         } catch (err) {
           logger.error(`Failed to save ${this.filePath}: ${err.message}`);
+          this.saveQueue = null;
           reject(err);
         }
       }, this.saveDelay);
@@ -137,7 +140,20 @@ export class PersistentMap {
   async close() {
     if (this.saveQueue) {
       clearTimeout(this.saveQueue);
-      await this.save();
+      this.saveQueue = null;
+      // Force immediate save without debouncing
+      try {
+        const dir = path.dirname(this.filePath);
+        await fs.mkdir(dir, { recursive: true });
+        const tempFile = `${this.filePath}.tmp`;
+        const obj = Object.fromEntries(this.map);
+        await fs.writeFile(tempFile, JSON.stringify(obj, null, 2));
+        await fs.rename(tempFile, this.filePath);
+        logger.debug(`Closed and saved ${this.map.size} entries to ${this.filePath}`);
+      } catch (err) {
+        logger.error(`Failed to save on close: ${err.message}`);
+        throw err;
+      }
     }
   }
 }
