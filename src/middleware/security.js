@@ -90,11 +90,21 @@ export function authRateLimit() {
 export function validateInput(req, res, next) {
   // Remove potentially dangerous characters
   if (req.body) {
-    req.body = sanitizeObject(req.body);
+    const sanitized = sanitizeObject(req.body);
+    if (sanitized !== req.body) {
+      req.body = sanitized;
+    }
   }
   
   if (req.query) {
-    req.query = sanitizeObject(req.query);
+    const sanitizedQuery = sanitizeObject(req.query);
+    // Only try to reassign if we can (some environments make query read-only)
+    try {
+      req.query = sanitizedQuery;
+    } catch (err) {
+      // If query is read-only, we'll use the sanitized version in our handlers
+      req.sanitizedQuery = sanitizedQuery;
+    }
   }
   
   next();

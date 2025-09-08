@@ -4,11 +4,11 @@
  * Provides non-blocking execution in browser environments
  */
 
-import { Logger } from '../utils/Logger.js';
+import { BaseEngine } from './BaseEngine.js';
 
-class WorkerEngine {
+class WorkerEngine extends BaseEngine {
   constructor(config = {}) {
-    this.logger = new Logger('WorkerEngine');
+    super('WorkerEngine');
     this.config = {
       maxWorkers: config.maxWorkers || navigator?.hardwareConcurrency || 4,
       workerScript: config.workerScript || null,
@@ -23,17 +23,33 @@ class WorkerEngine {
     this.workerPool = [];
     this.taskQueue = [];
     this.currentWorkerIndex = 0;
-    this.initialized = false;
     this.isServiceWorker = false;
     this.isBrowser = typeof window !== 'undefined';
+    
+    // Update capabilities
+    this.capabilities = {
+      ...this.capabilities,
+      parallel: true,
+      gpu: false,
+      streaming: true,
+      quantization: false,
+      multiModal: false,
+      batchProcessing: true
+    };
   }
 
   /**
-   * Initialize the engine
+   * Check if supported
    */
-  async initialize() {
-    if (this.initialized) return true;
-    
+  async isSupported() {
+    return typeof Worker !== 'undefined' || typeof ServiceWorker !== 'undefined';
+  }
+  
+  /**
+   * Internal initialization implementation
+   * @protected
+   */
+  async _initialize(options) {
     try {
       this.logger.info('Initializing Worker Engine');
       
@@ -45,7 +61,6 @@ class WorkerEngine {
         await this.createWorkerPool();
       }
       
-      this.initialized = true;
       this.logger.info(`Worker Engine initialized with ${this.config.maxWorkers} workers`);
       
       return true;

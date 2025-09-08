@@ -4,15 +4,13 @@
  * Provides high-performance server-side model execution
  */
 
-import { EventEmitter } from 'events';
 import { Worker } from 'worker_threads';
 import { cpus } from 'os';
-import { Logger } from '../utils/Logger.js';
+import { BaseEngine } from './BaseEngine.js';
 
-class NodeEngine extends EventEmitter {
+class NodeEngine extends BaseEngine {
   constructor(config = {}) {
-    super();
-    this.logger = new Logger('NodeEngine');
+    super('NodeEngine');
     this.config = {
       threads: config.threads || cpus().length,
       useNativeBindings: config.useNativeBindings !== false,
@@ -23,11 +21,20 @@ class NodeEngine extends EventEmitter {
       workerPool: config.workerPool !== false
     };
     
-    this.initialized = false;
     this.workers = [];
     this.workerQueue = [];
     this.activeJobs = new Map();
-    this.capabilities = {};
+    
+    // Update capabilities
+    this.capabilities = {
+      ...this.capabilities,
+      parallel: true,
+      gpu: false,
+      streaming: true,
+      quantization: true,
+      multiModal: false,
+      batchProcessing: true
+    };
   }
 
   async isSupported() {
@@ -37,14 +44,16 @@ class NodeEngine extends EventEmitter {
   /**
    * Initialize the engine
    */
-  async initialize() {
-    if (this.initialized) return true;
-    
+  /**
+   * Internal initialization implementation
+   * @protected
+   */
+  async _initialize(options) {
     try {
       this.logger.info('Initializing Node Engine');
       
       // Detect CPU capabilities
-      this.capabilities = this.detectCapabilities();
+      Object.assign(this.capabilities, this.detectCapabilities());
       
       // Initialize worker pool if enabled
       if (this.config.workerPool) {
@@ -56,7 +65,6 @@ class NodeEngine extends EventEmitter {
         await this.loadNativeBindings();
       }
       
-      this.initialized = true;
       this.logger.info(`Node Engine initialized with ${this.config.threads} threads`);
       
       return true;

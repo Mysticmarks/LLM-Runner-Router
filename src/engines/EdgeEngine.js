@@ -4,12 +4,12 @@
  * Provides lightweight, globally distributed inference
  */
 
-import { Logger } from '../utils/Logger.js';
+import { BaseEngine } from './BaseEngine.js';
 /* global KV, DurableObject, fastly, CF, Deno */
 
-class EdgeEngine {
+class EdgeEngine extends BaseEngine {
   constructor(config = {}) {
-    this.logger = new Logger('EdgeEngine');
+    super('EdgeEngine');
     this.config = {
       platform: config.platform || this.detectPlatform(),
       cacheStrategy: config.cacheStrategy || 'aggressive',
@@ -21,11 +21,21 @@ class EdgeEngine {
       coldStartOptimization: config.coldStartOptimization !== false
     };
     
-    this.initialized = false;
     this.cache = null;
     this.kv = null;
     this.models = new Map();
     this.platform = null;
+    
+    // Update capabilities
+    this.capabilities = {
+      ...this.capabilities,
+      parallel: false,
+      gpu: false,
+      streaming: true,
+      quantization: true,
+      multiModal: false,
+      batchProcessing: false
+    };
   }
 
   /**
@@ -70,11 +80,10 @@ class EdgeEngine {
   }
 
   /**
-   * Initialize the engine
+   * Internal initialization implementation
+   * @protected
    */
-  async initialize() {
-    if (this.initialized) return true;
-    
+  async _initialize(options) {
     try {
       this.logger.info(`Initializing Edge Engine for ${this.config.platform}`);
       
@@ -95,8 +104,6 @@ class EdgeEngine {
       
       // Initialize cache
       await this.initializeCache();
-      
-      this.initialized = true;
       this.logger.info(`Edge Engine initialized on ${this.config.platform}`);
       
       return true;

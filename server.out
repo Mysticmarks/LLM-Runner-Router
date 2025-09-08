@@ -1,18 +1,37 @@
-
-> llm-runner-router@2.0.0 start
-> node server.js
-
-[34m[2025-09-05T16:41:24.093Z] 💡 [Config] 🎛️ Configuration initialized:[0m { environment: 'development', strategy: 'balanced' }
-[34m[2025-09-05T16:41:24.097Z] 💡 [Router] 🧭 Router initialized with strategy:[0m balanced
-[34m[2025-09-05T16:41:24.097Z] 💡 [LLMRouter] 🚀 LLM-Runner-Router initializing...[0m { version: '2.0.0', environment: 'node' }
-[dotenv@17.2.1] injecting env (8) from .env -- tip: ⚙️  override existing env vars with { override: true }
-🚀 LLM Router Server Starting...
-
-[34m[2025-09-05T16:41:24.100Z] 💡 [Config] 🎛️ Configuration initialized:[0m { environment: 'development', strategy: 'balanced' }
-[34m[2025-09-05T16:41:24.100Z] 💡 [Router] 🧭 Router initialized with strategy:[0m balanced
-[34m[2025-09-05T16:41:24.101Z] 💡 [LLMRouter] 🚀 LLM-Runner-Router initializing...[0m { version: '2.0.0', environment: 'node' }
-[34m[2025-09-05T16:41:24.101Z] 💡 [Config] 🎛️ Configuration initialized:[0m { environment: 'development', strategy: 'balanced' }
-[31m[2025-09-05T16:41:24.105Z] ❌ [ErrorHandler] 🚨 CRITICAL: Uncaught Exception:[0m Error: listen EADDRINUSE: address already in use 0.0.0.0:3006
+[34m[2025-09-07T05:30:11.160Z] 💡 [Prometheus] Custom Prometheus metrics initialized[0m
+[34m[2025-09-07T05:30:11.162Z] 💡 [HealthMonitor] Health check registered: cpu_usage[0m
+[34m[2025-09-07T05:30:11.162Z] 💡 [HealthMonitor] Health check registered: memory_usage[0m
+[34m[2025-09-07T05:30:11.163Z] 💡 [HealthMonitor] Health check registered: disk_usage[0m
+[34m[2025-09-07T05:30:11.163Z] 💡 [HealthMonitor] Health check registered: process_health[0m
+[34m[2025-09-07T05:30:11.163Z] 💡 [HealthMonitor] Health check registered: error_rate[0m
+[34m[2025-09-07T05:30:11.163Z] 💡 [HealthMonitor] Health check registered: response_time[0m
+[34m[2025-09-07T05:30:11.163Z] 💡 [HealthMonitor] Health check registered: network_connectivity[0m
+[34m[2025-09-07T05:30:11.163Z] 💡 [HealthMonitor] Default health checks registered[0m
+[34m[2025-09-07T05:30:11.164Z] 💡 [Alerting] Alert rule added: high_error_rate[0m
+[34m[2025-09-07T05:30:11.164Z] 💡 [Alerting] Alert rule added: high_memory_usage[0m
+[34m[2025-09-07T05:30:11.164Z] 💡 [Alerting] Alert rule added: model_inference_failures[0m
+[34m[2025-09-07T05:30:11.164Z] 💡 [Alerting] Alert rule added: system_health_degraded[0m
+[34m[2025-09-07T05:30:11.164Z] 💡 [Alerting] Alert rule added: performance_degradation[0m
+[34m[2025-09-07T05:30:11.164Z] 💡 [Alerting] Default alert rules loaded[0m
+[34m[2025-09-07T05:30:11.165Z] 💡 [Monitoring] Monitoring component integrations configured[0m
+[34m[2025-09-07T05:30:11.179Z] 💡 [Monitoring] Starting monitoring system...[0m
+[32m[2025-09-07T05:30:11.182Z] ✅ [Prometheus] Prometheus metrics server started on port 9090[0m
+[34m[2025-09-07T05:30:11.182Z] 💡 [Prometheus] Metrics available at: http://localhost:9090/metrics[0m
+[32m[2025-09-07T05:30:11.182Z] ✅ [Monitoring] ✓ prometheus started[0m
+[34m[2025-09-07T05:30:11.183Z] 💡 [HealthMonitor] Starting health monitor (interval: 10000ms)[0m
+[32m[2025-09-07T05:30:11.184Z] ✅ [Monitoring] ✓ health started[0m
+[34m[2025-09-07T05:30:11.184Z] 💡 [Alerting] Starting alerting system[0m
+[34m[2025-09-07T05:30:11.202Z] 💡 [Config] 🎛️ Configuration initialized:[0m { environment: 'development', strategy: 'balanced' }
+[34m[2025-09-07T05:30:11.205Z] 💡 [Router] 🧭 Router initialized with strategy:[0m balanced
+[34m[2025-09-07T05:30:11.205Z] 💡 [LLMRouter] 🚀 LLM-Runner-Router initializing...[0m { version: '2.0.0', environment: 'node' }
+[dotenv@17.2.1] injecting env (8) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+[34m[2025-09-07T05:30:11.206Z] 💡 [Server] 🚀 LLM Router Server Starting...
+[0m
+[34m[2025-09-07T05:30:11.210Z] 💡 [Config] 🎛️ Configuration initialized:[0m { environment: 'development', strategy: 'balanced' }
+[34m[2025-09-07T05:30:11.210Z] 💡 [Router] 🧭 Router initialized with strategy:[0m balanced
+[34m[2025-09-07T05:30:11.210Z] 💡 [LLMRouter] 🚀 LLM-Runner-Router initializing...[0m { version: '2.0.0', environment: 'node' }
+[34m[2025-09-07T05:30:11.210Z] 💡 [Config] 🎛️ Configuration initialized:[0m { environment: 'development', strategy: 'balanced' }
+[31m[2025-09-07T05:30:11.214Z] ❌ [ErrorHandler] 🚨 CRITICAL: Uncaught Exception:[0m Error: listen EADDRINUSE: address already in use 0.0.0.0:3006
     at Server.setupListenHandle [as _listen2] (node:net:1908:16)
     at listenInCluster (node:net:1965:12)
     at doListen (node:net:2139:7)
@@ -23,7 +42,7 @@
   address: '0.0.0.0',
   port: 3006
 }
-[31m[2025-09-05T16:41:24.106Z] ❌ [ErrorHandler] 🚨 CRITICAL ERROR from uncaughtException:[0m {
+[31m[2025-09-07T05:30:11.214Z] ❌ [ErrorHandler] 🚨 CRITICAL ERROR from uncaughtException:[0m {
   message: 'listen EADDRINUSE: address already in use 0.0.0.0:3006',
   stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:3006\n' +
     '    at Server.setupListenHandle [as _listen2] (node:net:1908:16)\n' +
@@ -31,17 +50,17 @@
     '    at doListen (node:net:2139:7)\n' +
     '    at process.processTicksAndRejections (node:internal/process/task_queues:83:21)',
   source: 'uncaughtException',
-  timestamp: '2025-09-05T16:41:24.106Z',
+  timestamp: '2025-09-07T05:30:11.214Z',
   memoryUsage: {
-    rss: 121331712,
-    heapTotal: 57212928,
-    heapUsed: 32474552,
-    external: 3640223,
-    arrayBuffers: 1157417
+    rss: 169578496,
+    heapTotal: 88555520,
+    heapUsed: 64751472,
+    external: 3728714,
+    arrayBuffers: 1166433
   },
-  uptime: 0.695560451
+  uptime: 2.906852027
 }
-[31m[2025-09-05T16:41:24.106Z] ❌ [LLMRouter] 🚨 Critical system error detected:[0m {
+[31m[2025-09-07T05:30:11.215Z] ❌ [LLMRouter] 🚨 Critical system error detected:[0m {
   error: Error: listen EADDRINUSE: address already in use 0.0.0.0:3006
       at Server.setupListenHandle [as _listen2] (node:net:1908:16)
       at listenInCluster (node:net:1965:12)
@@ -55,7 +74,7 @@
   },
   source: 'uncaughtException'
 }
-[31m[2025-09-05T16:41:24.107Z] ❌ [LLMRouter] 🚨 Critical system error detected:[0m {
+[31m[2025-09-07T05:30:11.215Z] ❌ [LLMRouter] 🚨 Critical system error detected:[0m {
   error: Error: listen EADDRINUSE: address already in use 0.0.0.0:3006
       at Server.setupListenHandle [as _listen2] (node:net:1908:16)
       at listenInCluster (node:net:1965:12)
@@ -69,6 +88,9 @@
   },
   source: 'uncaughtException'
 }
-[31m[2025-09-05T16:41:25.108Z] ❌ [ErrorHandler] 🛑 Performing emergency graceful shutdown...[0m
-[34m[2025-09-05T16:41:25.109Z] 💡 [ErrorHandler] 🛑 Initiating graceful shutdown...[0m
-[34m[2025-09-05T16:41:30.113Z] 💡 [ErrorHandler] ✅ Graceful shutdown completed[0m
+[34m[2025-09-07T05:30:11.216Z] 💡 [Alerting] Loaded 30 persisted alerts[0m
+[32m[2025-09-07T05:30:11.216Z] ✅ [Monitoring] ✓ alerting started[0m
+[32m[2025-09-07T05:30:11.216Z] ✅ [Monitoring] Monitoring system started in 37ms[0m
+[31m[2025-09-07T05:30:12.215Z] ❌ [ErrorHandler] 🛑 Performing emergency graceful shutdown...[0m
+[34m[2025-09-07T05:30:12.215Z] 💡 [ErrorHandler] 🛑 Initiating graceful shutdown...[0m
+[34m[2025-09-07T05:30:17.216Z] 💡 [ErrorHandler] ✅ Graceful shutdown completed[0m

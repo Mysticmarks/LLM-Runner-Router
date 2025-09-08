@@ -151,8 +151,10 @@ class Pipeline extends EventEmitter {
         setTimeout(() => this.cache.delete(cacheKey), 3600000); // 1hr TTL
       }
       
-      // Update metrics
-      model.updateMetrics(startTime, final.tokens || 0);
+      // Update metrics (check if method exists for compatibility)
+      if (typeof model.updateMetrics === 'function') {
+        model.updateMetrics(startTime, final.tokens || 0);
+      }
       
       this.emit('processed', { id, duration: Date.now() - startTime });
       return final;

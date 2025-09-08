@@ -24,7 +24,7 @@ import OllamaAdapter from './src/loaders/adapters/OllamaAdapter.js';
 import HFLoader from './src/loaders/HFLoader.js';
 import SimpleInferenceServer from './src/loaders/SimpleInferenceServer.js';
 import WebSocketAPI from './src/api/WebSocket.js';
-import MonitoringSystem from './src/monitoring/index.js';
+import { MonitoringSystem } from './src/monitoring/index.js';
 import { httpMonitoringMiddleware } from './src/monitoring/middleware.js';
 import fs from 'fs/promises';
 import fsSync from 'fs';
@@ -76,19 +76,23 @@ logger.info('🚀 LLM Router Server Starting...\n');
 const app = express();
 const server = createServer(app);
 
+// Trust proxy since we're behind nginx
+app.set('trust proxy', true);
+
 // Basic security middleware
 app.use(securityHeaders());
 app.use(globalRateLimit());
 
 // Production monitoring middleware (before other middleware for accurate metrics)
-if (process.env.NODE_ENV === 'production' || process.env.MONITORING_ENABLED === 'true') {
-  app.use(httpMonitoringMiddleware({
-    enabled: true,
-    excludePaths: ['/favicon.ico', '/health', '/metrics'],
-    includeBody: false, // For security
-    sampling: 1.0 // Monitor 100% of requests in production
-  }));
-}
+// TEMPORARILY DISABLED DUE TO MONITORING SYSTEM ISSUES
+// if (process.env.NODE_ENV === 'production' || process.env.MONITORING_ENABLED === 'true') {
+//   app.use(httpMonitoringMiddleware({
+//     enabled: true,
+//     excludePaths: ['/favicon.ico', '/health', '/metrics'],
+//     includeBody: false, // For security
+//     sampling: 1.0 // Monitor 100% of requests in production
+//   }));
+// }
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
@@ -774,11 +778,12 @@ if (process.env.NODE_ENV !== 'test') {
       });
       
       // Expose health check endpoint
-      app.get('/health', (req, res) => {
-        monitoring.getHealth().then(health => {
-          res.status(health.status === 'healthy' ? 200 : 503).json(health);
-        });
-      });
+      // TEMPORARILY DISABLED DUE TO MONITORING ISSUES
+      // app.get('/health', (req, res) => {
+      //   monitoring.getHealth().then(health => {
+      //     res.status(health.status === 'healthy' ? 200 : 503).json(health);
+      //   });
+      // });
       
     } catch (error) {
       logger.warn(`Monitoring system failed to initialize: ${error.message}`);
