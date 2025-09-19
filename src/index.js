@@ -166,7 +166,7 @@ class LLMRouter {
     const model = await loader.load(spec);
     
     // Register the loaded model
-    this.registry.register(model);
+    await this.registry.register(model);
     
     logger.success(`✅ Model loaded: ${model.id}`);
     return model;
