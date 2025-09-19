@@ -99,15 +99,34 @@ class ModelRegistry extends EventEmitter {
       maxModels: 100,
       ...config
     };
-    
+
     this.models = new Map();
     this.loaders = new Map();
     this.indexes = {
       format: new Map(),
       capability: new Map()
     };
-    
+
     this.stats = { registered: 0, loaded: 0 };
+  }
+
+  /**
+   * Backwards compatible accessors for legacy callers
+   */
+  get maxModels() {
+    return this.config.maxModels;
+  }
+
+  set maxModels(value) {
+    this.config.maxModels = value;
+  }
+
+  get registryPath() {
+    return this.config.registryPath;
+  }
+
+  set registryPath(value) {
+    this.config.registryPath = value;
   }
 
   /**
@@ -184,17 +203,18 @@ class ModelRegistry extends EventEmitter {
    * await registry.register(model3);
    */
   async register(model) {
-    if (this.models.size >= this.config.maxModels) {
-      await this.evictLRU();
+    try {
+      const prepared = this.prepareModelForRegistration(model);
+
+      if (this.models.size >= this.config.maxModels) {
+        await this.evictLRU();
+      }
+
+      return await this.addModel(prepared);
+    } catch (error) {
+      this.emit('error', error);
+      throw error;
     }
-    
-    this.models.set(model.id, model);
-    this.indexModel(model);
-    this.stats.registered++;
-    
-    await this.saveRegistry();
-    this.emit('registered', model);
-    return model;
   }
 
   /**
@@ -448,21 +468,47 @@ class ModelRegistry extends EventEmitter {
    * const ggufModels = registry.getByFormat('gguf'); // includes custom-model
    */
   indexModel(model) {
+    this.deindexModel(model);
+
     // Index by format
     if (!this.indexes.format.has(model.format)) {
       this.indexes.format.set(model.format, []);
     }
-    this.indexes.format.get(model.format).push(model);
-    
+    const byFormat = this.indexes.format.get(model.format);
+    if (!byFormat.some(existing => existing.id === model.id)) {
+      byFormat.push(model);
+    }
+
     // Index by capabilities (only if capabilities exist)
-    if (model.capabilities && typeof model.capabilities === 'object') {
-      Object.entries(model.capabilities)
-        .filter(([_, enabled]) => enabled)
+    const { capabilities } = model;
+    if (!capabilities) return;
+
+    if (Array.isArray(capabilities)) {
+      capabilities
+        .filter(Boolean)
+        .forEach(cap => {
+          if (!this.indexes.capability.has(cap)) {
+            this.indexes.capability.set(cap, []);
+          }
+          const models = this.indexes.capability.get(cap);
+          if (!models.some(existing => existing.id === model.id)) {
+            models.push(model);
+          }
+        });
+      return;
+    }
+
+    if (typeof capabilities === 'object') {
+      Object.entries(capabilities)
+        .filter(([_, enabled]) => Boolean(enabled))
         .forEach(([cap]) => {
           if (!this.indexes.capability.has(cap)) {
             this.indexes.capability.set(cap, []);
           }
-          this.indexes.capability.get(cap).push(model);
+          const models = this.indexes.capability.get(cap);
+          if (!models.some(existing => existing.id === model.id)) {
+            models.push(model);
+          }
         });
     }
   }
@@ -497,7 +543,12 @@ class ModelRegistry extends EventEmitter {
     }
     
     if (oldest) {
-      await oldest.cleanup();
+      if (typeof oldest.cleanup === 'function') {
+        await oldest.cleanup();
+      } else if (typeof oldest.unload === 'function') {
+        await oldest.unload();
+      }
+      this.deindexModel(oldest);
       this.models.delete(oldest.id);
       logger.info(`Evicted: ${oldest.name}`);
     }
@@ -599,9 +650,8 @@ class ModelRegistry extends EventEmitter {
     data.path = resolvedSource;
 
     const model = await loader.fromData(data);
-    this.models.set(model.id, model);
-    this.indexModel(model);
-    return model;
+    const prepared = this.prepareModelForRegistration(model, { allowExisting: true });
+    return await this.addModel(prepared, { persist: false, emitEvent: false });
   }
 
   /**
@@ -659,11 +709,138 @@ class ModelRegistry extends EventEmitter {
    */
   async cleanup() {
     for (const model of this.models.values()) {
-      await model.cleanup();
+      if (typeof model.cleanup === 'function') {
+        await model.cleanup();
+      } else if (typeof model.unload === 'function') {
+        await model.unload();
+      }
     }
     this.models.clear();
     this.indexes.format.clear();
     this.indexes.capability.clear();
+  }
+
+  /**
+   * Validate and normalize model definition before registration
+   * @private
+   */
+  prepareModelForRegistration(model, options = {}) {
+    const { allowExisting = false } = options;
+
+    if (!model || typeof model !== 'object') {
+      throw new TypeError('Model definition must be an object');
+    }
+
+    const requiredFields = ['id', 'name', 'format'];
+    for (const field of requiredFields) {
+      const value = model[field];
+      if (typeof value !== 'string' || value.trim().length === 0) {
+        throw new Error(`Model is missing required field: ${field}`);
+      }
+    }
+
+    if (!allowExisting && this.models.has(model.id)) {
+      throw new Error(`Model with id ${model.id} is already registered`);
+    }
+
+    const hasLocation = Boolean(
+      model.source ||
+      model.path ||
+      model.endpoint ||
+      model.url ||
+      (typeof model.load === 'function')
+    );
+
+    if (!hasLocation) {
+      throw new Error(`Model ${model.id} must define a source or implement load()`);
+    }
+
+    // Normalise metadata without breaking model instances
+    if (!model.status) {
+      model.status = 'registered';
+    }
+
+    const registeredAt = model.registered;
+    if (!registeredAt) {
+      model.registered = new Date();
+    } else if (!(registeredAt instanceof Date)) {
+      const parsed = new Date(registeredAt);
+      model.registered = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+    }
+
+    if (model.metrics && typeof model.metrics.lastUsed === 'string') {
+      const parsed = new Date(model.metrics.lastUsed);
+      if (!Number.isNaN(parsed.getTime())) {
+        model.metrics.lastUsed = parsed;
+      }
+    }
+
+    return model;
+  }
+
+  /**
+   * Insert model into registry, maintaining indexes
+   * @private
+   */
+  async addModel(model, options = {}) {
+    const { persist = true, emitEvent = true } = options;
+
+    this.models.set(model.id, model);
+    this.indexModel(model);
+    this.stats.registered++;
+
+    if (persist) {
+      await this.saveRegistry();
+    }
+
+    if (emitEvent) {
+      this.emit('registered', model);
+    }
+
+    return model;
+  }
+
+  /**
+   * Remove existing index references for model
+   * @private
+   */
+  deindexModel(model) {
+    if (!model) return;
+
+    const formatModels = this.indexes.format.get(model.format);
+    if (formatModels) {
+      const filtered = formatModels.filter(entry => entry.id !== model.id);
+      if (filtered.length === 0) {
+        this.indexes.format.delete(model.format);
+      } else {
+        this.indexes.format.set(model.format, filtered);
+      }
+    }
+
+    const capabilities = model.capabilities;
+    if (!capabilities) return;
+
+    const removeCapability = (cap) => {
+      const list = this.indexes.capability.get(cap);
+      if (!list) return;
+      const filtered = list.filter(entry => entry.id !== model.id);
+      if (filtered.length === 0) {
+        this.indexes.capability.delete(cap);
+      } else {
+        this.indexes.capability.set(cap, filtered);
+      }
+    };
+
+    if (Array.isArray(capabilities)) {
+      capabilities.filter(Boolean).forEach(removeCapability);
+      return;
+    }
+
+    if (typeof capabilities === 'object') {
+      Object.entries(capabilities)
+        .filter(([_, enabled]) => Boolean(enabled))
+        .forEach(([cap]) => removeCapability(cap));
+    }
   }
 }
 
