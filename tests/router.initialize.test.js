@@ -10,6 +10,34 @@ async function loadServer() {
   return mod;
 }
 
+describe('server bootstrap environment validation', () => {
+  it('validates environment during module import', async () => {
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'test';
+
+    const getSummary = jest.fn(() => ({ valid: true, warningCount: 0, errorCount: 0 }));
+    const validateMock = jest.fn(() => ({ getSummary }));
+
+    try {
+      await jest.isolateModulesAsync(async () => {
+        jest.unstable_mockModule('../src/utils/EnvValidator.js', () => ({
+          __esModule: true,
+          default: { validate: validateMock },
+          EnvValidator: { validate: validateMock }
+        }));
+
+        await import('../server.js');
+      });
+
+      expect(validateMock).toHaveBeenCalledWith('test');
+      expect(getSummary).toHaveBeenCalled();
+    } finally {
+      process.env.NODE_ENV = originalEnv;
+      jest.resetModules();
+    }
+  });
+});
+
 describe('initializeRouter smollm3 directory check', () => {
   beforeEach(async () => {
     // remove directory before each

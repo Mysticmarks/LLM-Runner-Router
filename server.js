@@ -32,6 +32,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Config from './src/config/Config.js';
 import Logger from './src/utils/Logger.js';
+import EnvValidator from './src/utils/EnvValidator.js';
 
 // Import authentication middleware
 import { 
@@ -66,10 +67,25 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const logger = new Logger('Server');
+
+const envValidator = EnvValidator.validate(process.env.NODE_ENV || 'development');
+const envSummary = envValidator.getSummary();
+
+if (!envSummary.valid) {
+  logger.error(`Environment validation failed with ${envSummary.errorCount} error(s).`);
+  throw new Error('Environment validation failed. Resolve configuration issues before starting the server.');
+}
+
+if (envSummary.warningCount > 0) {
+  logger.warn(`Environment validation completed with ${envSummary.warningCount} warning(s).`);
+} else {
+  logger.success('Environment configuration validated successfully.');
+}
+
 const PORT = process.env.PORT || 3006;
 const HOST = process.env.HOST || '0.0.0.0'; // Use HOST env var for binding
 
-const logger = new Logger('Server');
 logger.info('🚀 LLM Router Server Starting...\n');
 
 // Initialize Express and HTTP server
