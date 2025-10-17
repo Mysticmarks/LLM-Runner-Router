@@ -80,14 +80,38 @@ describe('WebGPU Engine Integration - Production Tests', () => {
   let originalEnv;
   let mockSetup;
 
+  let originalWindow;
+
   beforeAll(() => {
     originalEnv = process.env.NODE_ENV;
+    originalWindow = global.window;
+
+    if (typeof global.window === 'undefined') {
+      global.window = {};
+    }
+
+    global.window.navigator = global.navigator;
     mockSetup = setupWebGPU();
+  });
+
+  beforeEach(() => {
+    if (typeof global.window === 'undefined') {
+      global.window = {};
+    }
+
+    global.window.navigator = global.navigator;
+    mockSetup = setupWebGPU();
+    jest.clearAllMocks();
   });
 
   afterAll(() => {
     process.env.NODE_ENV = originalEnv;
     cleanupWebGPU();
+    if (typeof originalWindow === 'undefined') {
+      delete global.window;
+    } else {
+      global.window = originalWindow;
+    }
   });
 
   describe('Environment Detection', () => {
@@ -284,8 +308,8 @@ describe('WebGPU Engine Integration - Production Tests', () => {
       const largeInput = new Float32Array(10000);
       await engine.execute(model, largeInput);
       
-      // All should complete without error
-      expect(mockSetup.mockDevice.queue.submit).toHaveBeenCalledTimes(3);
+      // Each execution submits work twice (compute + readback)
+      expect(mockSetup.mockDevice.queue.submit).toHaveBeenCalledTimes(6);
     });
 
     it('dispatches correct number of workgroups', async () => {
@@ -465,18 +489,50 @@ describe('WebGPU Engine Integration - Production Tests', () => {
 
   describe('Error Handling', () => {
     let engine;
+    let originalRequestAdapter;
+    let originalRequestDevice;
+    let originalCreateShaderModule;
+    let originalCreateBuffer;
+    let originalQueueSubmit;
 
     beforeEach(() => {
       engine = new WebGPUEngine();
+      originalRequestAdapter = globalThis.navigator?.gpu?.requestAdapter;
+      originalRequestDevice = mockSetup?.mockAdapter?.requestDevice;
+      originalCreateShaderModule = mockSetup?.mockDevice?.createShaderModule;
+      originalCreateBuffer = mockSetup?.mockDevice?.createBuffer;
+      originalQueueSubmit = mockSetup?.mockDevice?.queue?.submit;
     });
 
     afterEach(async () => {
       await engine.cleanup();
+
+      if (originalRequestAdapter && globalThis.navigator?.gpu) {
+        globalThis.navigator.gpu.requestAdapter = originalRequestAdapter;
+      }
+
+      if (mockSetup?.mockAdapter && originalRequestDevice) {
+        mockSetup.mockAdapter.requestDevice = originalRequestDevice;
+      }
+
+      if (mockSetup?.mockDevice) {
+        if (originalCreateShaderModule) {
+          mockSetup.mockDevice.createShaderModule = originalCreateShaderModule;
+        }
+
+        if (originalCreateBuffer) {
+          mockSetup.mockDevice.createBuffer = originalCreateBuffer;
+        }
+
+        if (mockSetup.mockDevice.queue && originalQueueSubmit) {
+          mockSetup.mockDevice.queue.submit = originalQueueSubmit;
+        }
+      }
     });
 
     it('handles initialization errors gracefully', async () => {
       navigator.gpu.requestAdapter = jest.fn().mockRejectedValue(new Error('GPU error'));
-      
+
       await expect(engine.initialize()).rejects.toThrow('GPU error');
       expect(engine.initialized).toBe(false);
     });
