@@ -144,7 +144,10 @@ class WebGPUEngine extends BaseEngine {
     await staging.mapAsync(GPUMapMode.READ);
     const data = new Float32Array(staging.getMappedRange());
     staging.unmap();
-    
+    if (typeof staging.destroy === 'function') {
+      staging.destroy();
+    }
+
     return data;
   }
 

@@ -312,6 +312,84 @@ class ModelRegistry extends EventEmitter {
   }
 
   /**
+   * List models with optional filtering.
+   * Provides a stable API for callers that previously relied on an asynchronous
+   * `list()` helper while remaining synchronous for internal consumers.
+   *
+   * @param {Object} [options={}] - Filter options.
+   * @param {string|string[]} [options.format] - Restrict to one or more formats.
+   * @param {string|string[]} [options.capability] - Restrict to models exposing the capability.
+   * @param {string|string[]} [options.capabilities] - Alias for {@link options.capability}.
+   * @param {boolean} [options.loaded] - Filter based on load state.
+   * @param {boolean} [options.includeInactive=true] - Exclude models explicitly marked inactive.
+   * @param {Function} [options.predicate] - Custom filter predicate.
+   * @param {number} [options.limit] - Optional limit on returned results.
+   * @returns {Array<Object>} Filtered list of registered models.
+   */
+  list(options = {}) {
+    const {
+      format,
+      capability,
+      capabilities,
+      loaded,
+      includeInactive = true,
+      predicate,
+      limit
+    } = options;
+
+    let results = this.getAll();
+
+    if (format) {
+      const formats = Array.isArray(format) ? format : [format];
+      results = results.filter(model => formats.includes(model.format));
+    }
+
+    const requiredCapabilities = capabilities || capability;
+    if (requiredCapabilities) {
+      const required = Array.isArray(requiredCapabilities)
+        ? requiredCapabilities
+        : [requiredCapabilities];
+
+      results = results.filter(model => {
+        if (!model || !model.capabilities) return false;
+
+        const caps = model.capabilities;
+        if (Array.isArray(caps)) {
+          return required.every(cap => caps.includes(cap));
+        }
+
+        if (typeof caps === 'object') {
+          return required.every(cap => Boolean(caps[cap] ?? caps[cap?.toLowerCase?.()]));
+        }
+
+        if (typeof caps === 'string') {
+          return required.every(cap => caps === cap);
+        }
+
+        return false;
+      });
+    }
+
+    if (typeof loaded === 'boolean') {
+      results = results.filter(model => Boolean(model?.loaded) === loaded);
+    }
+
+    if (!includeInactive) {
+      results = results.filter(model => model?.active !== false);
+    }
+
+    if (typeof predicate === 'function') {
+      results = results.filter(predicate);
+    }
+
+    if (Number.isInteger(limit) && limit >= 0) {
+      results = results.slice(0, limit);
+    }
+
+    return results;
+  }
+
+  /**
    * Get all models of a specific format
    * @param {string} format - The model format (e.g., 'gguf', 'onnx', 'safetensors')
    * @returns {Array} Array of models with the specified format
