@@ -306,15 +306,15 @@ class MemoryManager {
       global.gc();
     } else {
       // Trigger GC indirectly
-      const arrays = [];
-      try {
-        while (true) {
-          arrays.push(new Array(1000000));
+        const arrays = [];
+        try {
+          for (let i = 0; i < 5; i++) {
+            arrays.push(new Array(1_000_000));
+          }
+        } catch (e) {
+          // Memory pressure will trigger GC
+          arrays.length = 0;
         }
-      } catch (e) {
-        // Memory pressure will trigger GC
-        arrays.length = 0;
-      }
     }
     
     this.statistics.gcCount++;

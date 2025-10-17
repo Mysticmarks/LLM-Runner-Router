@@ -14,6 +14,7 @@ import Logger from '../utils/Logger.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const logger = new Logger('BitNetLoader');
+const ANSI_ESCAPE_REGEX = new RegExp(String.raw`\u001B\[[0-9;]*m`, 'g');
 
 /**
  * Loader for BitNet 1-bit quantized models
@@ -345,8 +346,8 @@ class BitNetLoader extends BaseLoader {
      */
     parseStreamChunk(chunk) {
         // Extract tokens from streaming output
-        const cleaned = chunk
-            .replace(/\x1b\[[0-9;]*m/g, '') // Remove ANSI codes
+            const cleaned = chunk
+                .replace(ANSI_ESCAPE_REGEX, '') // Remove ANSI codes
             .trim();
         
         return cleaned || null;

@@ -461,7 +461,7 @@ class ChatTemplateEngine {
     remaining = remaining.substring(firstSpecialPos);
     
     // Process elif blocks
-    while (true) {
+      while (remaining.length > 0) {
       const elifMatch = remaining.match(/{%-?\s*elif\s+([^%]+?)\s*-?%}/);
       if (!elifMatch) break;
       

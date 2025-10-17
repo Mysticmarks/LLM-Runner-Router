@@ -205,6 +205,8 @@ export class BaseEngine extends EventEmitter {
    * @protected
    */
   async *_stream(model, input, options) {
+    // Provide an explicit async iterable structure so subclasses can override cleanly
+    yield* [];
     throw new Error('_stream() must be implemented by subclass');
   }
 

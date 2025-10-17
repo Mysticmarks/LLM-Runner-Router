@@ -74,7 +74,10 @@ class WorkerEngine extends BaseEngine {
    * Detect execution environment
    */
   detectEnvironment() {
-    if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
+    const globalScope = typeof globalThis !== 'undefined' && typeof globalThis.WorkerGlobalScope !== 'undefined'
+      ? globalThis.WorkerGlobalScope
+      : undefined;
+    if (globalScope && typeof self !== 'undefined' && self instanceof globalScope) {
       this.isServiceWorker = true;
       this.logger.info('Running in Service Worker context');
     } else if (typeof window !== 'undefined') {

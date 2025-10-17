@@ -124,9 +124,10 @@ class BaseLoader extends EventEmitter {
      *   console.error('Streaming failed:', error.message);
      * }
      */
-    async *stream(prompt, options = {}) {
-        throw new Error('stream() must be implemented by subclass');
-    }
+      async *stream(prompt, options = {}) {
+          yield* [];
+          throw new Error('stream() must be implemented by subclass');
+      }
 
     /**
      * Get information about the loaded model

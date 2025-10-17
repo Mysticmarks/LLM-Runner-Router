@@ -149,9 +149,10 @@ You are currently running completely locally from safetensors files. Respond hel
         },
         
         // Streaming not implemented yet
-        stream: async function* () {
-          throw new Error('Streaming not yet implemented for local SafeTensors models');
-        },
+          stream: async function* () {
+            yield* [];
+            throw new Error('Streaming not yet implemented for local SafeTensors models');
+          },
         
         // Cleanup method
         unload: () => {
