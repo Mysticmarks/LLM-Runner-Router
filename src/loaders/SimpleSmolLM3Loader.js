@@ -230,9 +230,10 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
         },
         
         // Streaming placeholder
-        stream: async function* () {
-          throw new Error('Streaming not yet implemented for simplified loader');
-        },
+          stream: async function* () {
+            yield* [];
+            throw new Error('Streaming not yet implemented for simplified loader');
+          },
         
         // Cleanup method
         unload: () => {
@@ -407,13 +408,15 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
       
       logger.info(`🤖 Generating AI response for: "${input.substring(0, 50)}..."`);
       
-      // Check if we have a Transformers.js pipeline
-      if (typeof this.generator === 'function') {
-        // Transformers.js pipeline - call it directly
-        const result = await this.generator(formattedPrompt, {
-          max_new_tokens: options.maxTokens || 150,
-          temperature: options.temperature || 0.8,
-          do_sample: true,
+        let responseText;
+
+        // Check if we have a Transformers.js pipeline
+        if (typeof this.generator === 'function') {
+          // Transformers.js pipeline - call it directly
+          const result = await this.generator(formattedPrompt, {
+            max_new_tokens: options.maxTokens || 150,
+            temperature: options.temperature || 0.8,
+            do_sample: true,
           top_p: options.topP || 0.95,
           repetition_penalty: options.repetitionPenalty || 1.2,
           no_repeat_ngram_size: 3,
@@ -424,33 +427,35 @@ Respond helpfully about local AI deployment, the LLM Router architecture, model 
         const fullText = result[0].generated_text || result;
         
         // Extract only the generated response (remove input prompt)
-        let response = fullText;
-        if (response.startsWith(formattedPrompt)) {
-          response = response.slice(formattedPrompt.length).trim();
+          responseText = fullText;
+          if (responseText.startsWith(formattedPrompt)) {
+            responseText = responseText.slice(formattedPrompt.length).trim();
+          }
+
+          // Clean up response - remove any leftover template markers
+          responseText = responseText.replace(/^Assistant:\s*/i, '').trim();
+
+          // If response is empty or contains only template tags, throw error
+          if (!responseText || responseText.match(/^(<\|[^>]+\|>\s*)+$/)) {
+            throw new Error('Model generated empty or malformed response - real inference failed');
+          }
+
+        } else if (this.generator && this.generator.generate) {
+          // Fallback wrapper - use generate method
+          const generated = await this.generator.generate(formattedPrompt, options);
+          responseText = generated?.text || generated?.response || generated;
+
+        } else {
+          throw new Error('No valid generator available');
         }
-        
-        // Clean up response - remove any leftover template markers
-        response = response.replace(/^Assistant:\s*/i, '').trim();
-        
-        // If response is empty or contains only template tags, throw error
-        if (!response || response.match(/^(<\|[^>]+\|>\s*)+$/)) {
-          throw new Error('Model generated empty or malformed response - real inference failed');
+
+        if (typeof responseText !== 'string') {
+          throw new Error('Generator returned non-string response');
         }
-        
-        return response;
-        
-      } else if (this.generator && this.generator.generate) {
-        // Fallback wrapper - use generate method
-        const response = await this.generator.generate(formattedPrompt, options);
-        return response;
-        
-      } else {
-        throw new Error('No valid generator available');
-      }
-      
-      logger.success(`✅ AI response generated: "${response.substring(0, 50)}..."`);
-      
-      return response;
+
+        logger.success(`✅ AI response generated: "${responseText.substring(0, 50)}..."`);
+
+        return responseText;
       
     } catch (error) {
       logger.error(`❌ AI generation failed: ${error.message}`);

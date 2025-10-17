@@ -5,13 +5,22 @@
  */
 
 // Core enterprise components
+import MultiTenancyManager, { IsolationLevels, QuotaTypes } from './MultiTenancy.js';
+import ABTestingManager, { ExperimentStatus, SplittingAlgorithms, StatisticalTests } from './ABTesting.js';
+import AuditLogger, { AuditEventTypes, ComplianceFrameworks, RiskLevels } from './AuditLogger.js';
+import SLAMonitor, { SLAMetricTypes, BreachSeverity, SLAStatus, TimeWindows } from './SLAMonitor.js';
+import EnterpriseAuthManager, { AuthMethods, UserRoles, Permissions, SessionTypes } from './EnterpriseAuth.js';
+
+// Integration components
+import EnterpriseManager from './EnterpriseManager.js';
+import EnterpriseRouter from './RouterIntegration.js';
+import { createEnterpriseExpressRoutes, createEnterpriseWebSocketHandlers } from './APIIntegration.js';
+
 export { default as MultiTenancyManager, IsolationLevels, QuotaTypes } from './MultiTenancy.js';
 export { default as ABTestingManager, ExperimentStatus, SplittingAlgorithms, StatisticalTests } from './ABTesting.js';
 export { default as AuditLogger, AuditEventTypes, ComplianceFrameworks, RiskLevels } from './AuditLogger.js';
 export { default as SLAMonitor, SLAMetricTypes, BreachSeverity, SLAStatus, TimeWindows } from './SLAMonitor.js';
 export { default as EnterpriseAuthManager, AuthMethods, UserRoles, Permissions, SessionTypes } from './EnterpriseAuth.js';
-
-// Integration components
 export { EnterpriseManager } from './EnterpriseManager.js';
 export { EnterpriseRouter } from './RouterIntegration.js';
 export { createEnterpriseExpressRoutes, createEnterpriseWebSocketHandlers } from './APIIntegration.js';

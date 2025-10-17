@@ -803,7 +803,7 @@ class SLAMonitor extends EventEmitter {
     };
     
     for (const sla of slas) {
-      const slaReport = await this.generateSLAReport(sla, startDate, endDate);
+      const slaReport = await this.generateIndividualSLAReport(sla, startDate, endDate);
       serviceReport.slas.push(slaReport);
       
       if (slaReport.overallCompliance) {
@@ -822,7 +822,7 @@ class SLAMonitor extends EventEmitter {
    * Generate SLA report
    * @private
    */
-  async generateSLAReport(sla, startDate, endDate) {
+  async generateIndividualSLAReport(sla, startDate, endDate) {
     const report = {
       slaId: sla.id,
       serviceName: sla.serviceName,

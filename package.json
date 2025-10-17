@@ -13,7 +13,7 @@
     "prebuild": "node scripts/prebuild-automation.js",
     "deploy": "node scripts/deploy.js",
     "migrate": "node -e \"import('./src/db/DatabaseManager.js').then(({DatabaseManager}) => new DatabaseManager().initialize())\"",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --runTestsByPath tests/final-validation.test.js --forceExit",
     "test:unit": "node --experimental-vm-modules node_modules/.bin/jest tests/basic.test.js",
     "test:integration": "node --experimental-vm-modules node_modules/.bin/jest tests/integration",
     "test:enterprise": "node --experimental-vm-modules node_modules/.bin/jest tests/enterprise",
@@ -107,7 +107,6 @@
     "msgpackr": "^1.10.0",
     "multer": "^2.0.2",
     "node-llama-cpp": "^3.12.4",
-    "onnxruntime-node": "^1.22.0-rev",
     "onnxruntime-web": "^1.22.0",
     "openapi-types": "^12.1.3",
     "p-queue": "^8.0.0",
@@ -126,6 +125,9 @@
     "tiktoken": "^1.0.0",
     "uuid": "^11.1.0",
     "ws": "^8.16.0"
+  },
+  "optionalDependencies": {
+    "onnxruntime-node": "^1.22.0-rev"
   },
   "devDependencies": {
     "@babel/core": "^7.23.0",

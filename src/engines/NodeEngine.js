@@ -500,10 +500,11 @@ class NodeEngine extends BaseEngine {
       case 'tanh':
         result = flat.map(val => Math.tanh(val));
         break;
-      case 'softmax':
+      case 'softmax': {
         const expSum = flat.reduce((sum, val) => sum + Math.exp(val), 0);
         result = flat.map(val => Math.exp(val) / expSum);
         break;
+      }
       default:
         result = flat;
     }

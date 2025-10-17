@@ -576,11 +576,20 @@ export class ModelQuantizer extends EventEmitter {
       result.quantizedSize = stats.size;
       result.originalSize = originalModelInfo.size;
       
-      // Quality metrics validation would go here
-      // This would involve loading both models and comparing outputs
-      // Calculate actual accuracy using validation dataset
-      result.accuracy = await this._calculateAccuracy(this.config.originalPath || originalModelPath, outputPath);
-      result.perplexity = await this._calculatePerplexity(outputPath);
+        // Quality metrics validation would go here
+        // This would involve loading both models and comparing outputs
+        // Calculate actual accuracy using validation dataset when paths are available
+        const originalPath = this.config.originalPath || originalModelInfo?.path || result.originalPath;
+        const quantizedPath = result.outputPath;
+
+        if (originalPath && quantizedPath) {
+          result.accuracy = await this._calculateAccuracy(originalPath, quantizedPath);
+          result.perplexity = await this._calculatePerplexity(quantizedPath);
+        } else {
+          result.warnings.push('Skipped accuracy/perplexity validation - model paths unavailable');
+          result.accuracy = result.accuracy ?? null;
+          result.perplexity = result.perplexity ?? null;
+        }
       
       if (result.accuracy < this.config.accuracyThreshold) {
         result.warnings.push(`Accuracy ${result.accuracy} below threshold ${this.config.accuracyThreshold}`);

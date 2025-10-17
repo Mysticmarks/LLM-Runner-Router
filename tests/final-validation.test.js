@@ -195,13 +195,18 @@ describe('Final Project Validation', () => {
     expect(packageJson.scripts.build).toBeDefined();
     
     // Check critical dependencies
-    const criticalDeps = [
-      'express', 'graphql', 'ws', '@grpc/grpc-js',
-      'onnxruntime-node', 'onnxruntime-web'
+    const dependencyChecks = [
+      { name: 'express', field: 'dependencies' },
+      { name: 'graphql', field: 'dependencies' },
+      { name: 'ws', field: 'dependencies' },
+      { name: '@grpc/grpc-js', field: 'dependencies' },
+      { name: 'onnxruntime-web', field: 'dependencies' },
+      { name: 'onnxruntime-node', field: 'optionalDependencies' }
     ];
-    
-    for (const dep of criticalDeps) {
-      expect(packageJson.dependencies[dep]).toBeDefined();
+
+    for (const { name, field } of dependencyChecks) {
+      const container = packageJson[field] || {};
+      expect(container[name]).toBeDefined();
     }
   });
 
